@@ -1,6 +1,10 @@
+import express from "express";
 import { z } from "zod";
-import { builder } from "./express-typesharing";
+import { createBuilder } from "./express-typesharing";
 import { success, zodValidationError } from "./express-typesharing-responses";
+
+const app = express();
+const builder = createBuilder(app);
 
 const auth = builder
   .middleware(({ req }) => {

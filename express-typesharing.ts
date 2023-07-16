@@ -1,11 +1,10 @@
 import { z, ZodError, ZodType } from "zod";
-import express, { Request, response, Response } from "express";
+import express, { Request, Response, Express } from "express";
 import {
   ImprovedZodIssue,
   unexpectedError,
   zodValidationError,
 } from "./express-typesharing-responses";
-const app = express();
 
 type ExpressRequest = Request; // TODO
 type ExpressResponse = Response; // TODO
@@ -27,6 +26,7 @@ type Endpoint<TRequest, TResponse> = (
 type Next = { next: true | false };
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 const getBuilder = <A = unknown, Response = never>(config: {
+  app: Express;
   middlewares: any[];
   final_middleware?: any;
   body_parsers: any[];
@@ -34,7 +34,9 @@ const getBuilder = <A = unknown, Response = never>(config: {
   path?: string;
 }) => {
   function buildFinalMiddlewareSetter(method: HttpVerbs) {
-    return <B extends A, C>(mw: Middleware<B & { next: true }, C | Response>) => {
+    return <B extends A, C>(
+      mw: Middleware<B & { next: true }, C | Response>
+    ) => {
       return getBuilder<C, Response | C>({
         ...config,
         final_middleware: mw,
@@ -143,7 +145,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
         throw new Error("Path is required");
       }
 
-      return app[config.method](config.path, (req, res) => {
+      return config.app[config.method](config.path, (req, res) => {
         endpoint(req, res).catch((err) => {
           console.error(err);
 
@@ -156,7 +158,9 @@ const getBuilder = <A = unknown, Response = never>(config: {
   };
 };
 
-export const builder = getBuilder({
-  body_parsers: [],
-  middlewares: [],
-});
+export const createBuilder = (app: Express) =>
+  getBuilder({
+    app,
+    body_parsers: [],
+    middlewares: [],
+  });

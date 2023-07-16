@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { builder } from "./express-typesharing";
+import { createBuilder } from "./express-typesharing";
+import express from "express";
+
+const app = express();
+const builder = createBuilder(app);
 
 const endpoint = builder
   .path("/user")
