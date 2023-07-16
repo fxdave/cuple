@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { builder } from "./react-express-typesharing";
+import { builder } from "./express-typesharing";
 
 const endpoint = builder
   .path("/user")
