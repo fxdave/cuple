@@ -10,7 +10,7 @@ const endpoint = builder
   .chain(
     // auth middleware
     builder
-      .middleware(({ req }) => {
+      .middleware(async ({ req }) => {
         if (req.headers["Authorization"] == "asd")
           return {
             next: true,
@@ -27,7 +27,7 @@ const endpoint = builder
       })
       .build()
   )
-  .middleware(({ req, data }) => {
+  .middleware(async ({ req, data }) => {
     // Get user
     return {
       next: true,
@@ -44,7 +44,7 @@ const endpoint = builder
       name: z.string(),
     })
   )
-  .get(({ data }) => {
+  .get(async ({ data }) => {
     console.log(data.body.name);
     console.log(data.user.email);
     return {

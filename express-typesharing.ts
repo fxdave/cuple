@@ -1,5 +1,5 @@
 import { z, ZodError, ZodType } from "zod";
-import express, { Request, Response, Express } from "express";
+import { Request, Response, Express } from "express";
 import {
   ImprovedZodIssue,
   unexpectedError,
@@ -13,7 +13,9 @@ type MiddlewareProps<TData> = {
   req: ExpressRequest;
   res: ExpressResponse;
 };
-type Middleware<TData, TResult> = (props: MiddlewareProps<TData>) => TResult;
+type Middleware<TData, TResult> = (
+  props: MiddlewareProps<TData>
+) => Promise<TResult>;
 type Endpoint<TRequest, TResponse> = (
   req: ExpressRequest,
   res: ExpressResponse
@@ -79,6 +81,29 @@ const getBuilder = <A = unknown, Response = never>(config: {
   type BodySchemaMiddlewareResponse<TParser extends ZodType<any, any, any>> =
     Awaited<ReturnType<ReturnType<typeof getBodySchemaMiddleware<TParser>>>>;
 
+  function buildMiddleware() {
+    return (async <TData>({
+      req,
+      res,
+      data,
+    }: {
+      req: ExpressRequest;
+      res: ExpressResponse;
+      data: TData;
+    }) => {
+      let actualData = data;
+      for (let mw of config.middlewares) {
+        const result = await mw({ data: actualData, req, res });
+        if (!result.next) {
+          return result;
+        }
+        delete result.next;
+        actualData = { ...actualData, ...result };
+      }
+      return actualData;
+    }) as Middleware<A, Response>;
+  }
+
   return {
     body_schema<TParser extends ZodType<any, any, any>>(body_parser: TParser) {
       return getBuilder<
@@ -111,48 +136,34 @@ const getBuilder = <A = unknown, Response = never>(config: {
       });
     },
 
+    buildLink(): Middleware<A, Response> {
+      return buildMiddleware();
+    },
+
     build(): Endpoint<A, Response> {
-      const endpoint = async (req: ExpressRequest, res: ExpressResponse) => {
-        let data: any = null;
-
-        // 1. walk through middlewares
-        for (let mw of config.middlewares) {
-          const result = mw({ data, req, res });
-          if (!result.next) {
-            delete result.next;
-            res.status(result.statusCode).send(result);
-            return;
-          }
-          delete result.next;
-          data = { ...data, ...result };
-        }
-
-        // 2. Call final middleware, in case it is needed
-        if (config.final_middleware) {
-          const final_data = config.final_middleware({ data, req, res });
-          const statusCode = final_data.statusCode;
-          delete final_data.statusCode;
-          res.status(statusCode).send(final_data);
-        }
-      };
+      const endpoint = buildMiddleware();
 
       if (!config.method) {
-        // TODO: make this to a compile time error
-        throw new Error("Method is required");
+        throw new Error("Path is required");
       }
       if (!config.path) {
-        // TODO: make this to a compile time error
         throw new Error("Path is required");
       }
 
       return config.app[config.method](config.path, (req, res) => {
-        endpoint(req, res).catch((err) => {
-          console.error(err);
+        endpoint({ req, res, data: null as any })
+          .then((response: any) => {
+            const statusCode = response.statusCode;
+            delete response.statusCode;
+            res.status(statusCode).send(response);
+          })
+          .catch((err) => {
+            console.error(err);
 
-          res.status(500).send({
-            message: "Something went wrong.",
+            res.status(500).send({
+              message: "Something went wrong.",
+            });
           });
-        });
       });
     },
   };

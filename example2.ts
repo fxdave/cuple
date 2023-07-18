@@ -7,7 +7,7 @@ const app = express();
 const builder = createBuilder(app);
 
 const auth = builder
-  .middleware(({ req }) => {
+  .middleware(async ({ req }) => {
     if (req.headers["Authorization"] == "sometoken")
       return {
         next: true,
@@ -33,7 +33,7 @@ const endpoints = {
         id: z.number(),
       })
     )
-    .get(({ data }) => {
+    .get(async ({ data }) => {
       return success({
         message: "The use has been queried",
         userEmail: data.user.email,
@@ -49,7 +49,7 @@ const endpoints = {
         password2: z.string().min(6),
       })
     )
-    .post(({ data }) => {
+    .post(async ({ data }) => {
       if (data.body.password1 !== data.body.password2) {
         return zodValidationError([
           {
@@ -68,3 +68,7 @@ const endpoints = {
     })
     .build(),
 };
+
+app.listen(8080, () => {
+  console.log(`Example app listening on port 8080`)
+})
