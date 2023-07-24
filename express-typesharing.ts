@@ -47,11 +47,6 @@ type BuilderConfig = {
   path?: string;
 };
 
-type GetSchemaResult<
-  TFunction extends (...args: any[]) => any,
-  TNext extends boolean
-> = Awaited<ReturnType<ReturnType<TFunction>>> & { next: TNext };
-
 /**
  * @template TData - The data object that you can use in request handlers
  * @template TResponses - The possible responses that the endpoint can produce
@@ -71,25 +66,29 @@ class Builder<TData = unknown, TResponses = unknown> {
     });
   }
 
-  bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
-    return this.__schema(bodyParser, SchemaType.Body);
+  bodySchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
+    return this.middleware(this.__getSchemaMiddleware(SchemaType.Body, parser));
   }
 
-  querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
-    return this.__schema(queryParser, SchemaType.Query);
+  querySchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
+    return this.middleware(
+      this.__getSchemaMiddleware(SchemaType.Query, parser)
+    );
   }
 
   path(path: string) {
     return new Builder<TData, TResponses>({ ...this.config, path });
   }
 
-  chain<TReq, TRes>(mw: Middleware<TReq, TRes>) {
+  chain<TLinkData, TLinkResponses>(
+    link: Middleware<TLinkData, TLinkResponses>
+  ) {
     return new Builder<
-      TReq & { next: true },
-      (TRes & { next: false }) | TResponses
+      TData & TLinkData & { next: true },
+      TResponses | (TLinkResponses & { next: false })
     >({
       ...this.config,
-      middlewares: [...this.config.middlewares, mw],
+      middlewares: [...this.config.middlewares, link],
     });
   }
 
@@ -99,7 +98,7 @@ class Builder<TData = unknown, TResponses = unknown> {
     const endpoint = this.__buildMiddleware();
 
     if (!this.config.method) {
-      throw new Error("Path is required");
+      throw new Error("Method is required");
     }
     if (!this.config.path) {
       throw new Error("Path is required");
@@ -110,14 +109,8 @@ class Builder<TData = unknown, TResponses = unknown> {
         .then((response) => {
           if (typeof response.next !== "boolean")
             throw new BadMiddlewareReturnTypeError();
-
-          if (!response.next) {
-            return response;
-          }
-
-          if (!this.config.finalware) {
-            throw new MissingFinalwareError();
-          }
+          if (!response.next) return response;
+          if (!this.config.finalware) throw new MissingFinalwareError();
           return this.config.finalware({ req, res, data: response });
         })
         .then((response) => {
@@ -176,10 +169,10 @@ class Builder<TData = unknown, TResponses = unknown> {
   }
 
   private __buildFinalMiddlewareSetter(method: HttpVerbs) {
-    return <B extends TData, C>(
-      mw: Finalware<B & { next: true }, C | TResponses>
+    return <TFinalResponses>(
+      mw: Finalware<TData, TResponses | TFinalResponses>
     ) => {
-      return new Builder<B & { next: true }, TResponses | C>({
+      return new Builder<TData, TResponses | TFinalResponses>({
         ...this.config,
         finalware: mw,
         method,
@@ -188,7 +181,7 @@ class Builder<TData = unknown, TResponses = unknown> {
   }
 
   private __buildMiddleware(): Middleware<TData, TResponses> {
-    return async <TData>({
+    return async ({
       req,
       res,
       data,
@@ -207,32 +200,6 @@ class Builder<TData = unknown, TResponses = unknown> {
       return { ...actualData, next: true };
     };
   }
-
-  private __schema<
-    TParser extends ZodType<any, any, any>,
-    TSchemaType extends SchemaType
-  >(bodyParser: TParser, schemaType: TSchemaType) {
-    return new Builder<
-      // The consequent TData will be merged with { body: ... } in case { next: TRUE }
-      TData &
-        GetSchemaResult<
-          typeof this.__getSchemaMiddleware<TSchemaType, TParser>,
-          true
-        >,
-      // The consequent TResponses can be validation error in case { next: FALSE }
-      | TResponses
-      | GetSchemaResult<
-          typeof this.__getSchemaMiddleware<TSchemaType, TParser>,
-          false
-        >
-    >({
-      ...this.config,
-      middlewares: [
-        ...this.config.middlewares,
-        this.__getSchemaMiddleware(schemaType, bodyParser),
-      ],
-    });
-  }
 }
 
 enum SchemaType {
@@ -249,7 +216,7 @@ export const createBuilder = (app: Express) =>
 class BadMiddlewareReturnTypeError extends Error {
   constructor() {
     super(
-      'Every middleware should return an object with a "next" bool attribute'
+      'Every middleware should return an object with a "next" boolean attribute'
     );
   }
 }
