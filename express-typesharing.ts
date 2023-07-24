@@ -30,8 +30,8 @@ type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 const getBuilder = <A = unknown, Response = never>(config: {
   app: Express;
   middlewares: any[];
-  final_middleware?: any;
-  body_parsers: any[];
+  finalMiddleware?: any;
+  bodyParsers: any[];
   method?: HttpVerbs;
   path?: string;
 }) => {
@@ -41,7 +41,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
     ) => {
       return getBuilder<C, Response | C>({
         ...config,
-        final_middleware: mw,
+        finalMiddleware: mw,
         method,
       });
     };
@@ -57,11 +57,33 @@ const getBuilder = <A = unknown, Response = never>(config: {
   }
 
   const getBodySchemaMiddleware =
-    <TParser extends ZodType<any, any, any>>(body_parser: TParser) =>
+    <TParser extends ZodType<any, any, any>>(bodyParser: TParser) =>
     async ({ req }) => {
       try {
         return {
-          body: body_parser.parse(req.body) as z.infer<TParser>,
+          body: bodyParser.parse(req.body) as z.infer<TParser>,
+          next: true as const,
+        };
+      } catch (e) {
+        if (e instanceof ZodError) {
+          return {
+            ...zodValidationError(e.issues as ImprovedZodIssue<any>[]),
+            next: false as const,
+          };
+        }
+        return {
+          ...unexpectedError(),
+          next: false as const,
+        };
+      }
+    };
+
+  const getQuerySchemaMiddleware =
+    <TParser extends ZodType<any, any, any>>(queryParser: TParser) =>
+    async ({ req }) => {
+      try {
+        return {
+          query: queryParser.parse(req.query) as z.infer<TParser>,
           next: true as const,
         };
       } catch (e) {
@@ -80,6 +102,8 @@ const getBuilder = <A = unknown, Response = never>(config: {
 
   type BodySchemaMiddlewareResponse<TParser extends ZodType<any, any, any>> =
     Awaited<ReturnType<ReturnType<typeof getBodySchemaMiddleware<TParser>>>>;
+  type QuerySchemaMiddlewareResponse<TParser extends ZodType<any, any, any>> =
+    Awaited<ReturnType<ReturnType<typeof getQuerySchemaMiddleware<TParser>>>>;
 
   function buildMiddleware() {
     return (async <TData>({
@@ -100,12 +124,16 @@ const getBuilder = <A = unknown, Response = never>(config: {
         delete result.next;
         actualData = { ...actualData, ...result };
       }
-      return actualData;
+
+      return {
+        ...actualData,
+        next: true,
+      };
     }) as Middleware<A, Response>;
   }
 
   return {
-    body_schema<TParser extends ZodType<any, any, any>>(body_parser: TParser) {
+    bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
       return getBuilder<
         A & BodySchemaMiddlewareResponse<TParser> & { next: true },
         (BodySchemaMiddlewareResponse<TParser> & { next: false }) | Response
@@ -113,7 +141,19 @@ const getBuilder = <A = unknown, Response = never>(config: {
         ...config,
         middlewares: [
           ...config.middlewares,
-          getBodySchemaMiddleware(body_parser),
+          getBodySchemaMiddleware(bodyParser),
+        ],
+      });
+    },
+    querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
+      return getBuilder<
+        A & QuerySchemaMiddlewareResponse<TParser> & { next: true },
+        (QuerySchemaMiddlewareResponse<TParser> & { next: false }) | Response
+      >({
+        ...config,
+        middlewares: [
+          ...config.middlewares,
+          getQuerySchemaMiddleware(queryParser),
         ],
       });
     },
@@ -126,7 +166,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
     path(path: string) {
       return getBuilder<A, Response>({ ...config, path });
     },
-    chain<TReq, TRes>(mw: Endpoint<TReq, TRes>) {
+    chain<TReq, TRes>(mw: Middleware<TReq, TRes>) {
       return getBuilder<
         TReq & { next: true },
         (TRes & { next: false }) | Response
@@ -152,9 +192,19 @@ const getBuilder = <A = unknown, Response = never>(config: {
 
       return config.app[config.method](config.path, (req, res) => {
         endpoint({ req, res, data: null as any })
-          .then((response: any) => {
+          .then((response) => {
+            if (!config.finalMiddleware) {
+              throw new Error(
+                "You have to use get/put/delete/post/patch at the end of the middleware chain"
+              );
+            }
+            return config.finalMiddleware({ req, res, data: response });
+          })
+          .then((response) => {
             const statusCode = response.statusCode;
             delete response.statusCode;
+            delete response.next;
+
             res.status(statusCode).send(response);
           })
           .catch((err) => {
@@ -172,6 +222,6 @@ const getBuilder = <A = unknown, Response = never>(config: {
 export const createBuilder = (app: Express) =>
   getBuilder({
     app,
-    body_parsers: [],
+    bodyParsers: [],
     middlewares: [],
   });

@@ -25,7 +25,7 @@ const endpoint = builder
           message: "Access denied",
         };
       })
-      .build()
+      .buildLink()
   )
   .middleware(async ({ req, data }) => {
     // Get user
@@ -39,7 +39,7 @@ const endpoint = builder
       },
     };
   })
-  .body_schema(
+  .bodySchema(
     z.object({
       name: z.string(),
     })

@@ -8,7 +8,7 @@ const builder = createBuilder(app);
 
 const auth = builder
   .middleware(async ({ req }) => {
-    if (req.headers["Authorization"] == "sometoken")
+    if (req.headers["authorization"] == "sometoken")
       return {
         next: true,
         user: {
@@ -22,27 +22,28 @@ const auth = builder
       message: "Access denied",
     };
   })
-  .build();
+  .buildLink();
 
 const endpoints = {
   getUserEmail: builder
     .path("/user")
     .chain(auth)
-    .body_schema(
+    .querySchema(
       z.object({
-        id: z.number(),
+        id: z.coerce.number(),
       })
     )
     .get(async ({ data }) => {
       return success({
-        message: "The use has been queried",
+        message: "The user has been queried",
         userEmail: data.user.email,
       });
     })
     .build(),
   setUserPassword: builder
+    .path("/user")
     .chain(auth)
-    .body_schema(
+    .bodySchema(
       z.object({
         oldPassword: z.string(),
         password1: z.string().min(6),
@@ -70,5 +71,5 @@ const endpoints = {
 };
 
 app.listen(8080, () => {
-  console.log(`Example app listening on port 8080`)
-})
+  console.log(`Example app listening on port 8080`);
+});
