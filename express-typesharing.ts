@@ -42,7 +42,6 @@ const getBuilder = <A = unknown, Response = never>(config: {
     return <B extends A, C>(
       mw: Finalware<B & { next: true }, C | Response>
     ) => {
-      // Is it C?
       return getBuilder<B & { next: true }, Response | C>({
         ...config,
         finalware: mw,
@@ -51,7 +50,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
     };
   }
 
-  function middleware<C extends Next>(mw: Middleware<A, C>) {
+  function setMiddleware<C extends Next>(mw: Middleware<A, C>) {
     return getBuilder<A & C & { next: true }, (C & { next: false }) | Response>(
       {
         ...config,
@@ -60,12 +59,18 @@ const getBuilder = <A = unknown, Response = never>(config: {
     );
   }
 
-  const getBodySchemaMiddleware =
-    <TParser extends ZodType<any, any, any>>(bodyParser: TParser) =>
+  const getSchemaMiddleware =
+    <
+      PropertyName extends keyof ExpressRequest,
+      TParser extends ZodType<any, any, any>
+    >(
+      propertyName: PropertyName,
+      parser: TParser
+    ) =>
     async ({ req }: { req: ExpressRequest }) => {
       try {
         return {
-          body: bodyParser.parse(req.body) as z.infer<TParser>,
+          [propertyName]: parser.parse(req[propertyName]) as z.infer<TParser>,
           next: true as const,
         };
       } catch (e) {
@@ -82,32 +87,12 @@ const getBuilder = <A = unknown, Response = never>(config: {
       }
     };
 
-  const getQuerySchemaMiddleware =
-    <TParser extends ZodType<any, any, any>>(queryParser: TParser) =>
-    async ({ req }: { req: ExpressRequest }) => {
-      try {
-        return {
-          query: queryParser.parse(req.query) as z.infer<TParser>,
-          next: true as const,
-        };
-      } catch (e) {
-        if (e instanceof ZodError) {
-          return {
-            ...zodValidationError(e.issues as ImprovedZodIssue<any>[]),
-            next: false as const,
-          };
-        }
-        return {
-          ...unexpectedError(),
-          next: false as const,
-        };
-      }
-    };
-
-  type BodySchemaMiddlewareResponse<TParser extends ZodType<any, any, any>> =
-    Awaited<ReturnType<ReturnType<typeof getBodySchemaMiddleware<TParser>>>>;
-  type QuerySchemaMiddlewareResponse<TParser extends ZodType<any, any, any>> =
-    Awaited<ReturnType<ReturnType<typeof getQuerySchemaMiddleware<TParser>>>>;
+  type SchemaMiddlewareResponse<
+    PropertyName extends keyof ExpressRequest,
+    TParser extends ZodType<any, any, any>
+  > = Awaited<
+    ReturnType<ReturnType<typeof getSchemaMiddleware<PropertyName, TParser>>>
+  >;
 
   function buildMiddleware() {
     return (async <TData>({
@@ -123,7 +108,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
       for (let mw of config.middlewares) {
         const { next, ...rest } = await mw({ data: actualData, req, res });
         if (typeof next !== "boolean") throw new BadMiddlewareReturnTypeError();
-        if (!next) return rest;
+        if (!next) return { ...rest, next: false };
         actualData = { ...actualData, ...rest };
       }
       return { ...actualData, next: true };
@@ -133,29 +118,30 @@ const getBuilder = <A = unknown, Response = never>(config: {
   return {
     bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
       return getBuilder<
-        A & BodySchemaMiddlewareResponse<TParser> & { next: true },
-        (BodySchemaMiddlewareResponse<TParser> & { next: false }) | Response
+        A & SchemaMiddlewareResponse<"body", TParser> & { next: true },
+        (SchemaMiddlewareResponse<"body", TParser> & { next: false }) | Response
       >({
         ...config,
         middlewares: [
           ...config.middlewares,
-          getBodySchemaMiddleware(bodyParser),
+          getSchemaMiddleware("body", bodyParser),
         ],
       });
     },
     querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
       return getBuilder<
-        A & QuerySchemaMiddlewareResponse<TParser> & { next: true },
-        (QuerySchemaMiddlewareResponse<TParser> & { next: false }) | Response
+        A & SchemaMiddlewareResponse<"query", TParser> & { next: true },
+        | (SchemaMiddlewareResponse<"query", TParser> & { next: false })
+        | Response
       >({
         ...config,
         middlewares: [
           ...config.middlewares,
-          getQuerySchemaMiddleware(queryParser),
+          getSchemaMiddleware("query", queryParser),
         ],
       });
     },
-    middleware,
+    middleware: setMiddleware,
     get: buildFinalMiddlewareSetter("get"),
     post: buildFinalMiddlewareSetter("post"),
     patch: buildFinalMiddlewareSetter("patch"),
