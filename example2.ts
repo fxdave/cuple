@@ -38,8 +38,7 @@ const endpoints = {
         message: "The user has been queried",
         userEmail: data.user.email,
       });
-    })
-    .build(),
+    }),
   setUserPassword: builder
     .path("/user")
     .chain(auth)
@@ -66,8 +65,7 @@ const endpoints = {
       return success({
         message: "The password has been updated successfully!",
       });
-    })
-    .build(),
+    }),
 };
 
 app.listen(8080, () => {

@@ -52,5 +52,4 @@ const endpoint = builder
       message: "The use has been queried",
       userEmail: data.user.email,
     };
-  })
-  .build();
+  });

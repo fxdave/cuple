@@ -76,6 +76,12 @@ class Builder<TData = unknown, TResponses = unknown> {
     );
   }
 
+  paramsSchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
+    return this.middleware(
+      this.__getSchemaMiddleware(SchemaType.Params, parser)
+    );
+  }
+
   path(path: string) {
     return new Builder<TData, TResponses>({ ...this.config, path });
   }
@@ -172,11 +178,13 @@ class Builder<TData = unknown, TResponses = unknown> {
     return <TFinalResponses>(
       mw: Finalware<TData, TResponses | TFinalResponses>
     ) => {
-      return new Builder<TData, TResponses | TFinalResponses>({
+      const builder = new Builder<TData, TResponses | TFinalResponses>({
         ...this.config,
         finalware: mw,
         method,
       });
+
+      return builder.build()
     };
   }
 
@@ -205,6 +213,7 @@ class Builder<TData = unknown, TResponses = unknown> {
 enum SchemaType {
   Body = "body",
   Query = "query",
+  Params = "params"
 }
 
 export const createBuilder = (app: Express) =>
