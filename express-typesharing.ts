@@ -33,9 +33,8 @@ type Next = { next: true | false };
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 const getBuilder = <A = unknown, Response = never>(config: {
   app: Express;
-  middlewares: any[];
-  finalMiddleware?: any;
-  bodyParsers: any[];
+  middlewares: Middleware<any, any>[];
+  finalware?: Finalware<any, any>;
   method?: HttpVerbs;
   path?: string;
 }) => {
@@ -43,9 +42,10 @@ const getBuilder = <A = unknown, Response = never>(config: {
     return <B extends A, C>(
       mw: Finalware<B & { next: true }, C | Response>
     ) => {
-      return getBuilder<C, Response | C>({
+      // Is it C?
+      return getBuilder<B & { next: true }, Response | C>({
         ...config,
-        finalMiddleware: mw,
+        finalware: mw,
         method,
       });
     };
@@ -62,7 +62,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
 
   const getBodySchemaMiddleware =
     <TParser extends ZodType<any, any, any>>(bodyParser: TParser) =>
-    async ({ req }) => {
+    async ({ req }: { req: ExpressRequest }) => {
       try {
         return {
           body: bodyParser.parse(req.body) as z.infer<TParser>,
@@ -84,7 +84,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
 
   const getQuerySchemaMiddleware =
     <TParser extends ZodType<any, any, any>>(queryParser: TParser) =>
-    async ({ req }) => {
+    async ({ req }: { req: ExpressRequest }) => {
       try {
         return {
           query: queryParser.parse(req.query) as z.infer<TParser>,
@@ -121,22 +121,13 @@ const getBuilder = <A = unknown, Response = never>(config: {
     }) => {
       let actualData = data;
       for (let mw of config.middlewares) {
-        const result = await mw({ data: actualData, req, res });
-        if (typeof result.next !== "boolean")
-          throw new BadMiddlewareReturnTypeError();
-
-        if (!result.next) {
-          return result;
-        }
-        delete result.next;
-        actualData = { ...actualData, ...result };
+        const { next, ...rest } = await mw({ data: actualData, req, res });
+        if (typeof next !== "boolean") throw new BadMiddlewareReturnTypeError();
+        if (!next) return rest;
+        actualData = { ...actualData, ...rest };
       }
-
-      return {
-        ...actualData,
-        next: true,
-      };
-    }) as Middleware<A, Response>;
+      return { ...actualData, next: true };
+    }) as Middleware<null, Response>;
   }
 
   return {
@@ -183,7 +174,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
       });
     },
 
-    buildLink(): Middleware<A, Response> {
+    buildLink(): Middleware<null, Response> {
       return buildMiddleware();
     },
 
@@ -198,7 +189,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
       }
 
       return config.app[config.method](config.path, (req, res) => {
-        endpoint({ req, res, data: null as any })
+        endpoint({ req, res, data: null })
           .then((response) => {
             if (typeof response.next !== "boolean")
               throw new BadMiddlewareReturnTypeError();
@@ -207,10 +198,10 @@ const getBuilder = <A = unknown, Response = never>(config: {
               return response;
             }
 
-            if (!config.finalMiddleware) {
+            if (!config.finalware) {
               throw new MissingFinalMiddlewareError();
             }
-            return config.finalMiddleware({ req, res, data: response });
+            return config.finalware({ req, res, data: response });
           })
           .then((response) => {
             const { next, statusCode, ...rest } = response;
@@ -231,7 +222,6 @@ const getBuilder = <A = unknown, Response = never>(config: {
 export const createBuilder = (app: Express) =>
   getBuilder({
     app,
-    bodyParsers: [],
     middlewares: [],
   });
 
