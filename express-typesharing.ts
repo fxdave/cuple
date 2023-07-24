@@ -47,16 +47,24 @@ type BuilderConfig = {
   path?: string;
 };
 
-type SchemaMiddlewareResponse<
-  TSchemaMiddleware extends (...args: any[]) => any
-> = Awaited<ReturnType<ReturnType<TSchemaMiddleware>>>;
-class Builder<TInput = unknown, TOutput = unknown> {
+type GetSchemaResult<
+  TFunction extends (...args: any[]) => any,
+  TNext extends boolean
+> = Awaited<ReturnType<ReturnType<TFunction>>> & { next: TNext };
+
+/**
+ * @template TData - The data object that you can use in request handlers
+ * @template TResponses - The possible responses that the endpoint can produce
+ */
+class Builder<TData = unknown, TResponses = unknown> {
   constructor(private config: BuilderConfig) {}
 
-  middleware<C extends Next>(mw: Middleware<TInput, C>) {
+  middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
     return new Builder<
-      TInput & C & { next: true },
-      (C & { next: false }) | TOutput
+      // The consequent TData will be merged with TResult only when { next: TRUE }
+      TData & TResult & { next: true },
+      // The consequent TResponses can be TResult only when { next: FALSE }
+      TResponses | (TResult & { next: false })
     >({
       ...this.config,
       middlewares: [...this.config.middlewares, mw],
@@ -64,51 +72,21 @@ class Builder<TInput = unknown, TOutput = unknown> {
   }
 
   bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
-    return new Builder<
-      TInput &
-        SchemaMiddlewareResponse<
-          typeof this.__getSchemaMiddleware<SchemaTypes.Body, TParser>
-        > & { next: true },
-      | (SchemaMiddlewareResponse<
-          typeof this.__getSchemaMiddleware<SchemaTypes.Body, TParser>
-        > & { next: false })
-      | TOutput
-    >({
-      ...this.config,
-      middlewares: [
-        ...this.config.middlewares,
-        this.__getSchemaMiddleware(SchemaTypes.Body, bodyParser),
-      ],
-    });
+    return this.__schema(bodyParser, SchemaType.Body);
   }
 
   querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
-    return new Builder<
-      TInput &
-        SchemaMiddlewareResponse<
-          typeof this.__getSchemaMiddleware<SchemaTypes.Query, TParser>
-        > & { next: true },
-      | (SchemaMiddlewareResponse<
-          typeof this.__getSchemaMiddleware<SchemaTypes.Query, TParser>
-        > & { next: false })
-      | TOutput
-    >({
-      ...this.config,
-      middlewares: [
-        ...this.config.middlewares,
-        this.__getSchemaMiddleware(SchemaTypes.Query, queryParser),
-      ],
-    });
+    return this.__schema(queryParser, SchemaType.Query);
   }
 
   path(path: string) {
-    return new Builder<TInput, TOutput>({ ...this.config, path });
+    return new Builder<TData, TResponses>({ ...this.config, path });
   }
 
   chain<TReq, TRes>(mw: Middleware<TReq, TRes>) {
     return new Builder<
       TReq & { next: true },
-      (TRes & { next: false }) | TOutput
+      (TRes & { next: false }) | TResponses
     >({
       ...this.config,
       middlewares: [...this.config.middlewares, mw],
@@ -117,7 +95,7 @@ class Builder<TInput = unknown, TOutput = unknown> {
 
   buildLink = this.__buildMiddleware;
 
-  build(): Endpoint<TInput, TOutput> {
+  build(): Endpoint<TData, TResponses> {
     const endpoint = this.__buildMiddleware();
 
     if (!this.config.method) {
@@ -163,13 +141,13 @@ class Builder<TInput = unknown, TOutput = unknown> {
   put = this.__buildFinalMiddlewareSetter("put");
 
   private __getSchemaMiddleware<
-    TPropertyName extends SchemaTypes,
+    TPropertyName extends SchemaType,
     TParser extends ZodType<any, any, any>
   >(
     propertyName: TPropertyName,
     parser: TParser
   ): Middleware<
-    TInput,
+    TData,
     | ({ [i in TPropertyName]: z.infer<TParser> } & { next: true })
     | (ZodValidationError<z.infer<TParser>> & { next: false })
     | (UnexpectedError & { next: false })
@@ -198,10 +176,10 @@ class Builder<TInput = unknown, TOutput = unknown> {
   }
 
   private __buildFinalMiddlewareSetter(method: HttpVerbs) {
-    return <B extends TInput, C>(
-      mw: Finalware<B & { next: true }, C | TOutput>
+    return <B extends TData, C>(
+      mw: Finalware<B & { next: true }, C | TResponses>
     ) => {
-      return new Builder<B & { next: true }, TOutput | C>({
+      return new Builder<B & { next: true }, TResponses | C>({
         ...this.config,
         finalware: mw,
         method,
@@ -209,7 +187,7 @@ class Builder<TInput = unknown, TOutput = unknown> {
     };
   }
 
-  private __buildMiddleware(): Middleware<TInput, TOutput> {
+  private __buildMiddleware(): Middleware<TData, TResponses> {
     return async <TData>({
       req,
       res,
@@ -229,9 +207,35 @@ class Builder<TInput = unknown, TOutput = unknown> {
       return { ...actualData, next: true };
     };
   }
+
+  private __schema<
+    TParser extends ZodType<any, any, any>,
+    TSchemaType extends SchemaType
+  >(bodyParser: TParser, schemaType: TSchemaType) {
+    return new Builder<
+      // The consequent TData will be merged with { body: ... } in case { next: TRUE }
+      TData &
+        GetSchemaResult<
+          typeof this.__getSchemaMiddleware<TSchemaType, TParser>,
+          true
+        >,
+      // The consequent TResponses can be validation error in case { next: FALSE }
+      | TResponses
+      | GetSchemaResult<
+          typeof this.__getSchemaMiddleware<TSchemaType, TParser>,
+          false
+        >
+    >({
+      ...this.config,
+      middlewares: [
+        ...this.config.middlewares,
+        this.__getSchemaMiddleware(schemaType, bodyParser),
+      ],
+    });
+  }
 }
 
-enum SchemaTypes {
+enum SchemaType {
   Body = "body",
   Query = "query",
 }
