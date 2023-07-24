@@ -1,5 +1,5 @@
 import { z, ZodError, ZodType } from "zod";
-import { Request, Response, Express } from "express";
+import { Request, Response, Express, response } from "express";
 import {
   ImprovedZodIssue,
   unexpectedError,
@@ -14,6 +14,10 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 type Middleware<TData, TResult> = (
+  props: MiddlewareProps<TData>
+) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
+/** The last middleware */
+type Finalware<TData, TResult> = (
   props: MiddlewareProps<TData>
 ) => Promise<TResult>;
 type Endpoint<TRequest, TResponse> = (
@@ -37,7 +41,7 @@ const getBuilder = <A = unknown, Response = never>(config: {
 }) => {
   function buildFinalMiddlewareSetter(method: HttpVerbs) {
     return <B extends A, C>(
-      mw: Middleware<B & { next: true }, C | Response>
+      mw: Finalware<B & { next: true }, C | Response>
     ) => {
       return getBuilder<C, Response | C>({
         ...config,
@@ -118,6 +122,9 @@ const getBuilder = <A = unknown, Response = never>(config: {
       let actualData = data;
       for (let mw of config.middlewares) {
         const result = await mw({ data: actualData, req, res });
+        if (typeof result.next !== "boolean")
+          throw new BadMiddlewareReturnTypeError();
+
         if (!result.next) {
           return result;
         }
@@ -193,19 +200,21 @@ const getBuilder = <A = unknown, Response = never>(config: {
       return config.app[config.method](config.path, (req, res) => {
         endpoint({ req, res, data: null as any })
           .then((response) => {
+            if (typeof response.next !== "boolean")
+              throw new BadMiddlewareReturnTypeError();
+
+            if (!response.next) {
+              return response;
+            }
+
             if (!config.finalMiddleware) {
-              throw new Error(
-                "You have to use get/put/delete/post/patch at the end of the middleware chain"
-              );
+              throw new MissingFinalMiddlewareError();
             }
             return config.finalMiddleware({ req, res, data: response });
           })
           .then((response) => {
-            const statusCode = response.statusCode;
-            delete response.statusCode;
-            delete response.next;
-
-            res.status(statusCode).send(response);
+            const { next, statusCode, ...rest } = response;
+            res.status(statusCode).send(rest);
           })
           .catch((err) => {
             console.error(err);
@@ -225,3 +234,18 @@ export const createBuilder = (app: Express) =>
     bodyParsers: [],
     middlewares: [],
   });
+
+class BadMiddlewareReturnTypeError extends Error {
+  constructor() {
+    super(
+      'Every middleware should return an object with a "next" bool attribute'
+    );
+  }
+}
+class MissingFinalMiddlewareError extends Error {
+  constructor() {
+    super(
+      "You have to use get/put/delete/post/patch at the end of the middleware chain"
+    );
+  }
+}
