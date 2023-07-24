@@ -1,25 +1,32 @@
-import { z, ZodError, ZodType } from "zod";
-import { Request, Response, Express, response } from "express";
+import { TypeOf, z, ZodError, ZodType } from "zod";
+import { Request, Response, Express } from "express";
 import {
   ImprovedZodIssue,
+  UnexpectedError,
   unexpectedError,
+  ZodValidationError,
   zodValidationError,
 } from "./express-typesharing-responses";
 
-type ExpressRequest = Request; // TODO
-type ExpressResponse = Response; // TODO
+type ExpressRequest = Request;
+type ExpressResponse = Response;
+
 type MiddlewareProps<TData> = {
   data: TData;
   req: ExpressRequest;
   res: ExpressResponse;
 };
+
 type Middleware<TData, TResult> = (
   props: MiddlewareProps<TData>
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
+
 /** The last middleware */
 type Finalware<TData, TResult> = (
   props: MiddlewareProps<TData>
 ) => Promise<TResult>;
+
+/** An express compatible request handler */
 type Endpoint<TRequest, TResponse> = (
   req: ExpressRequest,
   res: ExpressResponse
@@ -31,43 +38,143 @@ type Endpoint<TRequest, TResponse> = (
 /** Middlewares should include next, which tells the handler to continue */
 type Next = { next: true | false };
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
-const getBuilder = <A = unknown, Response = never>(config: {
+
+type BuilderConfig = {
   app: Express;
   middlewares: Middleware<any, any>[];
   finalware?: Finalware<any, any>;
   method?: HttpVerbs;
   path?: string;
-}) => {
-  function buildFinalMiddlewareSetter(method: HttpVerbs) {
-    return <B extends A, C>(
-      mw: Finalware<B & { next: true }, C | Response>
-    ) => {
-      return getBuilder<B & { next: true }, Response | C>({
-        ...config,
-        finalware: mw,
-        method,
-      });
-    };
+};
+
+type SchemaMiddlewareResponse<
+  TSchemaMiddleware extends (...args: any[]) => any
+> = Awaited<ReturnType<ReturnType<TSchemaMiddleware>>>;
+class Builder<TInput = unknown, TOutput = unknown> {
+  constructor(private config: BuilderConfig) {}
+
+  middleware<C extends Next>(mw: Middleware<TInput, C>) {
+    return new Builder<
+      TInput & C & { next: true },
+      (C & { next: false }) | TOutput
+    >({
+      ...this.config,
+      middlewares: [...this.config.middlewares, mw],
+    });
   }
 
-  function setMiddleware<C extends Next>(mw: Middleware<A, C>) {
-    return getBuilder<A & C & { next: true }, (C & { next: false }) | Response>(
-      {
-        ...config,
-        middlewares: [...config.middlewares, mw],
-      }
-    );
+  bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
+    return new Builder<
+      TInput &
+        SchemaMiddlewareResponse<
+          typeof this.__getSchemaMiddleware<SchemaTypes.Body, TParser>
+        > & { next: true },
+      | (SchemaMiddlewareResponse<
+          typeof this.__getSchemaMiddleware<SchemaTypes.Body, TParser>
+        > & { next: false })
+      | TOutput
+    >({
+      ...this.config,
+      middlewares: [
+        ...this.config.middlewares,
+        this.__getSchemaMiddleware(SchemaTypes.Body, bodyParser),
+      ],
+    });
   }
 
-  const getSchemaMiddleware =
-    <
-      PropertyName extends keyof ExpressRequest,
-      TParser extends ZodType<any, any, any>
-    >(
-      propertyName: PropertyName,
-      parser: TParser
-    ) =>
-    async ({ req }: { req: ExpressRequest }) => {
+  querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
+    return new Builder<
+      TInput &
+        SchemaMiddlewareResponse<
+          typeof this.__getSchemaMiddleware<SchemaTypes.Query, TParser>
+        > & { next: true },
+      | (SchemaMiddlewareResponse<
+          typeof this.__getSchemaMiddleware<SchemaTypes.Query, TParser>
+        > & { next: false })
+      | TOutput
+    >({
+      ...this.config,
+      middlewares: [
+        ...this.config.middlewares,
+        this.__getSchemaMiddleware(SchemaTypes.Query, queryParser),
+      ],
+    });
+  }
+
+  path(path: string) {
+    return new Builder<TInput, TOutput>({ ...this.config, path });
+  }
+
+  chain<TReq, TRes>(mw: Middleware<TReq, TRes>) {
+    return new Builder<
+      TReq & { next: true },
+      (TRes & { next: false }) | TOutput
+    >({
+      ...this.config,
+      middlewares: [...this.config.middlewares, mw],
+    });
+  }
+
+  buildLink = this.__buildMiddleware;
+
+  build(): Endpoint<TInput, TOutput> {
+    const endpoint = this.__buildMiddleware();
+
+    if (!this.config.method) {
+      throw new Error("Path is required");
+    }
+    if (!this.config.path) {
+      throw new Error("Path is required");
+    }
+
+    return this.config.app[this.config.method](this.config.path, (req, res) => {
+      endpoint({ req, res, data: null as any })
+        .then((response) => {
+          if (typeof response.next !== "boolean")
+            throw new BadMiddlewareReturnTypeError();
+
+          if (!response.next) {
+            return response;
+          }
+
+          if (!this.config.finalware) {
+            throw new MissingFinalwareError();
+          }
+          return this.config.finalware({ req, res, data: response });
+        })
+        .then((response) => {
+          const { next, statusCode, ...rest } = response;
+          res.status(statusCode).send(rest);
+        })
+        .catch((err) => {
+          console.error(err);
+
+          res.status(500).send({
+            message: "Something went wrong.",
+          });
+        });
+    });
+  }
+
+  get = this.__buildFinalMiddlewareSetter("get");
+  post = this.__buildFinalMiddlewareSetter("post");
+  patch = this.__buildFinalMiddlewareSetter("patch");
+  delete = this.__buildFinalMiddlewareSetter("delete");
+  put = this.__buildFinalMiddlewareSetter("put");
+
+  private __getSchemaMiddleware<
+    TPropertyName extends SchemaTypes,
+    TParser extends ZodType<any, any, any>
+  >(
+    propertyName: TPropertyName,
+    parser: TParser
+  ): Middleware<
+    TInput,
+    | ({ [i in TPropertyName]: z.infer<TParser> } & { next: true })
+    | (ZodValidationError<z.infer<TParser>> & { next: false })
+    | (UnexpectedError & { next: false })
+  > {
+    return async ({ req }: MiddlewareProps<unknown>) => {
       try {
         return {
           [propertyName]: parser.parse(req[propertyName]) as z.infer<TParser>,
@@ -76,7 +183,9 @@ const getBuilder = <A = unknown, Response = never>(config: {
       } catch (e) {
         if (e instanceof ZodError) {
           return {
-            ...zodValidationError(e.issues as ImprovedZodIssue<any>[]),
+            ...zodValidationError(
+              e.issues as ImprovedZodIssue<TypeOf<TParser>>[]
+            ),
             next: false as const,
           };
         }
@@ -86,16 +195,22 @@ const getBuilder = <A = unknown, Response = never>(config: {
         };
       }
     };
+  }
 
-  type SchemaMiddlewareResponse<
-    PropertyName extends keyof ExpressRequest,
-    TParser extends ZodType<any, any, any>
-  > = Awaited<
-    ReturnType<ReturnType<typeof getSchemaMiddleware<PropertyName, TParser>>>
-  >;
+  private __buildFinalMiddlewareSetter(method: HttpVerbs) {
+    return <B extends TInput, C>(
+      mw: Finalware<B & { next: true }, C | TOutput>
+    ) => {
+      return new Builder<B & { next: true }, TOutput | C>({
+        ...this.config,
+        finalware: mw,
+        method,
+      });
+    };
+  }
 
-  function buildMiddleware() {
-    return (async <TData>({
+  private __buildMiddleware(): Middleware<TInput, TOutput> {
+    return async <TData>({
       req,
       res,
       data,
@@ -105,108 +220,24 @@ const getBuilder = <A = unknown, Response = never>(config: {
       data: TData;
     }) => {
       let actualData = data;
-      for (let mw of config.middlewares) {
+      for (let mw of this.config.middlewares) {
         const { next, ...rest } = await mw({ data: actualData, req, res });
         if (typeof next !== "boolean") throw new BadMiddlewareReturnTypeError();
         if (!next) return { ...rest, next: false };
         actualData = { ...actualData, ...rest };
       }
       return { ...actualData, next: true };
-    }) as Middleware<null, Response>;
+    };
   }
+}
 
-  return {
-    bodySchema<TParser extends ZodType<any, any, any>>(bodyParser: TParser) {
-      return getBuilder<
-        A & SchemaMiddlewareResponse<"body", TParser> & { next: true },
-        (SchemaMiddlewareResponse<"body", TParser> & { next: false }) | Response
-      >({
-        ...config,
-        middlewares: [
-          ...config.middlewares,
-          getSchemaMiddleware("body", bodyParser),
-        ],
-      });
-    },
-    querySchema<TParser extends ZodType<any, any, any>>(queryParser: TParser) {
-      return getBuilder<
-        A & SchemaMiddlewareResponse<"query", TParser> & { next: true },
-        | (SchemaMiddlewareResponse<"query", TParser> & { next: false })
-        | Response
-      >({
-        ...config,
-        middlewares: [
-          ...config.middlewares,
-          getSchemaMiddleware("query", queryParser),
-        ],
-      });
-    },
-    middleware: setMiddleware,
-    get: buildFinalMiddlewareSetter("get"),
-    post: buildFinalMiddlewareSetter("post"),
-    patch: buildFinalMiddlewareSetter("patch"),
-    delete: buildFinalMiddlewareSetter("delete"),
-    put: buildFinalMiddlewareSetter("put"),
-    path(path: string) {
-      return getBuilder<A, Response>({ ...config, path });
-    },
-    chain<TReq, TRes>(mw: Middleware<TReq, TRes>) {
-      return getBuilder<
-        TReq & { next: true },
-        (TRes & { next: false }) | Response
-      >({
-        ...config,
-        middlewares: [...config.middlewares, mw],
-      });
-    },
-
-    buildLink(): Middleware<null, Response> {
-      return buildMiddleware();
-    },
-
-    build(): Endpoint<A, Response> {
-      const endpoint = buildMiddleware();
-
-      if (!config.method) {
-        throw new Error("Path is required");
-      }
-      if (!config.path) {
-        throw new Error("Path is required");
-      }
-
-      return config.app[config.method](config.path, (req, res) => {
-        endpoint({ req, res, data: null })
-          .then((response) => {
-            if (typeof response.next !== "boolean")
-              throw new BadMiddlewareReturnTypeError();
-
-            if (!response.next) {
-              return response;
-            }
-
-            if (!config.finalware) {
-              throw new MissingFinalMiddlewareError();
-            }
-            return config.finalware({ req, res, data: response });
-          })
-          .then((response) => {
-            const { next, statusCode, ...rest } = response;
-            res.status(statusCode).send(rest);
-          })
-          .catch((err) => {
-            console.error(err);
-
-            res.status(500).send({
-              message: "Something went wrong.",
-            });
-          });
-      });
-    },
-  };
-};
+enum SchemaTypes {
+  Body = "body",
+  Query = "query",
+}
 
 export const createBuilder = (app: Express) =>
-  getBuilder({
+  new Builder({
     app,
     middlewares: [],
   });
@@ -218,7 +249,7 @@ class BadMiddlewareReturnTypeError extends Error {
     );
   }
 }
-class MissingFinalMiddlewareError extends Error {
+class MissingFinalwareError extends Error {
   constructor() {
     super(
       "You have to use get/put/delete/post/patch at the end of the middleware chain"
