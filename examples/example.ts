@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createBuilder } from "./express-typesharing";
 import express from "express";
+import { createBuilder } from "../src/server";
 
 const app = express();
 const builder = createBuilder(app);

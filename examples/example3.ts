@@ -1,10 +1,10 @@
 import express from "express";
 import { z } from "zod";
-import { createBuilder } from "./express-typesharing";
-import { apiResponse, success } from "./express-typesharing-responses";
+import { createBuilder, initRpc } from "../src/server";
+import { apiResponse, success } from "../src/server/responses";
 
 const app = express();
-app.use(express.json())
+app.use(express.json());
 const builder = createBuilder(app);
 
 const posts = [
@@ -12,7 +12,7 @@ const posts = [
   { id: 2, title: "Hi", content: "This is my first post" },
 ];
 
-const endpoints = {
+export const routes = {
   getPosts: builder.path("/posts").get(async () => {
     return success({ posts });
   }),
@@ -76,6 +76,11 @@ const endpoints = {
       });
     }),
 };
+
+initRpc(app, {
+  path: "/rpc",
+  routes,
+});
 
 app.listen(8080, () => {
   console.log(`Example app listening on port 8080`);

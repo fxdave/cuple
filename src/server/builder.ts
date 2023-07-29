@@ -6,7 +6,7 @@ import {
   unexpectedError,
   ZodValidationError,
   zodValidationError,
-} from "./express-typesharing-responses";
+} from "./responses";
 
 type ExpressRequest = Request;
 type ExpressResponse = Response;
@@ -26,14 +26,42 @@ type Finalware<TData, TResult> = (
   props: MiddlewareProps<TData>
 ) => Promise<TResult>;
 
-/** An express compatible request handler */
-type Endpoint<TRequest, TResponse> = (
-  req: ExpressRequest,
-  res: ExpressResponse
-) => Promise<{
-  statusCode: number;
-  data: TResponse;
-}> & { _phantomData?: { request: TRequest; response: TResponse } };
+type UndefinedProperties<T extends object> = {
+  [Key in keyof T]-?: undefined extends T[Key] ? Key : never;
+}[keyof T];
+
+type WithoutUndefinedProperties<T extends object> = Pick<
+  T,
+  Exclude<keyof T, UndefinedProperties<T>>
+>;
+
+export type ApiCaller<
+  TRequestBody,
+  TRequestQuery,
+  TRequestParams,
+  TRequestHeaders,
+  TResponse
+> = (
+  params: WithoutUndefinedProperties<{
+    body: TRequestBody;
+    query: TRequestQuery;
+    params: TRequestParams;
+    headers: TRequestHeaders;
+  }>
+) => Promise<TResponse>;
+
+export type BuiltEndpoint<
+  TData extends { body?: never; query?: never; params?: never; header?: never },
+  TResponses
+> = ApiCaller<
+  TData["body"],
+  TData["query"],
+  TData["params"],
+  TData["header"],
+  TResponses
+> & {
+  handler: (req: ExpressRequest, res: ExpressResponse) => void;
+};
 
 /** Middlewares should include next, which tells the handler to continue */
 type Next = { next: true | false };
@@ -51,7 +79,10 @@ type BuilderConfig = {
  * @template TData - The data object that you can use in request handlers
  * @template TResponses - The possible responses that the endpoint can produce
  */
-class Builder<TData = unknown, TResponses = unknown> {
+class Builder<
+  TData extends object,
+  TResponses = unknown
+> {
   constructor(private config: BuilderConfig) {}
 
   middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
@@ -100,17 +131,10 @@ class Builder<TData = unknown, TResponses = unknown> {
 
   buildLink = this.__buildMiddleware;
 
-  build(): Endpoint<TData, TResponses> {
+  build(): BuiltEndpoint<TData, TResponses> {
     const endpoint = this.__buildMiddleware();
 
-    if (!this.config.method) {
-      throw new Error("Method is required");
-    }
-    if (!this.config.path) {
-      throw new Error("Path is required");
-    }
-
-    return this.config.app[this.config.method](this.config.path, (req, res) => {
+    const handler = (req: ExpressRequest, res: ExpressResponse) => {
       endpoint({ req, res, data: null as any })
         .then((response) => {
           if (typeof response.next !== "boolean")
@@ -130,7 +154,17 @@ class Builder<TData = unknown, TResponses = unknown> {
             message: "Something went wrong.",
           });
         });
-    });
+    };
+
+    if (!this.config.method) {
+      throw new Error("Method is required");
+    }
+    if (!this.config.path) {
+      throw new Error("Path is required");
+    }
+    this.config.app[this.config.method](this.config.path, handler);
+
+    return { handler } as any;
   }
 
   get = this.__buildFinalMiddlewareSetter("get");
@@ -175,16 +209,16 @@ class Builder<TData = unknown, TResponses = unknown> {
   }
 
   private __buildFinalMiddlewareSetter(method: HttpVerbs) {
-    return <TFinalResponses>(
-      mw: Finalware<TData, TResponses | TFinalResponses>
+    return <TFinalResponses extends TResponses>(
+      mw: Finalware<TData, TFinalResponses>
     ) => {
-      const builder = new Builder<TData, TResponses | TFinalResponses>({
+      const builder = new Builder<TData, TFinalResponses>({
         ...this.config,
         finalware: mw,
         method,
       });
 
-      return builder.build()
+      return builder.build();
     };
   }
 
@@ -213,7 +247,7 @@ class Builder<TData = unknown, TResponses = unknown> {
 enum SchemaType {
   Body = "body",
   Query = "query",
-  Params = "params"
+  Params = "params",
 }
 
 export const createBuilder = (app: Express) =>

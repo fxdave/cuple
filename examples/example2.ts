@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
-import { createBuilder } from "./express-typesharing";
-import { success, zodValidationError } from "./express-typesharing-responses";
+import { createBuilder } from "../src/server";
+import { success, zodValidationError } from "../src/server/responses";
 
 const app = express();
 const builder = createBuilder(app);
