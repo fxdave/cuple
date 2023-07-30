@@ -1,5 +1,5 @@
-import { createClient } from "../src/client";
-import type { routes } from "./example2";
+import { createClient } from "../../src/client";
+import type { routes } from "./example";
 
 const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",

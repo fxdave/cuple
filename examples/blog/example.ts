@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
-import { createBuilder, initRpc } from "../src/server";
-import { apiResponse, success } from "../src/server/responses";
+import { createBuilder, initRpc } from "../../src/server";
+import { apiResponse, success } from "../../src/server/responses";
 
 const app = express();
 app.use(express.json());
