@@ -1,18 +1,33 @@
 import express from "express";
 import { z } from "zod";
-import { createBuilder } from "../src/server";
-import { success, zodValidationError } from "../src/server/responses";
+import { createBuilder, initRpc } from "../src/server";
+import {
+  apiResponse,
+  success,
+  unexpectedError,
+  zodValidationError,
+} from "../src/server/responses";
 
 const app = express();
+app.use(express.json());
 const builder = createBuilder(app);
 
+const users = [
+  { id: 1, name: "David", email: "some@thing.com", passwordHash: "something" },
+];
+
 const auth = builder
-  .middleware(async ({ req }) => {
-    if (req.headers["authorization"] == "sometoken")
+  .headersSchema(
+    z.object({
+      authorization: z.string(),
+    })
+  )
+  .middleware(async ({ data }) => {
+    if (data.headers["authorization"] == "sometoken")
       return {
         next: true,
-        user: {
-          email: "asd@asd.hu",
+        auth: {
+          userId: 1,
         },
       };
 
@@ -24,23 +39,22 @@ const auth = builder
   })
   .buildLink();
 
-const endpoints = {
-  getUserEmail: builder
-    .path("/user") // optional
-    .chain(auth)
-    .querySchema(
-      z.object({
-        id: z.coerce.number(),
-      })
-    )
-    .get(async ({ data }) => {
-      return success({
-        message: "The user has been queried",
-        userEmail: data.user.email,
+export const routes = {
+  getProfile: builder.chain(auth).get(async ({ data }) => {
+    const user = users.find((user) => user.id === data.auth.userId);
+    if (!user)
+      return apiResponse("notFound", 404, {
+        message: "Your user has been deleted",
       });
-    }),
+    return success({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  }),
   setUserPassword: builder
-    .path("/user") // optional
     .chain(auth)
     .bodySchema(
       z.object({
@@ -55,18 +69,29 @@ const endpoints = {
           {
             code: "custom",
             path: ["password2"],
-            message: "Error. Passwords do not match.",
+            message: "Passwords do not match.",
           },
         ]);
       }
 
-      // ...  update user
+      const userIdx = users.findIndex((user) => user.id === data.auth.userId);
+      if (userIdx === -1)
+        return apiResponse("notFound", 404, {
+          message: "Your user has been deleted",
+        });
+
+      users[userIdx].passwordHash = "NEW PASSWORD HASH";
 
       return success({
         message: "The password has been updated successfully!",
       });
     }),
 };
+
+initRpc(app, {
+  path: "/rpc",
+  routes,
+});
 
 app.listen(8080, () => {
   console.log(`Example app listening on port 8080`);

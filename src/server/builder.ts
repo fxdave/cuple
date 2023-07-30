@@ -56,14 +56,14 @@ export type ApiCaller<
 };
 
 export type BuiltEndpoint<
-  TData extends { body?: never; query?: never; params?: never; header?: never },
+  TData extends { body?: never; query?: never; params?: never; headers?: never },
   TResponses,
   TMethod extends HttpVerbs
 > = ApiCaller<
   TData["body"],
   TData["query"],
   TData["params"],
-  TData["header"],
+  TData["headers"],
   TResponses,
   TMethod
 > & {
@@ -120,6 +120,12 @@ class Builder<
   paramsSchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
     return this.middleware(
       this.__getSchemaMiddleware(SchemaType.Params, parser)
+    );
+  }
+
+  headersSchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
+    return this.middleware(
+      this.__getSchemaMiddleware(SchemaType.Headers, parser)
     );
   }
 
@@ -257,6 +263,7 @@ enum SchemaType {
   Body = "body",
   Query = "query",
   Params = "params",
+  Headers = "headers"
 }
 
 export const createBuilder = (app: Express) =>
