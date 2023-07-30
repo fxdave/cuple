@@ -1,42 +1,47 @@
 import { createClient } from "../src/client";
 import type { routes } from "./example3";
 
+const client = createClient<typeof routes>({
+  path: "http://localhost:8080/rpc",
+});
+
 async function test() {
-  const client = createClient<typeof routes>({
-    path: "http://localhost:8080/rpc",
-  });
+  console.log("getPosts(): ", await getPosts());
+  console.log("getPost(1): ", await getPost(1));
+  console.log("deletePost(1): ", await deletePost(1));
+  console.log("getPost(1): ", await getPost(1));
+  const newPost = await addPost("Some Thing", "There's something.");
+  console.log("newPost: ", newPost);
+  console.log("getPost(newPost.post.id): ", await getPost(newPost.post.id));
+}
 
-  const response = await client.getPost.get({
+async function getPosts() {
+  return await client.getPosts.get({});
+}
+
+async function getPost(id: number) {
+  return await client.getPost.get({
     params: {
-      id: 1,
+      id,
     },
   });
+}
 
-  if (response.result === "success") {
-    console.log(response.post);
-  } else {
-    console.error(response);
-  }
-
-  await client.deletePost.delete({
+async function deletePost(id: number) {
+  return await client.deletePost.delete({
     params: {
-      id: 1,
+      id,
     },
   });
+}
 
-
-
-  const response2 = await client.getPost.get({
-    params: {
-      id: 1,
+async function addPost(title: string, content: string) {
+  return await client.addPost.post({
+    body: {
+      content,
+      title,
     },
   });
-
-  if (response2.result === "success") {
-    console.log(response2.post);
-  } else {
-    console.error(response2);
-  }
 }
 
 test();

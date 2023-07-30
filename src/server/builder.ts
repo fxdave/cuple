@@ -33,7 +33,9 @@ type UndefinedProperties<T extends object> = {
 type WithoutUndefinedProperties<T extends object> = Pick<
   T,
   Exclude<keyof T, UndefinedProperties<T>>
->;
+> & {
+  [Key in UndefinedProperties<T>]?: never
+};
 
 export type ApiCaller<
   TRequestBody,
