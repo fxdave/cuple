@@ -44,7 +44,7 @@ const endpoint = builder
       name: z.string(),
     })
   )
-  .get(async ({ data }) => {
+  .post(async ({ data }) => {
     console.log(data.body.name);
     console.log(data.user.email);
     return {

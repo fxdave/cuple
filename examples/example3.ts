@@ -13,11 +13,10 @@ const posts = [
 ];
 
 export const routes = {
-  getPosts: builder.path("/posts").get(async () => {
+  getPosts: builder.get(async () => {
     return success({ posts });
   }),
   getPost: builder
-    .path("/post/:id")
     .paramsSchema(
       z.object({
         id: z.coerce.number(),
@@ -35,7 +34,6 @@ export const routes = {
       });
     }),
   addPost: builder
-    .path("/post")
     .bodySchema(
       z.object({
         title: z.string(),
@@ -56,7 +54,6 @@ export const routes = {
       });
     }),
   deletePost: builder
-    .path("/post/:id")
     .paramsSchema(
       z.object({
         id: z.coerce.number(),

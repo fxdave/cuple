@@ -40,27 +40,33 @@ export type ApiCaller<
   TRequestQuery,
   TRequestParams,
   TRequestHeaders,
-  TResponse
-> = (
-  params: WithoutUndefinedProperties<{
-    body: TRequestBody;
-    query: TRequestQuery;
-    params: TRequestParams;
-    headers: TRequestHeaders;
-  }>
-) => Promise<TResponse>;
+  TResponse,
+  TMethod extends HttpVerbs
+> = {
+  [Key in TMethod]: (
+    params: WithoutUndefinedProperties<{
+      body: TRequestBody;
+      query: TRequestQuery;
+      params: TRequestParams;
+      headers: TRequestHeaders;
+    }>
+  ) => Promise<TResponse>;
+};
 
 export type BuiltEndpoint<
   TData extends { body?: never; query?: never; params?: never; header?: never },
-  TResponses
+  TResponses,
+  TMethod extends HttpVerbs
 > = ApiCaller<
   TData["body"],
   TData["query"],
   TData["params"],
   TData["header"],
-  TResponses
+  TResponses,
+  TMethod
 > & {
   handler: (req: ExpressRequest, res: ExpressResponse) => void;
+  method: HttpVerbs;
 };
 
 /** Middlewares should include next, which tells the handler to continue */
@@ -81,7 +87,8 @@ type BuilderConfig = {
  */
 class Builder<
   TData extends object,
-  TResponses = unknown
+  TResponses = unknown,
+  TMethod extends HttpVerbs = "post"
 > {
   constructor(private config: BuilderConfig) {}
 
@@ -90,7 +97,8 @@ class Builder<
       // The consequent TData will be merged with TResult only when { next: TRUE }
       TData & TResult & { next: true },
       // The consequent TResponses can be TResult only when { next: FALSE }
-      TResponses | (TResult & { next: false })
+      TResponses | (TResult & { next: false }),
+      TMethod
     >({
       ...this.config,
       middlewares: [...this.config.middlewares, mw],
@@ -114,7 +122,7 @@ class Builder<
   }
 
   path(path: string) {
-    return new Builder<TData, TResponses>({ ...this.config, path });
+    return new Builder<TData, TResponses, TMethod>({ ...this.config, path });
   }
 
   chain<TLinkData, TLinkResponses>(
@@ -122,7 +130,8 @@ class Builder<
   ) {
     return new Builder<
       TData & TLinkData & { next: true },
-      TResponses | (TLinkResponses & { next: false })
+      TResponses | (TLinkResponses & { next: false }),
+      TMethod
     >({
       ...this.config,
       middlewares: [...this.config.middlewares, link],
@@ -131,7 +140,7 @@ class Builder<
 
   buildLink = this.__buildMiddleware;
 
-  build(): BuiltEndpoint<TData, TResponses> {
+  build(): BuiltEndpoint<TData, TResponses, TMethod> {
     const endpoint = this.__buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -156,15 +165,11 @@ class Builder<
         });
     };
 
-    if (!this.config.method) {
-      throw new Error("Method is required");
+    if (this.config.method && this.config.path) {
+      this.config.app[this.config.method](this.config.path, handler);
     }
-    if (!this.config.path) {
-      throw new Error("Path is required");
-    }
-    this.config.app[this.config.method](this.config.path, handler);
 
-    return { handler } as any;
+    return { handler, method: this.config.method } as any;
   }
 
   get = this.__buildFinalMiddlewareSetter("get");
@@ -208,11 +213,13 @@ class Builder<
     };
   }
 
-  private __buildFinalMiddlewareSetter(method: HttpVerbs) {
+  private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(
+    method: TMethod
+  ) {
     return <TFinalResponses extends TResponses>(
       mw: Finalware<TData, TFinalResponses>
     ) => {
-      const builder = new Builder<TData, TFinalResponses>({
+      const builder = new Builder<TData, TFinalResponses, TMethod>({
         ...this.config,
         finalware: mw,
         method,

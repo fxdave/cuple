@@ -26,7 +26,7 @@ const auth = builder
 
 const endpoints = {
   getUserEmail: builder
-    .path("/user")
+    .path("/user") // optional
     .chain(auth)
     .querySchema(
       z.object({
@@ -40,7 +40,7 @@ const endpoints = {
       });
     }),
   setUserPassword: builder
-    .path("/user")
+    .path("/user") // optional
     .chain(auth)
     .bodySchema(
       z.object({
