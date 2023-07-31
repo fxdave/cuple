@@ -22,7 +22,7 @@ export const routes = {
     .path("/post/:id") // optional for REST compatibility
     .paramsSchema(
       z.object({
-        id: z.string(),
+        id: z.coerce.number(),
       })
     )
     .get(async ({ data }) => {
@@ -52,8 +52,8 @@ const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",
 });
 
-async function getPost() {
-  const response = await client.getPosts.get({});
+async function getPost(id: number) {
+  const response = await client.getPosts.get({ params: { id } });
 
   console.log(postsResponse.post); // type error
 
