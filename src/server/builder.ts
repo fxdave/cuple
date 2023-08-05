@@ -29,12 +29,15 @@ type Finalware<TData, TResult> = (
 type UndefinedProperties<T extends object> = {
   [Key in keyof T]-?: undefined extends T[Key] ? Key : never;
 }[keyof T];
+type NotUndefinedProperties<T extends object> = {
+  [Key in keyof T]-?: undefined extends T[Key] ? never : Key;
+}[keyof T];
 
 type WithoutUndefinedProperties<T extends object> = Pick<
   T,
-  Exclude<keyof T, UndefinedProperties<T>>
+  NotUndefinedProperties<T>
 > & {
-  [Key in UndefinedProperties<T>]?: never
+  [Key in UndefinedProperties<T>]?: never;
 };
 
 export type ApiCaller<
@@ -56,7 +59,12 @@ export type ApiCaller<
 };
 
 export type BuiltEndpoint<
-  TData extends { body?: never; query?: never; params?: never; headers?: never },
+  TData extends {
+    body?: never;
+    query?: never;
+    params?: never;
+    headers?: never;
+  },
   TResponses,
   TMethod extends HttpVerbs
 > = ApiCaller<
@@ -89,7 +97,7 @@ type BuilderConfig = {
  */
 export class Builder<
   TData extends object,
-  TResponses = unknown,
+  TResponses = never,
   TMethod extends HttpVerbs = "post"
 > {
   constructor(private config: BuilderConfig) {}
@@ -224,14 +232,14 @@ export class Builder<
   private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(
     method: TMethod
   ) {
-    return <TFinalResponses extends TResponses>(
-      mw: Finalware<TData, TFinalResponses>
-    ) => {
-      const builder = new Builder<TData, TFinalResponses, TMethod>({
-        ...this.config,
-        finalware: mw,
-        method,
-      });
+    return <TFinalResponses>(mw: Finalware<TData, TFinalResponses>) => {
+      const builder = new Builder<TData, TFinalResponses | TResponses, TMethod>(
+        {
+          ...this.config,
+          finalware: mw,
+          method,
+        }
+      );
 
       return builder.build();
     };
@@ -263,7 +271,7 @@ enum SchemaType {
   Body = "body",
   Query = "query",
   Params = "params",
-  Headers = "headers"
+  Headers = "headers",
 }
 
 export const createBuilder = (app: Express) =>

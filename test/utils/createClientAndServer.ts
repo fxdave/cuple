@@ -4,7 +4,7 @@ import { createBuilder, initRpc } from "../../src/server";
 import { Builder } from "../../src/server/builder";
 
 export default async function createClientAndServer<T extends RecursiveApi>(
-  createRoutes: (builder: Builder<object, unknown, "post">) => T
+  createRoutes: (builder: Builder<object, never, "post">) => T
 ) {
   const app = express();
   const builder = createBuilder(app);

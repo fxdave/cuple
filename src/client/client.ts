@@ -16,20 +16,17 @@ export type RecursiveApi = {
     | RecursiveApi;
 };
 
-type UndefinedProperties<T extends object> = {
-  [Key in keyof T]-?: undefined extends T[Key] ? Key : never;
+type NonEmptyKeys<T> = {
+  [Key in keyof T]-?: [T[Key]] extends [undefined | never] ? never : Key;
 }[keyof T];
 
-type WithoutUndefinedProperties<T extends object> = Pick<
-  T,
-  Exclude<keyof T, UndefinedProperties<T>>
->;
+type WithoutEmptyProperties<T> = Pick<T, NonEmptyKeys<T>>;
 
-type OmitSameProps<TA, TB> = WithoutUndefinedProperties<{
-  [K in keyof TA]: K extends keyof TB
-    ? TB[K] extends TA[K]
+type OmitSameProps<TA, TB> = WithoutEmptyProperties<{
+  [K in keyof TA]: [K] extends [keyof TB]
+    ? [TB[K]] extends [TA[K]]
       ? undefined
-      : WithoutUndefinedProperties<OmitSameProps<TA[K], TB[K]>>
+      : WithoutEmptyProperties<OmitSameProps<TA[K], TB[K]>>
     : TA[K];
 }>;
 
@@ -82,6 +79,8 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = {}>(
       }
 
       const method = segments.pop();
+      if (!method)
+        throw new Error("Couldn't parse RPC request, method is required");
       const data = JSON.stringify({
         segments,
         argument: {
@@ -90,24 +89,33 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = {}>(
         },
       });
 
-      if (method === "get" || method === "delete") {
-        const argument = new URLSearchParams({ data });
-        return fetch(`${path}?${argument.toString()}`, {
-          method: method,
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }).then((response) => response.json());
-      }
-      return fetch(path, {
-        body: data,
-        method: method,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }).then((response) => response.json());
+      return methodAwareFetch(method, data, path).then(async (response) => {
+        const res = await response.json();
+        // TODO: differentiate data from response
+        (res as any).statusCode = response.status;
+        return res;
+      });
+    },
+  });
+}
+
+function methodAwareFetch(method: string, data: string, path: string) {
+  if (method === "get" || method === "delete") {
+    const argument = new URLSearchParams({ data });
+    return fetch(`${path}?${argument.toString()}`, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+  }
+  return fetch(path, {
+    body: data,
+    method: method,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
   });
 }

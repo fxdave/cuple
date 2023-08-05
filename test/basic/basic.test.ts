@@ -3,7 +3,7 @@ import { describe, it } from "mocha";
 import { success } from "../../src/server/responses";
 import createClientAndServer from "../utils/createClientAndServer";
 
-describe("fundamentals", () => {
+describe("basic request response", () => {
   it("should receive the returned data for GET", async () => {
     const cs = await createClientAndServer((builder) => ({
       get: builder.get(async () => {
