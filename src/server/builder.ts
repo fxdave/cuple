@@ -87,7 +87,7 @@ type BuilderConfig = {
  * @template TData - The data object that you can use in request handlers
  * @template TResponses - The possible responses that the endpoint can produce
  */
-class Builder<
+export class Builder<
   TData extends object,
   TResponses = unknown,
   TMethod extends HttpVerbs = "post"

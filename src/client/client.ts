@@ -1,8 +1,10 @@
+import fetch from "node-fetch";
+
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, []);
 }
 
-type RecursiveApi = {
+export type RecursiveApi = {
   [Key in string]:
     | {
         get?: (props: any) => any;
@@ -47,10 +49,10 @@ type WithPreloadedData<TApi, TPreloadedData> = {
     : WithPreloadedData<TApi[Key], TPreloadedData>;
 };
 
-type Client<TApi extends RecursiveApi, TPreloadedData = {}> = WithPreloadedData<
-  TApi,
-  TPreloadedData
-> &
+export type Client<
+  TApi extends RecursiveApi,
+  TPreloadedData = {}
+> = WithPreloadedData<TApi, TPreloadedData> &
   ({} extends TPreloadedData
     ? {
         with: <TParamsNext>(
