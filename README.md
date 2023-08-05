@@ -4,7 +4,7 @@ It's designed with compatibility in mind with other microservices but also keepi
 
 ## Status
 
-Currently it's W.I.P, barely tested.
+Currently it's tested, but it hasn't been released yet.
 
 ## Abouth RPCs in general
 
