@@ -206,10 +206,18 @@ export class Builder<
     | (ZodValidationError<z.infer<TParser>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
-    return async ({ req }: MiddlewareProps<unknown>) => {
+    return async ({ req, data }: MiddlewareProps<unknown>) => {
       try {
+        let newData = parser.parse(req[propertyName]) as z.infer<TParser>
+        const existingData = data && (data as any)[propertyName];
+        if(typeof newData === "object" && typeof existingData === "object") {
+          newData = {
+            ...existingData,
+            ...newData
+          }
+        }
         return {
-          [propertyName]: parser.parse(req[propertyName]) as z.infer<TParser>,
+          [propertyName]: newData,
           next: true as const,
         };
       } catch (e) {
