@@ -1,4 +1,6 @@
-# REST-first RPC for typescript services
+# Cuple RPC
+
+REST-compatible RPC for typescript services
 
 It's designed with compatibility in mind with other microservices but also keeping the advantages of tightly coupled microservers. For example, a Java microservice can also send requests as usual. It's REST first, so it typechecks HTTP headers, URL parameters, query strings, as well, not just the bodies. Unlike trpc, it also tracks error responses, and even let's you return custom validation errors. It tries to be out of the way as much as possbile, and let's you do everything that is possbile with `express`.
 

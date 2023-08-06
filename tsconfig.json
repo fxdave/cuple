@@ -1,10 +1,25 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "strictNullChecks": true
-  }
+    "strictNullChecks": true,
+    "paths": {
+      "@cuple/client/*": ["./packages/client/src/*"],
+      "@cuple/server/*": ["./packages/server/src/*"],
+      "@cuple/client": ["./packages/client/src"],
+      "@cuple/server": ["./packages/server/src"]
+    }
+  },
+  "references": [
+    { "path": "./packages/client" },
+    { "path": "./packages/server" }
+  ],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
+  "files": [],
+  "include": [],
+  "exclude": ["**/node_modules"]
 }

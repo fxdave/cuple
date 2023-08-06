@@ -1,6 +1,0 @@
-{
-    "scripts": {
-        "server": "npx tsx ./example.ts",
-        "client": "npx tsx ./example-client.ts"
-    }
-}

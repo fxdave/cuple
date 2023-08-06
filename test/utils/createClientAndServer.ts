@@ -1,7 +1,7 @@
 import express from "express";
-import { Client, createClient, RecursiveApi } from "../../src/client";
-import { createBuilder, initRpc } from "../../src/server";
-import { Builder } from "../../src/server/builder";
+import { Client, createClient, RecursiveApi } from "@cuple/client";
+import { createBuilder, initRpc } from "@cuple/server";
+import { Builder } from "@cuple/server";
 
 export default async function createClientAndServer<T extends RecursiveApi>(
   createRoutes: (builder: Builder<object, never, "post">) => T

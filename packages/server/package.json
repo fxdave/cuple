@@ -1,0 +1,32 @@
+{
+  "name": "@cuple/server",
+  "version": "1.0.0",
+  "description": "typescript-based RPC with REST compatibility",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxdave/typesharing.git"
+  },
+  "keywords": [
+    "rpc",
+    "type",
+    "sharing",
+    "rest",
+    "procedure",
+    "frontend",
+    "api"
+  ],
+  "author": "David Biro",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fxdave/typesharing/issues"
+  },
+  "homepage": "https://github.com/fxdave/typesharing#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "zod": "^3.21.4"
+  }
+}
