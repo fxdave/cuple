@@ -1,5 +1,10 @@
 {
   "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "strictNullChecks": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "composite": true
