@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fxdave/typesharing.git"
+    "url": "git+https://github.com/fxdave/cuple.git"
   },
   "keywords": [
     "rpc",
@@ -22,9 +22,9 @@
   "author": "David Biro",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fxdave/typesharing/issues"
+    "url": "https://github.com/fxdave/cuple/issues"
   },
-  "homepage": "https://github.com/fxdave/typesharing#readme",
+  "homepage": "https://github.com/fxdave/cuple#readme",
   "dependencies": {
     "node-fetch": "^2.6.12"
   }
