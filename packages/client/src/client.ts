@@ -4,7 +4,7 @@ async function getFetch() {
   if (fetchInstance !== undefined)
     return fetchInstance;
 
-  if (process?.versions?.node) {
+  if (globalThis?.process?.versions?.node) {
     fetchInstance = (await import('node-fetch')).default as any;
   } else {
     fetchInstance = globalThis?.fetch
