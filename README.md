@@ -65,6 +65,9 @@ async function getPost(id: number) {
 }
 ```
 
-## Other Examples
+## Other Resources
 
-Check the ./examples for more.
+Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)
+Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)
+Examples: `./test/src/examples`
+Tests: `./test/src`
