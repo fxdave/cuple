@@ -1,4 +1,4 @@
-import { createClient } from "../../src/client";
+import { createClient } from "@cuple/client";
 import type { routes } from "./example";
 
 // Fake localstorage for testing

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "sourceMap": true,
     "module": "commonjs",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -10,15 +11,15 @@
       "@cuple/client": ["./packages/client/src"],
       "@cuple/client/*": ["./packages/client/src/*"],
       "@cuple/server": ["./packages/server/src"],
-      "@cuple/server/*": ["./packages/server/src/*"],
+      "@cuple/server/*": ["./packages/server/src/*"]
     }
   },
   "references": [
     { "path": "./packages/client" },
-    { "path": "./packages/server" }
+    { "path": "./packages/server" },
+    { "path": "./test" }
   ],
   "files": [],
-  "include": ["./test/**/*"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   }

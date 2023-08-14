@@ -4,6 +4,7 @@
     "./packages/*"
   ],
   "scripts": {
+    "build": "tsc --build",
     "test": "mocha",
     "test:watch": "mocha --watch"
   },

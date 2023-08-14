@@ -1,11 +1,11 @@
 import express from "express";
 import { z } from "zod";
-import { createBuilder, initRpc } from "../../src/server";
+import { createBuilder, initRpc } from "@cuple/server";
 import {
   apiResponse,
   success,
   zodValidationError,
-} from "../../src/server/responses";
+} from "@cuple/server";
 
 const app = express();
 app.use(express.json());

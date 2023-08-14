@@ -1,7 +1,7 @@
 import assert from "assert";
 import { describe, it } from "mocha";
 import { z } from "zod";
-import { success } from "@cuple/server/responses";
+import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("REST", () => {

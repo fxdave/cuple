@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { Express } from "express";
 import { ApiCaller, BuiltEndpoint } from "./builder";
 
-type InitRpcConfig = {
+export type InitRpcConfig = {
   path: string;
   routes: RecursiveApi;
 };

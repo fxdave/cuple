@@ -1,7 +1,7 @@
+import { success } from "@cuple/server";
 import assert from "assert";
 import { describe, it } from "mocha";
 import { z } from "zod";
-import { success } from "@cuple/server/responses";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("client.with(..) (aka Client chaining)", () => {

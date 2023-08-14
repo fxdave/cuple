@@ -1,2 +1,9 @@
 export { createBuilder, Builder } from "./builder";
-export { initRpc } from "./rpc-handler";
+export { initRpc, InitRpcConfig } from "./rpc-handler";
+export {
+    apiResponse,
+    success,
+    unexpectedError,
+    validationError,
+    zodValidationError
+} from "./responses";

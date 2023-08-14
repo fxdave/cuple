@@ -1,4 +1,4 @@
-import { createClient } from "../../src/client";
+import { createClient } from "@cuple/client";
 import type { routes } from "./example";
 
 const client = createClient<typeof routes>({
@@ -12,7 +12,8 @@ async function test() {
   console.log("getPost(1): ", await getPost(1));
   const newPost = await addPost("Some Thing", "There's something.");
   console.log("newPost: ", newPost);
-  console.log("getPost(newPost.post.id): ", await getPost(newPost.post.id));
+  if(newPost.result === "success")
+    console.log("getPost(newPost.post.id): ", await getPost(newPost.post.id));
 }
 
 async function getPosts() {
