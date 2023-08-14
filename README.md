@@ -67,6 +67,7 @@ async function getPost(id: number) {
 
 ## Other Resources
 
+Boilerplate: https://github.com/fxdave/react-express-cuple-boilerplate
 Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)
 Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)
 Examples: `./test/src/examples`
