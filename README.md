@@ -8,7 +8,7 @@ It's designed with compatibility in mind with other microservices but also keepi
 
 Waiting for early adaptors.
 
-## Abouth RPCs in general
+## About RPCs in general
 
 RPC stands for Remote Rrocedure Call. You define procedures in the server, and you call them from the client.
 Let it be either backend-backend communication or backend-frontend.
