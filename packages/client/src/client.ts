@@ -1,18 +1,15 @@
-
 let fetchInstance: typeof globalThis.fetch;
 async function getFetch() {
-  if (fetchInstance !== undefined)
-    return fetchInstance;
+  if (fetchInstance !== undefined) return fetchInstance;
 
   if (globalThis?.process?.versions?.node) {
-    fetchInstance = (await import('node-fetch')).default as any;
+    fetchInstance = (await import("node-fetch")).default as any;
   } else {
-    fetchInstance = globalThis?.fetch
+    fetchInstance = globalThis?.fetch;
   }
 
-  return fetchInstance
+  return fetchInstance;
 }
-
 
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, []);
@@ -20,14 +17,14 @@ export function createClient<T extends RecursiveApi>(config: { path: string }) {
 
 export type RecursiveApi = {
   [Key in string]:
-  | {
-    get?: (props: any) => any;
-    post?: (props: any) => any;
-    put?: (props: any) => any;
-    patch?: (props: any) => any;
-    delete?: (props: any) => any;
-  }
-  | RecursiveApi;
+    | {
+        get?: (props: any) => any;
+        post?: (props: any) => any;
+        put?: (props: any) => any;
+        patch?: (props: any) => any;
+        delete?: (props: any) => any;
+      }
+    | RecursiveApi;
 };
 
 type NonEmptyKeys<T> = {
@@ -38,10 +35,10 @@ type WithoutEmptyProperties<T> = Pick<T, NonEmptyKeys<T>>;
 
 type OmitSameProps<TA, TB> = WithoutEmptyProperties<{
   [K in keyof TA]: [K] extends [keyof TB]
-  ? [TB[K]] extends [TA[K]]
-  ? undefined
-  : WithoutEmptyProperties<OmitSameProps<TA[K], TB[K]>>
-  : TA[K];
+    ? [TB[K]] extends [TA[K]]
+      ? undefined
+      : WithoutEmptyProperties<OmitSameProps<TA[K], TB[K]>>
+    : TA[K];
 }>;
 
 type RecursivePartial<T> = {
@@ -56,26 +53,24 @@ type ExcludePreloadedParams<TFrom, TPreloadedData> = OmitSameProps<
 
 type WithPreloadedData<TApi, TPreloadedData> = {
   [Key in keyof TApi]: TApi[Key] extends (arg: infer IArg) => infer IReturn
-  ? (arg: ExcludePreloadedParams<IArg, TPreloadedData>) => IReturn
-  : WithPreloadedData<TApi[Key], TPreloadedData>;
+    ? (arg: ExcludePreloadedParams<IArg, TPreloadedData>) => IReturn
+    : WithPreloadedData<TApi[Key], TPreloadedData>;
 };
 
 export type Client<
   TApi extends RecursiveApi,
-  TPreloadedData = {}
+  TPreloadedData = NonNullable<unknown>,
 > = WithPreloadedData<TApi, TPreloadedData> &
-  ({} extends TPreloadedData
+  (NonNullable<unknown> extends TPreloadedData
     ? {
-      with: <TParamsNext>(
-        middleware: () => TParamsNext
-      ) => Client<TApi, TParamsNext>;
-    }
-    : {});
+        with: <TParamsNext>(middleware: () => TParamsNext) => Client<TApi, TParamsNext>;
+      }
+    : NonNullable<unknown>);
 
-function createPathBuilder<TApi extends RecursiveApi, TParams = {}>(
+function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unknown>>(
   path: string,
   segments: string[],
-  preloader?: () => TParams
+  preloader?: () => TParams,
 ): Client<TApi, TParams> {
   const target = (() => false) as unknown as Client<TApi, TParams>;
 
@@ -93,8 +88,7 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = {}>(
       }
 
       const method = segments.pop();
-      if (!method)
-        throw new Error("Couldn't parse RPC request, method is required");
+      if (!method) throw new Error("Couldn't parse RPC request, method is required");
       const data = JSON.stringify({
         segments,
         argument: {
