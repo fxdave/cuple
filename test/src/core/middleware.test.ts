@@ -2,6 +2,7 @@ import assert from "assert";
 import { describe, it } from "mocha";
 import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
+import { z } from "zod";
 
 describe("middleware", () => {
   it("should return an independent response from the middleware", async () => {
@@ -22,6 +23,36 @@ describe("middleware", () => {
     await cs.run(async (client) => {
       const response = await client.get.get({});
       assert.equal(response.foo, "hi");
+    });
+  });
+  
+  it("should work with schema validation", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      get: builder
+        .bodySchema(z.object({
+          id: z.string()
+        }))
+        .middleware(async () => {
+          return {
+            next: true,
+            foo: "hello",
+          };
+        })
+        .get(async () => {
+          return success({
+            foo: "hi",
+          });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.get.get({
+        body: {
+          id: "test"
+        }
+      });
+
+      if(response.result === 'success')
+        assert.equal(response.foo, "hi");
     });
   });
 

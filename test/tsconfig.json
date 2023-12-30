@@ -8,11 +8,18 @@
     "strictNullChecks": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "composite": true
+    "composite": true,
+    "noErrorTruncation": true
   },
   "references": [
-    { "path": "../packages/client" },
-    { "path": "../packages/server" }
+    {
+      "path": "../packages/client"
+    },
+    {
+      "path": "../packages/server"
+    }
   ],
-  "include": ["./src/**/*"]
+  "include": [
+    "./src/**/*"
+  ]
 }

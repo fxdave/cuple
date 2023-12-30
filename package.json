@@ -9,14 +9,19 @@
     "test:watch": "mocha --watch"
   },
   "devDependencies": {
-    "@types/express": "^4.17.17",
-    "@types/mocha": "^10.0.1",
-    "@types/node-fetch": "^2.6.4",
-    "assert": "^2.0.0",
+    "@types/express": "^4.17.21",
+    "@types/mocha": "^10.0.6",
+    "@types/node-fetch": "^2.6.10",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "assert": "^2.1.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
     "mocha": "^10.2.0",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "^3.12.7",
-    "typescript": "^5.1.6"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

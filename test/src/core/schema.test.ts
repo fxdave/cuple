@@ -26,6 +26,33 @@ describe("schema validation", () => {
     });
   });
 
+  it("should validate mutli-level body schema", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.object({
+            user: z.object({
+              address: z.object({
+                street: z.string()
+              })
+            })
+          })
+        )
+        .post(async ({ data }) => {
+          return success({
+            street: data.body.user.address.street
+          });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({ user: { address: { street: 1 } }} as any);
+      assert.equal(response.statusCode, 422);
+      if (response.result !== "validation-error") assert.ok(false);
+      assert.notEqual(response.message.length, 0);
+      assert.ok(Array.isArray(response.issues[0].path));
+    });
+  });
+
   it("should allow non-objects", async () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder.bodySchema(z.number()).post(async ({ data }) => {

@@ -40,9 +40,9 @@ type Cons<H, T extends readonly any[]> = ((h: H, ...t: T) => void) extends (
   ? R
   : never
 /** TupleKeys<['a', 'b']> => 0 | 1 */
-type TupleKeys<T extends ReadonlyArray<any>> = Exclude<keyof T, keyof any[]>
+type TupleKeys<T extends any[]> = Exclude<keyof T, keyof any[]>
 /** IsTuple<[number, number]> => true, IsTuple<number[]> = false */
-type IsTuple<T extends ReadonlyArray<any>> = number extends T['length']
+type IsTuple<T extends any[]> = number extends T['length']
   ? false
   : true
 /** PathImpl<'foo', { bar: ['a'] }> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] */
@@ -50,7 +50,7 @@ type PathImpl<K extends string | number, V> = V extends Primitive
   ? [K]
   : [K] | Cons<K, Path<V>>
 /** Path<{ foor: { bar: ['a', 'b'] }}> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] | ["foo", "bar", "1"] */
-type Path<T> = T extends ReadonlyArray<infer V>
+type Path<T> = T extends ((infer V)[])
   ? IsTuple<T> extends true
     ? {
         [K in TupleKeys<T>]-?: PathImpl<K & string, T[K]>

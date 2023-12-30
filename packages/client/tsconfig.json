@@ -8,7 +8,10 @@
     "strictNullChecks": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "composite": true
+    "composite": true,
+    "noErrorTruncation": true
   },
-  "include": ["./src/*"]
+  "include": [
+    "./src/*"
+  ]
 }

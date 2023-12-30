@@ -17,6 +17,22 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 
+type Tidied_Step1_Array<T> = T extends Array<infer V>
+  ? unknown extends V
+  ? Tidied_Step2_ZodError<T>
+  : Array<Tidied<V>>
+  : Tidied_Step2_ZodError<T>
+type Tidied_Step2_ZodError<T> = T extends ZodValidationError<infer V>
+  ? unknown extends V
+  ? Tidied_Step3_Object<T>
+  : Record<string, unknown> extends V
+  ? Tidied_Step3_Object<T>
+  : ZodValidationError<V>
+  : Tidied_Step3_Object<T>
+type Tidied_Step3_Object<T> = T extends object ? ({ [i in keyof T]: Tidied<T[i]> }) : T
+/** Tidy type by merging intersections, hiding complex type under a name, to improve developer experience */
+type Tidied<T> = Tidied_Step1_Array<T>
+
 type Middleware<TData, TResult> = (
   props: MiddlewareProps<TData>
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
@@ -37,8 +53,8 @@ type WithoutUndefinedProperties<T extends object> = Pick<
   T,
   NotUndefinedProperties<T>
 > & {
-  [Key in UndefinedProperties<T>]?: never;
-};
+    [Key in UndefinedProperties<T>]?: never;
+  };
 
 export type ApiCaller<
   TRequestBody,
@@ -48,15 +64,15 @@ export type ApiCaller<
   TResponse,
   TMethod extends HttpVerbs
 > = {
-  [Key in TMethod]: (
-    params: WithoutUndefinedProperties<{
-      body: TRequestBody;
-      query: TRequestQuery;
-      params: TRequestParams;
-      headers: TRequestHeaders;
-    }>
-  ) => Promise<TResponse>;
-};
+    [Key in TMethod]: (
+      params: WithoutUndefinedProperties<{
+        body: TRequestBody;
+        query: TRequestQuery;
+        params: TRequestParams;
+        headers: TRequestHeaders;
+      }>
+    ) => Promise<TResponse>;
+  };
 
 export type BuiltEndpoint<
   TData extends {
@@ -100,7 +116,7 @@ export class Builder<
   TResponses = never,
   TMethod extends HttpVerbs = "post"
 > {
-  constructor(private config: BuilderConfig) {}
+  constructor(private config: BuilderConfig) { }
 
   middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
     return new Builder<
@@ -156,7 +172,7 @@ export class Builder<
 
   buildLink = this.__buildMiddleware;
 
-  build(): BuiltEndpoint<TData, TResponses, TMethod> {
+  build(): BuiltEndpoint<Tidied<TData>, Tidied<TResponses>, TMethod> {
     const endpoint = this.__buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -210,7 +226,7 @@ export class Builder<
       try {
         let newData = parser.parse(req[propertyName]) as z.infer<TParser>
         const existingData = data && (data as any)[propertyName];
-        if(typeof newData === "object" && typeof existingData === "object") {
+        if (typeof newData === "object" && typeof existingData === "object") {
           newData = {
             ...existingData,
             ...newData
@@ -219,7 +235,7 @@ export class Builder<
         return {
           [propertyName]: newData,
           next: true as const,
-        };
+        } as ({ [i in TPropertyName]: z.infer<TParser> } & { next: true });
       } catch (e) {
         if (e instanceof ZodError) {
           return {
@@ -227,12 +243,12 @@ export class Builder<
               e.issues as ImprovedZodIssue<TypeOf<TParser>>[]
             ),
             next: false as const,
-          };
+          } as (ZodValidationError<z.infer<TParser>> & { next: false });
         }
         return {
           ...unexpectedError(),
           next: false as const,
-        };
+        } as (UnexpectedError & { next: false });
       }
     };
   }
@@ -240,7 +256,7 @@ export class Builder<
   private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(
     method: TMethod
   ) {
-    return <TFinalResponses>(mw: Finalware<TData, TFinalResponses>) => {
+    return <TFinalResponses>(mw: Finalware<Tidied<TData>, Tidied<TFinalResponses>>) => {
       const builder = new Builder<TData, TFinalResponses | TResponses, TMethod>(
         {
           ...this.config,
@@ -253,7 +269,7 @@ export class Builder<
     };
   }
 
-  private __buildMiddleware(): Middleware<TData, TResponses> {
+  private __buildMiddleware(): Middleware<Tidied<TData>, Tidied<TResponses>> {
     return async ({
       req,
       res,
@@ -261,7 +277,7 @@ export class Builder<
     }: {
       req: ExpressRequest;
       res: ExpressResponse;
-      data: TData;
+      data: Tidied<TData>;
     }) => {
       let actualData = data;
       for (let mw of this.config.middlewares) {
