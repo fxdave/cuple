@@ -2,13 +2,13 @@
 
 REST-compatible RPC for typescript services
 
-It's designed with compatibility in mind with other microservices but also keeping the advantages of tightly coupled microservers. For example, a Java microservice can also send requests as usual. It's REST first, so it typechecks HTTP headers, URL parameters, query strings, as well, not just the bodies. Unlike trpc, it also tracks error responses, and even let's you return custom validation errors. It tries to be out of the way as much as possbile, and let's you do everything that is possbile with `express`.
+It's designed with compatibility in mind with other microservices but also keeping the advantages of tightly coupled microservers. For example, a Java microservice can also send requests as usual. It's REST first, so it typechecks HTTP headers, URL parameters, query strings, as well, not just the bodies. Unlike trpc, it also tracks error responses, and even lets you return custom validation errors. It tries to be out of the way as much as possbile, and lets you do everything that is possbile with `express`.
 
 ## Status
 
-Currently it's tested, but it hasn't been released yet.
+Waiting for early adaptors.
 
-## Abouth RPCs in general
+## About RPCs in general
 
 RPC stands for Remote Rrocedure Call. You define procedures in the server, and you call them from the client.
 Let it be either backend-backend communication or backend-frontend.
@@ -67,8 +67,8 @@ async function getPost(id: number) {
 
 ## Other Resources
 
-Boilerplate: https://github.com/fxdave/react-express-cuple-boilerplate
-Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)
-Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)
-Examples: `./test/src/examples`
-Tests: `./test/src`
+Boilerplate: https://github.com/fxdave/react-express-cuple-boilerplate  
+Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)  
+Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)  
+Examples: `./test/src/examples`  
+Tests: `./test/src`  
