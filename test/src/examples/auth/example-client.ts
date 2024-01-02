@@ -2,11 +2,11 @@ import { createClient } from "@cuple/client";
 import type { routes } from "./example";
 
 // Fake localstorage for testing
-const storage: Record<string, string> = {}
+const storage: Record<string, string> = {};
 const localStorage = {
-  setItem: (k: string, v: string) => storage[k] = v,
-  getItem: (k: string) => storage[k]
-}
+  setItem: (k: string, v: string) => (storage[k] = v),
+  getItem: (k: string) => storage[k],
+};
 
 const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",
@@ -40,4 +40,3 @@ async function changePassword() {
 }
 
 test();
-

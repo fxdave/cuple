@@ -12,7 +12,7 @@ describe("REST", () => {
         .paramsSchema(
           z.object({
             id: z.coerce.number(),
-          })
+          }),
         )
         .get(async ({ data }) => {
           return success({

@@ -11,7 +11,7 @@ describe("chaining", () => {
         .headersSchema(
           z.object({
             authorization: z.string(),
-          })
+          }),
         )
         .middleware(async ({ data }) => {
           if (data.headers.authorization === "foo")
@@ -64,14 +64,14 @@ describe("chaining", () => {
         .bodySchema(
           z.object({
             id: z.number(),
-          })
+          }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
           z.object({
             name: z.string(),
-          })
+          }),
         )
         .buildLink();
       return {
@@ -81,7 +81,7 @@ describe("chaining", () => {
           .get(async ({ data }) => {
             return success({
               gotId: data.body.id,
-              gotName: data.body.name
+              gotName: data.body.name,
             });
           }),
       };
@@ -90,10 +90,10 @@ describe("chaining", () => {
       const response = await client.someRoute.get({
         body: {
           id: 32,
-          name: "David"
-        }
+          name: "David",
+        },
       });
-      if(response.result !== "success") assert.ok(false)
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.gotId, 32);
       assert.equal(response.gotName, "David");
     });

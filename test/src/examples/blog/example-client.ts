@@ -12,7 +12,7 @@ async function test() {
   console.log("getPost(1): ", await getPost(1));
   const newPost = await addPost("Some Thing", "There's something.");
   console.log("newPost: ", newPost);
-  if(newPost.result === "success")
+  if (newPost.result === "success")
     console.log("getPost(newPost.post.id): ", await getPost(newPost.post.id));
 }
 

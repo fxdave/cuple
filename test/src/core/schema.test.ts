@@ -11,7 +11,7 @@ describe("schema validation", () => {
         .bodySchema(
           z.object({
             id: z.number(),
-          })
+          }),
         )
         .post(async () => {
           return success({});
@@ -33,19 +33,19 @@ describe("schema validation", () => {
           z.object({
             user: z.object({
               address: z.object({
-                street: z.string()
-              })
-            })
-          })
+                street: z.string(),
+              }),
+            }),
+          }),
         )
         .post(async ({ data }) => {
           return success({
-            street: data.body.user.address.street
+            street: data.body.user.address.street,
           });
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({ user: { address: { street: 1 } }} as any);
+      const response = await client.foo.post({ user: { address: { street: 1 } } } as any);
       assert.equal(response.statusCode, 422);
       if (response.result !== "validation-error") assert.ok(false);
       assert.notEqual(response.message.length, 0);
@@ -77,7 +77,7 @@ describe("schema validation", () => {
         .querySchema(
           z.object({
             id: z.number(),
-          })
+          }),
         )
         .post(async ({ data }) => {
           return success({
@@ -101,7 +101,7 @@ describe("schema validation", () => {
         .paramsSchema(
           z.object({
             id: z.number(),
-          })
+          }),
         )
         .post(async ({ data }) => {
           return success({
@@ -125,7 +125,7 @@ describe("schema validation", () => {
         .headersSchema(
           z.object({
             authorization: z.number(),
-          })
+          }),
         )
         .post(async ({ data }) => {
           return success({

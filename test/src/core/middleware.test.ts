@@ -25,13 +25,15 @@ describe("middleware", () => {
       assert.equal(response.foo, "hi");
     });
   });
-  
+
   it("should work with schema validation", async () => {
     const cs = await createClientAndServer((builder) => ({
       get: builder
-        .bodySchema(z.object({
-          id: z.string()
-        }))
+        .bodySchema(
+          z.object({
+            id: z.string(),
+          }),
+        )
         .middleware(async () => {
           return {
             next: true,
@@ -47,12 +49,11 @@ describe("middleware", () => {
     await cs.run(async (client) => {
       const response = await client.get.get({
         body: {
-          id: "test"
-        }
+          id: "test",
+        },
       });
 
-      if(response.result === 'success')
-        assert.equal(response.foo, "hi");
+      if (response.result === "success") assert.equal(response.foo, "hi");
     });
   });
 
@@ -93,8 +94,7 @@ describe("middleware", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.get.get({});
-      if (response.statusCode !== 400)
-        assert.ok(false, "statusCode should be 400");
+      if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.foo, "hello");
       assert.equal(response.bar, "42");
     });
@@ -123,8 +123,7 @@ describe("middleware", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.get.get({});
-      if (response.statusCode !== 400)
-        assert.ok(false, "statusCode should be 400");
+      if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.mw, 1);
     });
   });
@@ -150,8 +149,7 @@ describe("middleware", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.get.get({});
-      if (response.statusCode !== 400)
-        assert.ok(false, "statusCode should be 400");
+      if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.mw, 2);
     });
   });

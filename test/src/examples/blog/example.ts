@@ -20,7 +20,7 @@ export const routes = {
     .paramsSchema(
       z.object({
         id: z.coerce.number(),
-      })
+      }),
     )
     .get(async ({ data }) => {
       const post = posts.find((p) => p.id === data.params.id);
@@ -38,14 +38,10 @@ export const routes = {
       z.object({
         title: z.string(),
         content: z.string(),
-      })
+      }),
     )
     .post(async ({ data }) => {
-      const nextId =
-        Math.max.apply(
-          Math,
-          posts.map((post) => post.id)
-        ) + 1;
+      const nextId = Math.max(...posts.map((post) => post.id)) + 1;
       const newPost = { id: nextId, ...data.body };
       posts.push(newPost);
       return success({
@@ -57,7 +53,7 @@ export const routes = {
     .paramsSchema(
       z.object({
         id: z.coerce.number(),
-      })
+      }),
     )
     .delete(async ({ data }) => {
       const idx = posts.findIndex((post) => post.id === data.params.id);

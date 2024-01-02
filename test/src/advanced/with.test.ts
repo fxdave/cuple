@@ -11,7 +11,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         .querySchema(
           z.object({
             name: z.string(),
-          })
+          }),
         )
         .get(async ({ data }) => {
           return success({
@@ -37,7 +37,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         .querySchema(
           z.object({
             name: z.string(),
-          })
+          }),
         )
         .get(async ({ data }) => {
           return success({
@@ -54,8 +54,8 @@ describe("client.with(..) (aka Client chaining)", () => {
 
       const response = await newClient.exampleRoute.get({
         query: {
-          name: "Foo"
-        }
+          name: "Foo",
+        },
       });
       assert.equal(response.message, "Hi Foo!");
     });

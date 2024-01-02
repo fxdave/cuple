@@ -1,2 +1,3 @@
 packages/client/dist
 packages/server/dist
+test/dist
