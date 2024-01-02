@@ -1,16 +1,3 @@
-let fetchInstance: typeof globalThis.fetch;
-async function getFetch() {
-  if (fetchInstance !== undefined) return fetchInstance;
-
-  if (globalThis?.process?.versions?.node) {
-    fetchInstance = (await import("node-fetch")).default as any;
-  } else {
-    fetchInstance = globalThis?.fetch;
-  }
-
-  return fetchInstance;
-}
-
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, []);
 }
@@ -108,10 +95,9 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
 }
 
 async function methodAwareFetch(method: string, data: string, path: string) {
-  const myfetch = await getFetch();
   if (method === "get" || method === "delete") {
     const argument = new URLSearchParams({ data });
-    return await myfetch(`${path}?${argument.toString()}`, {
+    return await fetch(`${path}?${argument.toString()}`, {
       method: method,
       headers: {
         "Content-Type": "application/json",
@@ -119,7 +105,7 @@ async function methodAwareFetch(method: string, data: string, path: string) {
       },
     });
   }
-  return await myfetch(path, {
+  return await fetch(path, {
     body: data,
     method: method,
     headers: {
