@@ -98,7 +98,7 @@ async function methodAwareFetch(method: string, data: string, path: string) {
   if (method === "get" || method === "delete") {
     const argument = new URLSearchParams({ data });
     return await fetch(`${path}?${argument.toString()}`, {
-      method: method,
+      method: method.toUpperCase(),
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -107,7 +107,7 @@ async function methodAwareFetch(method: string, data: string, path: string) {
   }
   return await fetch(path, {
     body: data,
-    method: method,
+    method: method.toUpperCase(),
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",

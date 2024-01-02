@@ -24,8 +24,5 @@
   "bugs": {
     "url": "https://github.com/fxdave/cuple/issues"
   },
-  "homepage": "https://github.com/fxdave/cuple#readme",
-  "dependencies": {
-    "node-fetch": "^2.6.12"
-  }
+  "homepage": "https://github.com/fxdave/cuple#readme"
 }
