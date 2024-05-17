@@ -72,3 +72,7 @@ Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/
 Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)  
 Examples: `./test/src/examples`  
 Tests: `./test/src`  
+
+## Companies using Cuple
+
+[![RolloutIt](https://github.com/fxdave/cuple/assets/12275699/72f9ce50-ffe1-46a2-b317-183dfe0467d0)](https://rolloutit.net/)
