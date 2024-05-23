@@ -8,6 +8,8 @@ It's designed with compatibility in mind with external services but also keeping
 
 https://github.com/fxdave/cuple/assets/12275699/a9486ab2-6d61-467b-acd2-1a9acc6b6de0
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/~/github.com/fxdave/react-express-cuple-boilerplate/tree/stackblitz?file=backend/src/index.ts)
+
 ### About RPCs in general
 
 RPC stands for Remote Rrocedure Call. You define procedures in the server, and you call them from the client.
