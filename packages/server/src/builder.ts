@@ -33,6 +33,13 @@ type Tidied_Step3_Object<T> = T extends object ? { [i in keyof T]: Tidied<T[i]> 
 /** Tidy type by merging intersections, hiding complex type under a name, to improve developer experience */
 type Tidied<T> = Tidied_Step1_Array<T>;
 
+type BaseData = {
+  body?: never;
+  query?: never;
+  params?: never;
+  headers?: never;
+};
+
 type Middleware<TData, TResult> = (
   props: MiddlewareProps<TData>,
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
@@ -107,7 +114,7 @@ type BuilderConfig = {
  * @template TResponses - The possible responses that the endpoint can produce
  */
 export class Builder<
-  TData extends object,
+  TData extends BaseData,
   TResponses = never,
   TMethod extends HttpVerbs = "post",
 > {
@@ -116,7 +123,7 @@ export class Builder<
   middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
     return new Builder<
       // The consequent TData will be merged with TResult only when { next: TRUE }
-      TData & TResult & { next: true },
+      Tidied<TData & TResult & { next: true }>,
       // The consequent TResponses can be TResult only when { next: FALSE }
       TResponses | (TResult & { next: false }),
       TMethod
@@ -206,7 +213,7 @@ export class Builder<
     parser: TParser,
   ): Middleware<
     TData,
-    | ({ [i in TPropertyName]: z.infer<TParser> } & { next: true })
+    | Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>
     | (ZodValidationError<z.infer<TParser>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
@@ -223,7 +230,7 @@ export class Builder<
         return {
           [propertyName]: newData,
           next: true as const,
-        } as { [i in TPropertyName]: z.infer<TParser> } & { next: true };
+        } as Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>;
       } catch (e) {
         if (e instanceof ZodError) {
           return {
@@ -240,7 +247,7 @@ export class Builder<
   }
 
   private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
-    return <TFinalResponses>(mw: Finalware<Tidied<TData>, Tidied<TFinalResponses>>) => {
+    return <TFinalResponses>(mw: Finalware<TData, TFinalResponses>) => {
       const builder = new Builder<TData, TFinalResponses | TResponses, TMethod>({
         ...this.config,
         finalware: mw,

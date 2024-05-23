@@ -1,7 +1,7 @@
 import assert from "assert";
 import { describe, it } from "mocha";
 import { z } from "zod";
-import { success } from "@cuple/server";
+import { success, zodValidationError } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("schema validation", () => {
@@ -143,4 +143,67 @@ describe("schema validation", () => {
       assert.equal(response.got, 42);
     });
   });
+
+  it("should support manual validationError", async () => {
+    // TODO: ideally, this should fail because every header is string or string[].
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder.post(async () => {
+        return validationError({
+          message: "hey",
+        });
+      }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({});
+
+      if (response.result === "validation-error") {
+        assert.ok(true);
+      } else {
+        assert.ok(false);
+      }
+    });
+  });
+
+  it("should support complex zodValidationError path", async () => {
+    // TODO: ideally, this should fail because every header is string or string[].
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.object({
+            name: z.string(),
+          }),
+        )
+        .post(async ({ data }) => {
+          if (data.body.name === "David") {
+            return zodValidationError<typeof data.body>([
+              {
+                code: "custom",
+                message: "No David here", // I'm David
+                path: ["name"],
+              },
+            ]);
+          }
+          return success({
+            message: `Hi ${data.body.name}`,
+          });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({
+        body: { name: "David" },
+      });
+
+      if (response.result === "validation-error") {
+        assert.equal(response.issues[0].path[0], "name");
+      } else {
+        assert.ok(false);
+      }
+    });
+  });
+});
+
+const validationError = <Others extends { message: string }>(others: Others) => ({
+  result: "validation-error" as const,
+  statusCode: 422 as const,
+  ...others,
 });
