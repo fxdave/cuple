@@ -39,7 +39,7 @@ type IsTuple<T extends any[]> = number extends T["length"] ? false : true;
 type PathImpl<K extends string | number, V> = V extends Primitive
   ? [K]
   : [K] | Cons<K, Path<V>>;
-/** Path<{ foor: { bar: ['a', 'b'] }}> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] | ["foo", "bar", "1"] */
+/** Path<{ foo: { bar: ['a', 'b'] }}> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] | ["foo", "bar", "1"] */
 type Path<T> = T extends (infer V)[]
   ? IsTuple<T> extends true
     ? {
