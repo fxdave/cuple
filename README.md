@@ -4,9 +4,9 @@ REST-compatible RPC for typescript services
 
 It's designed with compatibility in mind with other microservices but also keeping the advantages of tightly coupled microservers. For example, a Java microservice can also send requests as usual. It's REST first, so it typechecks HTTP headers, URL parameters, query strings, as well, not just the bodies. Unlike trpc, it also tracks error responses, and even lets you return custom validation errors. It tries to be out of the way as much as possbile, and lets you do everything that is possbile with `express`.
 
-## Status
+## Example
 
-Waiting for early adaptors.
+https://github.com/fxdave/cuple/assets/12275699/a9486ab2-6d61-467b-acd2-1a9acc6b6de0
 
 ## About RPCs in general
 
@@ -65,10 +65,14 @@ async function getPost(id: number) {
 }
 ```
 
-## Other Resources
+## There's more:
 
 Boilerplate: https://github.com/fxdave/react-express-cuple-boilerplate  
 Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)  
 Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)  
 Examples: `./test/src/examples`  
 Tests: `./test/src`  
+
+## Companies using Cuple
+
+[![RolloutIt](https://github.com/fxdave/cuple/assets/12275699/72f9ce50-ffe1-46a2-b317-183dfe0467d0)](https://rolloutit.net/)
