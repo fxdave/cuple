@@ -25,10 +25,10 @@
   },
   "homepage": "https://github.com/fxdave/cuple#readme",
   "dependencies": {
-    "express": "4.x",
-    "zod": "3.x"
+    "express": "^4.0.0",
+    "zod": "^3.0.0"
   },
   "devDependencies": {
-    "@types/express": "4.x"
+    "@types/express": "^4.0.0"
   }
 }
