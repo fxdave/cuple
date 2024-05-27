@@ -12,7 +12,7 @@ https://github.com/fxdave/cuple/assets/12275699/a9486ab2-6d61-467b-acd2-1a9acc6b
 
 ### About RPCs in general
 
-RPC stands for Remote Rrocedure Call. You define procedures in the server, and you call them from the client.
+RPC stands for Remote Procedure Call. You define procedures in the server, and you call them from the client.
 Let it be either backend-backend communication or backend-frontend.
 RPC usually indicates strict typing of procedures for maximal compatibility and tight coupling.
 
