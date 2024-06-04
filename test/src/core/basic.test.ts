@@ -18,6 +18,20 @@ describe("basic request response", () => {
     });
   });
 
+  it("should return statusCode", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      post: builder.post(async () => {
+        return success({
+          foo: "post",
+        });
+      }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.post.post({});
+      assert.equal(response.statusCode, 200);
+    });
+  });
+
   it("should receive the returned data for POST", async () => {
     const cs = await createClientAndServer((builder) => ({
       post: builder.post(async () => {
