@@ -2,15 +2,15 @@
   "compilerOptions": {
     "sourceMap": true,
     "module": "commonjs",
+    "target": "ES2017",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "strictNullChecks": true,
     "outDir": "./dist",
+    "baseUrl": ".",
     "paths": {
-      "@cuple/client": ["./packages/client/src"],
       "@cuple/client/*": ["./packages/client/src/*"],
-      "@cuple/server": ["./packages/server/src"],
       "@cuple/server/*": ["./packages/server/src/*"]
     }
   },

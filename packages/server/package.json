@@ -1,6 +1,6 @@
 {
   "name": "@cuple/server",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "typescript-based RPC with REST compatibility",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -24,11 +24,11 @@
     "url": "https://github.com/fxdave/cuple/issues"
   },
   "homepage": "https://github.com/fxdave/cuple#readme",
-  "dependencies": {
-    "express": "^4.0.0",
-    "zod": "^3.0.0"
+  "peerDependencies": {
+    "express": "4.x.x",
+    "zod": "3.x.x"
   },
   "devDependencies": {
-    "@types/express": "^4.0.0"
+    "@types/express": "4.x.x"
   }
 }

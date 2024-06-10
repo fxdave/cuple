@@ -2,6 +2,7 @@
   "compilerOptions": {
     "declaration": true,
     "module": "commonjs",
+    "target": "ES2017",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -9,7 +10,11 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "composite": true,
-    "noErrorTruncation": true
+    "noErrorTruncation": true,
+    "paths": {
+      "@cuple/client/*": ["../packages/client/src/*"],
+      "@cuple/server/*": ["../packages/server/src/*"]
+    }
   },
   "references": [
     {

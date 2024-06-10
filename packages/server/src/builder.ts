@@ -21,24 +21,20 @@ type MiddlewareProps<TData> = {
 // but tuples and arrays are not differentiated,
 // and we can't do the same for tuples.
 // So arrays will be skipped.
-type Tidied_Step1_Array<T> = T extends Array<infer _V> ? T : Tidied_Step2_ZodError<T>;
-type Tidied_Step2_ZodError<T> = T extends ZodValidationError<infer V>
-  ? unknown extends V
-    ? Tidied_Step3_Object<T>
-    : Record<string, unknown> extends V
+type Tidied_Step1_Array<T> = T extends Array<infer V> ? T : Tidied_Step2_ZodError<T>;
+type Tidied_Step2_ZodError<T> =
+  T extends ZodValidationError<infer V>
+    ? unknown extends V
       ? Tidied_Step3_Object<T>
-      : ZodValidationError<V>
-  : Tidied_Step3_Object<T>;
+      : Record<string, unknown> extends V
+        ? Tidied_Step3_Object<T>
+        : ZodValidationError<V>
+    : Tidied_Step3_Object<T>;
 type Tidied_Step3_Object<T> = T extends object ? { [i in keyof T]: Tidied<T[i]> } : T;
 /** Tidy type by merging intersections, hiding complex type under a name, to improve developer experience */
 type Tidied<T> = Tidied_Step1_Array<T>;
 
-type BaseData = {
-  body?: never;
-  query?: never;
-  params?: never;
-  headers?: never;
-};
+type BaseData = object;
 
 type Middleware<TData, TResult> = (
   props: MiddlewareProps<TData>,
@@ -77,19 +73,14 @@ export type ApiCaller<
 };
 
 export type BuiltEndpoint<
-  TData extends {
-    body?: never;
-    query?: never;
-    params?: never;
-    headers?: never;
-  },
+  TData extends BaseData,
   TResponses,
   TMethod extends HttpVerbs,
 > = ApiCaller<
-  TData["body"],
-  TData["query"],
-  TData["params"],
-  TData["headers"],
+  TData extends { body?: unknown } ? TData["body"] : undefined,
+  TData extends { query?: unknown } ? TData["query"] : undefined,
+  TData extends { params?: unknown } ? TData["params"] : undefined,
+  TData extends { headers?: unknown } ? TData["headers"] : undefined,
   TResponses,
   TMethod
 > & {
