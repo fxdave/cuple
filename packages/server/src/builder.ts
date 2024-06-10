@@ -17,11 +17,11 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 
-type Tidied_Step1_Array<T> = T extends Array<infer V>
-  ? unknown extends V
-    ? Tidied_Step2_ZodError<T>
-    : Array<Tidied<V>>
-  : Tidied_Step2_ZodError<T>;
+// We could tidy array items,
+// but tuples and arrays are not differentiated,
+// and we can't do the same for tuples.
+// So arrays will be skipped.
+type Tidied_Step1_Array<T> = T extends Array<infer _V> ? T : Tidied_Step2_ZodError<T>;
 type Tidied_Step2_ZodError<T> = T extends ZodValidationError<infer V>
   ? unknown extends V
     ? Tidied_Step3_Object<T>
