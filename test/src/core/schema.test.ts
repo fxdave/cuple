@@ -119,12 +119,11 @@ describe("schema validation", () => {
   });
 
   it("should validate header schema", async () => {
-    // TODO: ideally, this should fail because every header is string or string[].
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .headersSchema(
           z.object({
-            authorization: z.number(),
+            authorization: z.string(),
           }),
         )
         .post(async ({ data }) => {
@@ -136,7 +135,7 @@ describe("schema validation", () => {
     await cs.run(async (client) => {
       const response = await client.foo.post({
         headers: {
-          authorization: 42,
+          authorization: "42",
         },
       });
       if (response.result !== "success") assert.ok(false);
