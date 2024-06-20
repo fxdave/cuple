@@ -60,4 +60,34 @@ describe("client.with(..) (aka Client chaining)", () => {
       assert.equal(response.message, "Hi Foo!");
     });
   });
+
+  it("should handle async functions", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      exampleRoute: builder
+        .querySchema(
+          z.object({
+            name: z.string(),
+          }),
+        )
+        .get(async ({ data }) => {
+          return success({
+            message: `Hi ${data.query.name}!`,
+          });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const newClient = client.with(async () => ({
+        query: {
+          name: "David",
+        },
+      }));
+
+      const response = await newClient.exampleRoute.get({
+        query: {
+          name: "Foo",
+        },
+      });
+      assert.equal(response.message, "Hi Foo!");
+    });
+  });
 });

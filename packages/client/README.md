@@ -29,7 +29,7 @@ async function changePassword() {
     },
   });
 
-  console.log(response)
+  console.log(response);
 }
 
 changePassword();
@@ -42,12 +42,12 @@ changePassword();
 ```ts
 // Server:
 const routes = {
-    foo: builder.get(/**/),
-    bar: builder.post(/**/),
-    baz: builder.put(/**/),
-    patch: builder.patch(/**/),
-    delete: builder.delete(/**/)
-}
+  foo: builder.get(/**/),
+  bar: builder.post(/**/),
+  baz: builder.put(/**/),
+  patch: builder.patch(/**/),
+  delete: builder.delete(/**/),
+};
 
 // Client:
 await client.foo.get({});
@@ -58,10 +58,11 @@ await client.delete.delete({});
 ```
 
 ### Parameters:
+
 **body**: The request body  
 **headers**: HTTP headers  
 **params**: URL parameters (e.g.: in case of `/post/:id`, it can be `{ id: "1" }`)  
-**query**: query parameters (e.g.: in case of `?id=2`, it can be `{ id: "2" }`)  
+**query**: query parameters (e.g.: in case of `?id=2`, it can be `{ id: "2" }`)
 
 Every parameter's type is defined based on the built request handler.
 
@@ -78,16 +79,19 @@ const authedClient = client.with(() => ({
   },
 }));
 
+// GOOD:
 await authedClient.getProfile.get({});
 
-// IT'S ALSO AN OPTION:
+// THIS IS ALSO GOOD:
 await client.getProfile.get({
   headers: {
     authorization: localStorage.getItem("token") || "nothing",
-  }
+  },
 });
 
 // BAD EXAMPLE:
 // Calling the handler which requires auth headers without auth headers cause type error:
-await client.getProfile.get({});
+await client.getProfile.get({}); // TYPE ERROR
 ```
+
+`with` can handle async callbacks, which will be evaluated every time you make a request.

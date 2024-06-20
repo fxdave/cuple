@@ -50,18 +50,20 @@ export type Client<
 > = WithPreloadedData<TApi, TPreloadedData> &
   (NonNullable<unknown> extends TPreloadedData
     ? {
-        with: <TParamsNext>(middleware: () => TParamsNext) => Client<TApi, TParamsNext>;
+        with: <TParamsNext>(
+          middleware: () => Promise<TParamsNext> | TParamsNext,
+        ) => Client<TApi, TParamsNext>;
       }
     : NonNullable<unknown>);
 
 function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unknown>>(
   path: string,
   segments: string[],
-  preloader?: () => TParams,
+  preloader?: () => Promise<TParams> | TParams,
 ): Client<TApi, TParams> {
   const target = (() => false) as unknown as Client<TApi, TParams>;
 
-  target.with = <TParamsNext>(preloader: () => TParamsNext) => {
+  target.with = <TParamsNext>(preloader: () => Promise<TParamsNext> | TParamsNext) => {
     return createPathBuilder<TApi, TParamsNext>(path, [], preloader);
   };
 
@@ -76,15 +78,17 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
 
       const method = segments.pop();
       if (!method) throw new Error("Couldn't parse RPC request, method is required");
-      const data = JSON.stringify({
-        segments,
-        argument: {
-          ...(preloader !== undefined ? preloader() : {}),
-          ...argumentsList[0],
-        },
-      });
+      const getData = async () => {
+        return JSON.stringify({
+          segments,
+          argument: {
+            ...(preloader !== undefined ? await preloader() : {}),
+            ...argumentsList[0],
+          },
+        });
+      };
 
-      return methodAwareFetch(method, data, path).then(async (response) => {
+      return methodAwareFetch(method, getData, path).then(async (response) => {
         const res = await response.json();
         // TODO: differentiate data from response
         (res as any).statusCode = response.status;
@@ -94,7 +98,12 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
   });
 }
 
-async function methodAwareFetch(method: string, data: string, path: string) {
+async function methodAwareFetch(
+  method: string,
+  getData: () => Promise<string>,
+  path: string,
+) {
+  const data = await getData();
   if (method === "get" || method === "delete") {
     const argument = new URLSearchParams({ data });
     return await fetch(`${path}?${argument.toString()}`, {
