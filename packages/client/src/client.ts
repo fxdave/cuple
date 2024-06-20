@@ -79,13 +79,13 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
       const method = segments.pop();
       if (!method) throw new Error("Couldn't parse RPC request, method is required");
       const getData = async () => {
-        return JSON.stringify({
+        return {
           segments,
           argument: {
             ...(preloader !== undefined ? await preloader() : {}),
             ...argumentsList[0],
           },
-        });
+        };
       };
 
       return methodAwareFetch(method, getData, path).then(async (response) => {
@@ -100,10 +100,14 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
 
 async function methodAwareFetch(
   method: string,
-  getData: () => Promise<string>,
+  getData: () => Promise<{ segments: string[]; argument: Record<string, unknown> }>,
   path: string,
 ) {
-  const data = await getData();
+  const {
+    segments,
+    argument: { headers, ...argument },
+  } = await getData();
+  const data = JSON.stringify({ segments, argument });
   if (method === "get" || method === "delete") {
     const argument = new URLSearchParams({ data });
     return await fetch(`${path}?${argument.toString()}`, {
@@ -111,6 +115,7 @@ async function methodAwareFetch(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...(typeof headers === "object" ? headers : {}),
       },
     });
   }
@@ -120,6 +125,7 @@ async function methodAwareFetch(
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...(typeof headers === "object" ? headers : {}),
     },
   });
 }
