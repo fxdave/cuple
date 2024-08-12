@@ -23,7 +23,7 @@ export default function Home(): JSX.Element {
     <Layout
       title={`${siteConfig.title}`}
       description="Typesharing between frontend and backends made easy. The missing type-safety for full-stack.">
-      <ReactPlayer playing controls url='example.mp4' width='100%' height='auto' />
+      <ReactPlayer playing controls url='example.mp4' loop width='100vw' height='min(calc(100vh - 60px), 56.25vw)'/>
       <HomepageHeader />
     </Layout>
   );
