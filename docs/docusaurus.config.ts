@@ -62,9 +62,15 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'mainSidebar',
+          sidebarId: 'clientSidebar',
           position: 'left',
-          label: 'Docs',
+          label: 'Client Docs',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'serverSidebar',
+          position: 'left',
+          label: 'Server Docs',
         },
         {
           href: 'https://github.com/fxdave/cuple',
