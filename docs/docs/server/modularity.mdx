@@ -1,0 +1,62 @@
+---
+sidebar_position: 5
+description: 'Code structuring'
+---
+
+
+# Modular Codebase
+
+Adding every routes in one file can be hard to do. Luckily, you don't have to.
+
+## Anatomy of route groups
+
+```ts
+const authModule = {
+    login: /*...*/,
+    register: /*...*/,
+}
+
+const postsModule = {
+    getPost: /*...*/,
+    getPosts: /*...*/,
+    createPost: /*...*/,
+    deletePost: /*...*/,
+}
+
+const app = {
+    auth: authModule,
+    posts: postsModule,
+}
+
+export type Routes = typeof app;
+```
+
+Deeply nesting modules is also supported.
+
+## How to create modules
+
+Cuple lets you do it your way, but if you are unsure here's an example:
+
+Usually it make sense to have `createSomeModule` function
+that initializes the module with all of its dependencies and routes.
+
+### Example:
+
+```ts
+// index.ts
+const routes = {
+  auth: createAuthModule(db, builder),
+};
+```
+
+```ts
+// modules/auth/index.ts
+
+export function createAuthModule(db: PrismaClient, builder: Builder) {
+  return {
+    login: builder.post(async ({data}) => { /* login */ }),
+    register: builder.post(async ({data}) => { /* register */ }),
+    // ...
+  };
+}
+```

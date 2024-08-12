@@ -1,0 +1,116 @@
+---
+sidebar_position: 2
+description: 'Anatomy of Request handlers'
+---
+
+# Anatomy of Request handlers
+
+## Basics
+
+Here's a very basic request handler:
+```ts
+builder.get(async () => {
+    return {
+        result: 'success' as const,
+        statusCode: 200 as const,
+        message: "Hey!"
+    }
+})
+```
+
+ - The `builder` is the request handler builder that you've created during the installation.
+ - The `.get` sets the final middleware with the appropriate HTTP method.
+    - The supported methods are: `get`, `post`, `put`, `patch`, `delete`
+ - The `async () => { /* ... */ }` is the function where your controller logic leaves
+    - The return type should contain these fields:
+        - `result`: a unique const indentifier for each possible responses.
+        - `statusCode`: the HTTP status code. For client-side typing it needs to be const as well.
+
+## Response factory methods
+
+Adding `result` and `statusCode` manually can be noisy.
+It's advised to create factory methods for common response types like `success`.
+
+`success` is included in the package:
+
+```ts
+import { success } from '@cuple/server'
+
+builder.get(async () => {
+    return success({ message: "Hey!" })
+})
+```
+
+Cuple needs validationErrors internally, so you can access these as well:
+
+```ts
+import { validationError } from '@cuple/server'
+
+builder.get(async () => {
+    return validationError({
+        message: "We found some issues with your request"
+    })
+})
+```
+
+```ts
+import { zodValidationError } from '@cuple/server'
+
+builder.get(async () => {
+    return zodValidationError([{
+        code: "custom",
+        path: ["password2"],
+        message: "Passwords do not match.",
+    }]);
+})
+```
+
+And there's also a generic `apiResponse` method, so you don't have to keep track the shape of the return type:
+
+
+```ts
+import { apiResponse } from '@cuple/server'
+
+builder.get(async () => {
+  return apiResponse("not-found-error", 404, {
+    message: "Resource not found",
+  });
+})
+```
+
+Example for custom factory method:
+```ts
+export function notFoundError(others?: {message: string}) {
+  return apiResponse("not-found-error", 404, {
+    message: others?.message || "Resource not found",
+  });
+}
+```
+
+## Access Request and Response object
+
+The first argument is an object containing 3 elements:
+    -   **req**: Express' Request object
+    -   **res**: Express' Response object
+    -   **data**: custom data from the middlewares
+
+```ts
+builder
+    .chain(auth)
+    .bodySchema(
+      z.object({
+        oldPassword: z.string(),
+        password1: z.string().min(6),
+        password2: z.string().min(6),
+      }),
+    )
+    .post(async ({ req, res, data }) => {
+        
+        // You can access request object
+        req.body
+
+        // but you have better, type-safe way to deal with the incoming data
+        data.body.password1
+
+    })
+```

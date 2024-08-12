@@ -1,0 +1,39 @@
+---
+sidebar_position: 4
+description: 'Include headers for each request.'
+---
+# Client chaining (Middleware)
+
+You don't have to specify authorization header every time.
+With client chaining, you can get a new client that includes the necessary parameters for every request.
+
+## Example
+
+```ts
+const client = createClient<typeof routes>({
+  path: "http://localhost:8080/rpc",
+});
+
+const authedClient = client.with(() => ({
+  headers: {
+    authorization: localStorage.getItem("token") || "nothing",
+  },
+}));
+
+// GOOD:
+await authedClient.getProfile.get({});
+
+// THIS IS ALSO GOOD:
+await client.getProfile.get({
+  headers: {
+    authorization: localStorage.getItem("token") || "nothing",
+  },
+});
+
+// BAD EXAMPLE:
+// Calling the handler which requires auth headers without auth headers cause type error:
+await client.getProfile.get({}); // TYPE ERROR
+```
+
+ - NOTE: `with` can handle async callbacks, which will be evaluated every time you make a request.
+ - NOTE: Having more than one chain link is experimental.

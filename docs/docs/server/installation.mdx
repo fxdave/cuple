@@ -1,0 +1,44 @@
+---
+sidebar_position: 1
+description: 'npm install, configuration'
+---
+
+# Installation
+
+```
+npm i @cuple/server express zod
+```
+
+## Configuration
+
+Please follow the steps in the comments.
+
+```ts
+import express from "express";
+import { z } from "zod";
+import { createBuilder, initRpc } from "@cuple/server";
+import { apiResponse, success } from "@cuple/server";
+
+const app = express();
+const builder = createBuilder(app); // STEP 1: Create builder with the express instance
+
+const posts = [
+  { id: 1, title: "Hi again", content: "This is my second post" },
+  { id: 2, title: "Hi", content: "This is my first post" },
+];
+
+// STEP 2: Define some request handlers
+export const routes = {
+  getPosts: builder.get(async () => {
+    return success({ posts });
+  }),
+};
+
+// STEP 3: Create the RPC handler (Required to use with @cuple/client)
+initRpc(app, { path: "/rpc", routes });
+
+app.listen(8080, () => {
+  console.log(`Example app listening on port 8080`);
+});
+
+```

@@ -1,0 +1,74 @@
+---
+sidebar_position: 2
+description: 'Methods, ReturnType'
+---
+# Making requests
+
+## Methods
+
+```ts
+// Server:
+const routes = {
+  foo: builder.get(/**/),
+  bar: builder.post(/**/),
+  baz: builder.put(/**/),
+  qux: builder.patch(/**/),
+  quux: builder.delete(/**/),
+};
+
+// Client:
+await client.foo.get({});
+await client.bar.post({});
+await client.baz.put({});
+await client.qux.patch({});
+await client.quux.delete({});
+```
+
+## Why specify the method on the client-side?
+
+Since Cuple doesn't have a code generator,
+you have to tell the HTTP method in order to build up the fetch request with the right method.
+It's type-checked so you cannot specify methods other than what the server specifies.
+
+## Parameters:
+
+**body**: The request body  
+**headers**: HTTP headers  
+**params**: URL parameters (e.g.: in case of `/post/:id`, it can be `{ id: "1" }`)  
+**query**: query parameters (e.g.: in case of `?id=2`, it can be `{ id: "2" }`)
+
+Every parameter's type is auto-infered from the server.
+
+```ts
+await client.user.updateUser.patch({
+    body: { name: 'David' },
+    headers: { authorization: 'Bearer ...' },
+    params: { id: 12 },
+    query: {
+        'foo': 'bar'
+    }
+})
+```
+
+## Return type example
+
+```ts
+Promise<{
+    statusCode: 200 
+    result: 'success',
+    /** e.g.: [{ id: 1, title: 'Hey'}, { id: 2, title: 'ho'}] */
+    posts: Post[]
+} | {
+    statusCode: 500
+    result: 'unexpected-error'
+    message: string
+}>
+```
+
+As you can see server errors are not treated unexpectedly.
+The same way how browser's fetch API would do.
+This lets you handle errors type-safely.
+
+For example, when you need to get the path of a problematic field in a ZodValidationError, you can access it.
+
+However, generic error handlers can reduce complexity of the client.

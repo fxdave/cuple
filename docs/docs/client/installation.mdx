@@ -1,0 +1,42 @@
+---
+sidebar_position: 1
+description: 'npm install, configuration'
+---
+
+# Installation
+
+```bash
+npm i @cuple/client
+```
+
+NOTE: **@cuple/client** and **@cuple/server** versions have to match
+
+## Create a client
+
+We need to tell Cuple about the server's location.
+Since the client has no way to get the specified path information without a code generator,
+currently every request goes to one path (usually `/rpc`) with the desired HTTP method.
+
+```ts
+// cuple.ts
+import { createClient } from "@cuple/client";
+import type { routes } from "../backend/src/app";
+
+export const client = createClient<typeof routes>({
+  path: "http://localhost:8080/rpc",
+});
+```
+
+## Use it like a fetch
+
+```ts
+async function getPost(id: number) {
+  const response = await client.getPosts.get({ params: { id } });
+
+  console.log(postsResponse.posts); // type error
+
+  if (response.result === "success") {
+    console.log(postsResponse.posts); // no type error
+  }
+}
+```

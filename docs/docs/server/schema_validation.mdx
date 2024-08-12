@@ -1,0 +1,80 @@
+---
+sidebar_position: 3
+description: 'headers, body, query, path validation'
+---
+
+# Schema Validation
+
+Cuple uses [Zod](https://zod.dev/) for schema validation.
+It was choosen because of the good defaults and the great type inference.
+Within Cuple the ZodIssue is also extended for additional type-safety.
+You can validate, parse, and convert each part of an HTTP request.
+
+## Headers validation
+
+Internally it parses express' `req.headers` object, so you should use the same naming.
+Successfully parsed result will be added to `data.headers`.
+
+```ts
+builder
+  .headersSchema(z.object({ authorization: z.string() }))
+  .get(async ({ data }) => {
+
+    data.headers.authorization // this has a string value
+
+  });
+```
+
+## Body validation
+
+Currently only json requests are supported.
+Successfully parsed result will be added to `data.body`.
+
+```ts
+.bodySchema(z.object({
+    user: z.object({
+        name: z.string().min(3),
+        age: z.number()
+    })
+}))
+```
+
+## Query validation
+
+Note: Query parameters are always strings!
+Luckily zod can convert it to number if you use `z.coerce.number()`.
+Successfully parsed result will be added to `data.query`.
+
+```ts
+// For URL query parsing (e.g.: ?somevar=12)
+.querySchema(z.object({ somevar: z.coerce.number() }))
+```
+
+## Path validation
+
+Note: Path parameters are always strings!
+Luckily zod can convert it to number if you use `z.coerce.number()`.
+Successfully parsed result will be added to `data.body`.
+
+```ts
+// For URL params parsing
+.path("/post/:id")
+.paramsSchema(z.object({ id: z.coerce.number() }))
+```
+
+## On error
+
+In case of error Cuple sends a ZodValidationError error.
+An example response:
+```ts
+{
+    result: 'validation-error',
+    statusCode: 422,
+    message: "We found some incorrect field(s) during validating the form.",
+    issues: [{
+        path: ["email"]
+        message: 'This field is required.'
+        code: 'invalid_type'
+    }]
+}
+```

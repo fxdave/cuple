@@ -1,0 +1,47 @@
+---
+sidebar_position: 3
+description: 'Advanced usage.'
+---
+# Generic Error Handlers
+
+It's up to you how you handle errors coming from the API.
+
+The response is a **discriminated union** including all possible responses from the server.
+So you have to check whether the response is an error every time.
+This can be cumbersome to do, so it's recommended to have a generic error handler that you can use for typical cases.
+
+Note: It's planned to make a ready-to-use error-handling solution.
+
+## Example
+
+```ts
+// foo.ts
+async function createUser(email: string) {
+    unwrapWithErrorNotification(await client.user.create({
+        body: { email }
+    }))
+}
+```
+
+```ts
+/** When the response is an error make a notification. */
+export function unwrapWithErrorNotification<T extends { statusCode: number }>(
+  response: T,
+) {
+  if (response.statusCode < 300) return response;
+  const message = hasMessage(response) ? response.message : 'Something went wrong.'
+  toast(message, { type: 'error' }); // react-toastify
+  return response;
+};
+
+export function hasMessage(object: any): object is { message: string } {
+  return !!object['message'];
+}
+```
+
+Similarly to this you can make
+ - `unwrapWithSuccessNotification` for notifying when it's success but you'd like to handle errors differently than notifying the user.
+ - `unwrapWithNotification` for both success and errors
+ - `unwrap` for crashing the page if it's not success response, so you will need to worry only about the the good case.
+
+You can also make your own `useQuery` function and integrate proper error handling into them.
