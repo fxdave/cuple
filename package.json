@@ -3,13 +3,6 @@
   "workspaces": [
     "./packages/*"
   ],
-  "scripts": {
-    "build": "tsc --build",
-    "test": "mocha",
-    "test:watch": "mocha --watch",
-    "lint": "eslint ./packages ./test",
-    "lint:fix": "eslint --fix ./packages ./test"
-  },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/mocha": "^10.0.6",
