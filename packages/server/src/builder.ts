@@ -36,7 +36,7 @@ type Tidied<T> = Tidied_Step1_Array<T>;
 
 type BaseData = object;
 
-type Middleware<TData, TResult> = (
+type Middleware<TData, TResult, TDependecyData = any> = (
   props: MiddlewareProps<TData>,
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
 
@@ -108,6 +108,7 @@ export class Builder<
   TData extends BaseData,
   TResponses = never,
   TMethod extends HttpVerbs = "post",
+  TDependencyData = any,
 > {
   constructor(private config: BuilderConfig) {}
 
@@ -117,7 +118,8 @@ export class Builder<
       Tidied<TData & TResult & { next: true }>,
       // The consequent TResponses can be TResult only when { next: FALSE }
       TResponses | (TResult & { next: false }),
-      TMethod
+      TMethod,
+      TDependencyData
     >({
       ...this.config,
       middlewares: [...this.config.middlewares, mw],
@@ -141,18 +143,39 @@ export class Builder<
   }
 
   path(path: string) {
-    return new Builder<TData, TResponses, TMethod>({ ...this.config, path });
+    return new Builder<TData, TResponses, TMethod, TDependencyData>({
+      ...this.config,
+      path,
+    });
   }
 
-  chain<TLinkData, TLinkResponses>(link: Middleware<TLinkData, TLinkResponses>) {
-    return new Builder<
-      TData & TLinkData & { next: true },
-      TResponses | (TLinkResponses & { next: false }),
-      TMethod
-    >({
+  expectChain<TChain extends Middleware<any, any, any>>() {
+    type TDataIncoming = TChain extends Middleware<infer TDataIn, any> ? TDataIn : never;
+    type TResponsesIncoming =
+      TChain extends Middleware<any, infer TRespIn> ? TRespIn : never;
+
+    return this as unknown as Builder<
+      TData & TDataIncoming,
+      TResponsesIncoming | TResponses,
+      TMethod,
+      TDataIncoming
+    >;
+  }
+
+  chain<TLinkData, TLinkResponses, TLinkDependencyData>(
+    link: Middleware<TLinkData, TLinkResponses, TLinkDependencyData>,
+  ) {
+    type AssertedBuilderType = TData extends TLinkDependencyData
+      ? Builder<
+          TData & TLinkData & { next: true },
+          TResponses | (TLinkResponses & { next: false }),
+          TMethod
+        >
+      : "Chainlink dependencies are not fulfilled";
+    return new Builder({
       ...this.config,
       middlewares: [...this.config.middlewares, link],
-    });
+    }) as AssertedBuilderType;
   }
 
   buildLink = this.__buildMiddleware;
@@ -249,7 +272,11 @@ export class Builder<
     };
   }
 
-  private __buildMiddleware(): Middleware<Tidied<TData>, Tidied<TResponses>> {
+  private __buildMiddleware(): Middleware<
+    Tidied<TData>,
+    Tidied<TResponses>,
+    TDependencyData
+  > {
     return async ({
       req,
       res,
