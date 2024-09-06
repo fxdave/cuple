@@ -18,10 +18,7 @@ RPC usually indicates strict typing of procedures for maximal compatibility and 
 
 ## Installation
 
-Please follow the instructions for each side:
-
-Server docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/server)  
-Client docs: [Server README](https://github.com/fxdave/cuple/tree/main/packages/client)
+Please check the [docs](https://fxdave.github.io/cuple/).
 
 Or try the boilerplate: https://github.com/fxdave/react-express-cuple-boilerplate
 

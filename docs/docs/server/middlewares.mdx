@@ -5,12 +5,13 @@ description: 'Middlewares, Chaining'
 
 # Middlewares
 
- - Middlewares are a way to reuse code.  
- - They can pass data down to other middlewares.  
- - They can also prevent further execution.  
- - They can send responses so you don't have to handle every case.
+Middlewares allow you to reuse logic by handling tasks like validation, access control, or response formatting. They offer several features:
 
-NOTE: Schema validators are also middlewares.
+ - Passing data to other middlewares.
+ - Preventing further execution based on conditions.
+ - Sending responses, so you don't need to handle every case manually.
+
+Note: Schema validators are also treated as middlewares.
 
 ## Basic
 
@@ -28,20 +29,20 @@ builder
   });
 ```
 
- - If the middleware returns `{ next: true }`, it can also add something to `data` type-safely.
-    - The above example returns `{ next: true, randomValue }` thus `data.randomValue` is accessible in the next request handler.
- - If the middleware returns `{ next: false }` it sends a response thus it needs `statusCode`. 
- But having `result` is also advised for a good **discriminated union**.
+In this example:
+
+ - If the middleware returns `{ next: true }`, the execution proceeds to the next handler. You can also type-safely add data, as shown with `randomValue` in `data.randomValue`
+ - If the middleware returns `{ next: false }`, it sends an immediate response, which requires a `statusCode`. It's recommended to include a `result: 'some-error' as const` for having a proper discriminated union in the response.
 
 ## Middleware Chaining
 
-Some middlewares need to use schema validation.
-This, however, prevents you to just move the request handler out of the request handler building.
-To solve this, there are two concepts you can use:
-    - `.buildLink()` Instead of the final middleware, you can use this to get a chain link.
-    - `.chain(fooLink).chain(barLink)` to bring multiple links into the request handler building.
+Some middlewares need to use data coming from schema validators. In order to use the data from the schema validation you have to keep the middleware function in the builder code.
+This, however, prevents you to just move the middleware function out of the builder.
+To solve this, Cuple introduces a wrapper called **link**, and you can connect links with each other.
+    - `.buildLink()` Creates a link from a build chain. Use this instead of the final middleware (get, post, ...).
+    - `.chain(fooLink).chain(barLink)` to bring multiple links into the build chain
 
-Here's an example:
+### Example:
 
 ```ts
 const authLink = builder
@@ -70,3 +71,87 @@ const routes = {
     }),
 };
 ```
+
+## Dependent chain links (Since 1.0.10)
+
+Middlewares can depend on the output of previous middlewares.
+For example, a role-check middleware might depend on the result of an authentication middleware.
+
+### Example:
+
+```ts
+
+const authLink = builder
+  .middleware(async () => ({ next: true, auth: { userId: 12345 } }))
+  .buildLink();
+
+const adminRoleLink = builder
+  .expectChain<typeof authLink>()
+  .middleware(async ({ data }) => {
+    const user = await getUser(data.auth.userId)
+    if(user.role !== 'admin') {
+      return { next: false, statusCode: 403, message: "This is admin only." }
+    }
+    return { next: true, user }
+  })
+  .buildLink();
+
+return {
+  someRoute: builder
+    .chain(authLink)
+    .chain(adminRoleLink)
+    .get(async ({ data }) => {
+      return success({
+        message: `You have access! Good ${data.user.name}`
+      });
+    }),
+};
+```
+
+In this example:
+ - `adminRoleLink` depends on the output of `authLink`.
+
+## Dealing with service dependencies
+
+In more complex applications, middleware may need additional services like a database or external APIs.
+To keep the code maintainable and testable, it's best to inject these dependencies rather than import them directly.
+You can achieve this by creating middleware link factories.
+
+### Example:
+```ts
+function createAuthLink(builder: CupleBuilder) {
+  return builder
+    .middleware(async () => ({ next: true, auth: { userId: 12345 } }))
+    .buildLink()
+}
+type AuthLink = ReturnType<typeof createAuthLink>
+
+function createAdminRoleLink(builder: CupleBuilder, userRepository: UserRepository) {
+  return builder
+    .expectChain<AuthLink>()
+    .middleware(async ({ data }) => {
+      const user = await getUser(data.auth.userId)
+      if(user.role !== 'admin') {
+        return { next: false, statusCode: 403, message: "Admins only." }
+      }
+      return { next: true, user }
+    })
+    .buildLink()
+}
+
+function createAdminModule(builder: CupleBuilder, userRepository: UserRepository) {
+  const authLink = createAuthLink(builder);
+  const adminRoleLink = createAdminRoleLink(builder, userRepository);
+  return {
+    someRoute: builder
+      .chain(authLink)
+      .chain(adminRoleLink)
+      .get(async ({ data }) => {
+        return success({
+          message: `You have access! Good ${data.user.name}`
+        });
+      }),
+  };
+}
+```
+- note: `CupleBuilder` is an exported type from the `index.ts` file
