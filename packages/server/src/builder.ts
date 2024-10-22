@@ -92,12 +92,24 @@ export type BuiltEndpoint<
 type Next = { next: true | false };
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 
+type ErrorHandler = (data: {
+  err: unknown;
+  req: ExpressRequest;
+  res: ExpressResponse;
+}) => UnexpectedError;
+
+const DEFAULT_ERROR_HANDLER: ErrorHandler = ({ err }) => {
+  console.error(err);
+  return unexpectedError();
+};
+
 type BuilderConfig = {
   app: Express;
   middlewares: Middleware<any, any>[];
   finalware?: Finalware<any, any>;
   method?: HttpVerbs;
   path?: string;
+  errorHandler?: ErrorHandler;
 };
 
 /**
@@ -110,7 +122,14 @@ export class Builder<
   TMethod extends HttpVerbs = "post",
   TDependencyData = any,
 > {
-  constructor(private config: BuilderConfig) {}
+  private config: BuilderConfig & { errorHandler: ErrorHandler };
+
+  constructor(config: BuilderConfig) {
+    this.config = {
+      ...config,
+      errorHandler: config.errorHandler || DEFAULT_ERROR_HANDLER,
+    };
+  }
 
   middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
     return new Builder<
@@ -198,11 +217,13 @@ export class Builder<
           res.status(statusCode).send(rest);
         })
         .catch((err) => {
-          console.error(err);
-
-          res.status(500).send({
-            message: "Something went wrong.",
-          });
+          const { statusCode, ...rest } = this.config.errorHandler({ err, res, req });
+          res.status(statusCode).send(rest);
+        })
+        .catch((err) => {
+          console.error("Custom error handler failed, falling back to DEFAULT");
+          const { statusCode, ...rest } = DEFAULT_ERROR_HANDLER({ err, res, req });
+          res.status(statusCode).send(rest);
         });
     };
 
@@ -231,7 +252,7 @@ export class Builder<
     | (ZodValidationError<z.infer<TParser>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
-    return async ({ req, data }: MiddlewareProps<unknown>) => {
+    return async ({ req, res, data }: MiddlewareProps<unknown>) => {
       try {
         let newData = parser.parse(req[propertyName]) as z.infer<TParser>;
         const existingData = data && (data as any)[propertyName];
@@ -252,8 +273,10 @@ export class Builder<
             next: false as const,
           } as ZodValidationError<z.infer<TParser>> & { next: false };
         }
+
+        const response = this.config.errorHandler({ req, res, err: e });
         return {
-          ...unexpectedError(),
+          ...response,
           next: false as const,
         } as UnexpectedError & { next: false };
       }
@@ -262,7 +285,11 @@ export class Builder<
 
   private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
     return <TFinalResponses>(mw: Finalware<TData, TFinalResponses>) => {
-      const builder = new Builder<TData, TFinalResponses | TResponses, TMethod>({
+      const builder = new Builder<
+        TData,
+        TFinalResponses | TResponses | UnexpectedError,
+        TMethod
+      >({
         ...this.config,
         finalware: mw,
         method,
@@ -305,10 +332,14 @@ enum SchemaType {
   Headers = "headers",
 }
 
-export const createBuilder = (app: Express) =>
+export const createBuilder = (
+  app: Express,
+  options?: Pick<BuilderConfig, "errorHandler">,
+) =>
   new Builder({
     app,
     middlewares: [],
+    ...options,
   });
 
 class BadMiddlewareReturnTypeError extends Error {

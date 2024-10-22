@@ -14,6 +14,7 @@ describe("basic request response", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.get.get({});
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "get");
     });
   });
@@ -42,6 +43,7 @@ describe("basic request response", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.post.post({});
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "post");
     });
   });
@@ -57,6 +59,7 @@ describe("basic request response", () => {
 
     await cs.run(async (client) => {
       const response = await client.patch.patch({});
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "patch");
     });
   });
@@ -71,6 +74,7 @@ describe("basic request response", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.put.put({});
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "put");
     });
   });
@@ -85,6 +89,7 @@ describe("basic request response", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.delete.delete({});
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "delete");
     });
   });

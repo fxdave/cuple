@@ -22,6 +22,8 @@ describe("middleware", () => {
     }));
     await cs.run(async (client) => {
       const response = await client.get.get({});
+
+      if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "hi");
     });
   });
@@ -89,7 +91,6 @@ describe("middleware", () => {
         })
         .get(async () => {
           assert.ok(false, "This should not be called");
-          return success({});
         }),
     }));
     await cs.run(async (client) => {
