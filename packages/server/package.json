@@ -1,6 +1,6 @@
 {
   "name": "@cuple/server",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "description": "typescript-based RPC with REST compatibility",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
