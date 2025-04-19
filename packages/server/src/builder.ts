@@ -17,23 +17,6 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 
-// We could tidy array items,
-// but tuples and arrays are not differentiated,
-// and we can't do the same for tuples.
-// So arrays will be skipped.
-type Tidied_Step1_Array<T> = T extends Array<infer V> ? T : Tidied_Step2_ZodError<T>;
-type Tidied_Step2_ZodError<T> =
-  T extends ZodValidationError<infer V>
-    ? unknown extends V
-      ? Tidied_Step3_Object<T>
-      : Record<string, unknown> extends V
-        ? Tidied_Step3_Object<T>
-        : ZodValidationError<V>
-    : Tidied_Step3_Object<T>;
-type Tidied_Step3_Object<T> = T extends object ? { [i in keyof T]: Tidied<T[i]> } : T;
-/** Tidy type by merging intersections, hiding complex type under a name, to improve developer experience */
-type Tidied<T> = Tidied_Step1_Array<T>;
-
 type BaseData = object;
 
 type Middleware<TData, TResult, TDependecyData = any> = (
@@ -134,7 +117,7 @@ export class Builder<
   middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
     return new Builder<
       // The consequent TData will be merged with TResult only when { next: TRUE }
-      Tidied<TData & TResult & { next: true }>,
+      TData & TResult & { next: true },
       // The consequent TResponses can be TResult only when { next: FALSE }
       TResponses | (TResult & { next: false }),
       TMethod,
@@ -199,7 +182,7 @@ export class Builder<
 
   buildLink = this.__buildMiddleware;
 
-  build(): BuiltEndpoint<Tidied<TData>, Tidied<TResponses>, TMethod> {
+  build(): BuiltEndpoint<TData, TResponses, TMethod> {
     const endpoint = this.__buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -248,7 +231,7 @@ export class Builder<
     parser: TParser,
   ): Middleware<
     TData,
-    | Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>
+    | ({ [i in TPropertyName]: z.infer<TParser> } & { next: true })
     | (ZodValidationError<z.infer<TParser>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
@@ -265,7 +248,7 @@ export class Builder<
         return {
           [propertyName]: newData,
           next: true as const,
-        } as Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>;
+        } as { [i in TPropertyName]: z.infer<TParser> } & { next: true };
       } catch (e) {
         if (e instanceof ZodError) {
           return {
@@ -299,11 +282,7 @@ export class Builder<
     };
   }
 
-  private __buildMiddleware(): Middleware<
-    Tidied<TData>,
-    Tidied<TResponses>,
-    TDependencyData
-  > {
+  private __buildMiddleware(): Middleware<TData, TResponses, TDependencyData> {
     return async ({
       req,
       res,
@@ -311,7 +290,7 @@ export class Builder<
     }: {
       req: ExpressRequest;
       res: ExpressResponse;
-      data: Tidied<TData>;
+      data: TData;
     }) => {
       let actualData = data;
       for (const mw of this.config.middlewares) {
