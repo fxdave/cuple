@@ -174,7 +174,7 @@ describe("schema validation", () => {
         )
         .post(async ({ data }) => {
           if (data.body.name === "David") {
-            return zodValidationError<typeof data.body>([
+            return zodValidationError([
               {
                 code: "custom",
                 message: "No David here", // I'm David

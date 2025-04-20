@@ -22,38 +22,6 @@ export const apiResponse = <
   ...others,
 });
 
-// Utility types
-type ArrayKey = number;
-type Primitive = null | undefined | string | number | boolean | symbol | bigint;
-/** Cons<'a', ['b', 'c']> => ['a', 'b', 'c']*/
-type Cons<H, T extends readonly any[]> = ((h: H, ...t: T) => void) extends (
-  ...r: infer R
-) => void
-  ? R
-  : never;
-/** TupleKeys<['a', 'b']> => 0 | 1 */
-type TupleKeys<T extends any[]> = Exclude<keyof T, keyof any[]>;
-/** IsTuple<[number, number]> => true, IsTuple<number[]> = false */
-type IsTuple<T extends any[]> = number extends T["length"] ? false : true;
-/** PathImpl<'foo', { bar: ['a'] }> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] */
-type PathImpl<K extends string | number, V> = V extends Primitive
-  ? [K]
-  : [K] | Cons<K, Path<V>>;
-/** Path<{ foo: { bar: ['a', 'b'] }}> => ["foo"] | ["foo", "bar"] | ["foo", "bar", "0"] | ["foo", "bar", "1"] */
-type Path<T> = T extends (infer V)[]
-  ? IsTuple<T> extends true
-    ? {
-        [K in TupleKeys<T>]-?: PathImpl<K & string, T[K]>;
-      }[TupleKeys<T>]
-    : PathImpl<ArrayKey, V>
-  : {
-      [K in keyof T]-?: PathImpl<K & string, T[K]>;
-    }[keyof T];
-
-export type ImprovedZodIssue<TRequestBody extends Record<string, unknown>> = ZodIssue & {
-  path: Path<TRequestBody>;
-};
-
 // Factory methods
 export const success = <Others>(others: Others) => ({
   result: "success" as const,
@@ -62,9 +30,7 @@ export const success = <Others>(others: Others) => ({
 });
 export const validationError = <Others extends { message: string }>(others: Others) =>
   apiResponse("validation-error", 422, others);
-export const zodValidationError = <TRequestBody extends Record<string, unknown>>(
-  issues: ImprovedZodIssue<TRequestBody>[],
-): ZodValidationError<TRequestBody> =>
+export const zodValidationError = (issues: ZodIssue[]): ZodValidationError =>
   validationError({
     message: "We found some incorrect field(s) during validating the form.",
     issues,
@@ -78,8 +44,11 @@ export const unexpectedError = () =>
 export type Success<T> = ApiResponse<"success", 200, T>;
 export type ValidationError<T> = ApiResponse<"validation-error", 422, T>;
 export type UnexpectedError = ApiResponse<"unexpected-error", 500, { message: string }>;
-export type ZodValidationError<TRequestBody extends Record<string, unknown>> =
-  ValidationError<{
-    message: string;
-    issues: ImprovedZodIssue<TRequestBody>[];
-  }>;
+export type ZodValidationError = ValidationError<{
+  message: string;
+  issues: {
+    code: ZodIssue["code"];
+    message: ZodIssue["message"];
+    path: ZodIssue["path"];
+  }[];
+}>;

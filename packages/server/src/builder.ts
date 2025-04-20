@@ -1,7 +1,6 @@
 import { TypeOf, z, ZodError, ZodType } from "zod";
 import { Request, Response, Express } from "express";
 import {
-  ImprovedZodIssue,
   UnexpectedError,
   unexpectedError,
   ZodValidationError,
@@ -86,6 +85,23 @@ const DEFAULT_ERROR_HANDLER: ErrorHandler = ({ err }) => {
   return unexpectedError();
 };
 
+type ValidJson =
+  | undefined // undefined means no property, it's here for compatibilitys with other types like "statusCode?: number"
+  | null
+  | string
+  | number
+  | boolean
+  | ValidJson[]
+  | { [K in string]: ValidJson };
+type ValidJsonObject = { [K in string]: ValidJson };
+type ValidMiddlewareReturnType = ValidJsonObject & {
+  next: true | false;
+  statusCode?: number;
+};
+type ValidInputOrError<T> = T extends ValidJson
+  ? T
+  : { _: "You can only use JSON types" };
+
 type BuilderConfig = {
   app: Express;
   middlewares: Middleware<any, any>[];
@@ -114,7 +130,7 @@ export class Builder<
     };
   }
 
-  middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
+  middleware<TResult extends ValidMiddlewareReturnType>(mw: Middleware<TData, TResult>) {
     return new Builder<
       // The consequent TData will be merged with TResult only when { next: TRUE }
       TData & TResult & { next: true },
@@ -231,8 +247,8 @@ export class Builder<
     parser: TParser,
   ): Middleware<
     TData,
-    | ({ [i in TPropertyName]: z.infer<TParser> } & { next: true })
-    | (ZodValidationError<z.infer<TParser>> & { next: false })
+    | ({ [i in TPropertyName]: ValidInputOrError<z.input<TParser>> } & { next: true })
+    | (ZodValidationError & { next: false })
     | (UnexpectedError & { next: false })
   > {
     return async ({ req, res, data }: MiddlewareProps<unknown>) => {
@@ -252,9 +268,9 @@ export class Builder<
       } catch (e) {
         if (e instanceof ZodError) {
           return {
-            ...zodValidationError(e.issues as ImprovedZodIssue<TypeOf<TParser>>[]),
+            ...zodValidationError(e.issues),
             next: false as const,
-          } as ZodValidationError<z.infer<TParser>> & { next: false };
+          } as ZodValidationError & { next: false };
         }
 
         const response = this.config.errorHandler({ req, res, err: e });
