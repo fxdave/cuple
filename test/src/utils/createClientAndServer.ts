@@ -4,7 +4,7 @@ import { createBuilder, initRpc } from "@cuple/server";
 import { Builder } from "@cuple/server";
 
 export default async function createClientAndServer<T extends RecursiveApi>(
-  createRoutes: (builder: Builder<object, never, "post">) => T,
+  createRoutes: (builder: Builder) => T,
   builderOptions?: Parameters<typeof createBuilder>[1],
 ) {
   const app = express();

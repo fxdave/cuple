@@ -10,7 +10,7 @@ describe("REST", () => {
       getPost: builder
         .path("/api/posts/:id")
         .paramsSchema(
-          z.object({
+          z.strictObject({
             id: z.coerce.number(),
           }),
         )

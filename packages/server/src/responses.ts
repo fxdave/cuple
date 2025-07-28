@@ -1,4 +1,4 @@
-import { ZodIssue } from "zod";
+import * as z from "zod";
 
 export type ApiResponse<Result extends string, StatusCode extends number, Others> = {
   result: Result;
@@ -30,7 +30,7 @@ export const success = <Others>(others: Others) => ({
 });
 export const validationError = <Others extends { message: string }>(others: Others) =>
   apiResponse("validation-error", 422, others);
-export const zodValidationError = (issues: ZodIssue[]): ZodValidationError =>
+export const zodValidationError = (issues: z.core.$ZodIssue[]): ZodValidationError =>
   validationError({
     message: "We found some incorrect field(s) during validating the form.",
     issues,
@@ -47,8 +47,8 @@ export type UnexpectedError = ApiResponse<"unexpected-error", 500, { message: st
 export type ZodValidationError = ValidationError<{
   message: string;
   issues: {
-    code: ZodIssue["code"];
-    message: ZodIssue["message"];
-    path: ZodIssue["path"];
+    code: z.core.$ZodIssue["code"];
+    message: z.core.$ZodIssue["message"];
+    path: z.core.$ZodIssue["path"];
   }[];
 }>;

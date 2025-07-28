@@ -9,7 +9,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -35,7 +35,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -65,7 +65,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )

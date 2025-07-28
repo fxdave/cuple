@@ -13,7 +13,7 @@ const users = [
 
 const auth = builder
   .headersSchema(
-    z.object({
+    z.strictObject({
       authorization: z.string(),
     }),
   )
@@ -52,7 +52,7 @@ export const routes = {
   setUserPassword: builder
     .chain(auth)
     .bodySchema(
-      z.object({
+      z.strictObject({
         oldPassword: z.string(),
         password1: z.string().min(6),
         password2: z.string().min(6),

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "mocha";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { success, zodValidationError } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -9,7 +9,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
           }),
         )
@@ -20,9 +20,73 @@ describe("schema validation", () => {
     await cs.run(async (client) => {
       const response = await client.foo.post({} as any);
       assert.equal(response.statusCode, 422);
-      if (response.result !== "validation-error") assert.ok(false);
+      if (response.result !== "validation-error") return assert.ok(false);
       assert.notEqual(response.message.length, 0);
       assert.ok(Array.isArray(response.issues[0].path));
+    });
+  });
+  it("should handle string date inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.iso.date(),
+          }),
+        )
+        .post(async ({ data }) => {
+          const time = data.body.birthdate.getTime();
+          return success({ time });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({
+        body: {
+          birthdate: new Date().toString(),
+        },
+      });
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle date type date inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.coerce.date(),
+          }),
+        )
+        .post(async () => {
+          return success({});
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({
+        body: {
+          birthdate: new Date(),
+        },
+      });
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle timestamp(ms) type date inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.coerce.date(),
+          }),
+        )
+        .post(async () => {
+          return success({});
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({
+        body: {
+          birthdate: Date.now(),
+        },
+      });
+      assert.equal(response.statusCode, 200);
     });
   });
 
@@ -30,9 +94,9 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
-            user: z.object({
-              address: z.object({
+          z.strictObject({
+            user: z.strictObject({
+              address: z.strictObject({
                 street: z.string(),
               }),
             }),
@@ -75,7 +139,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
           }),
         )
@@ -99,7 +163,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .paramsSchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
           }),
         )
@@ -122,7 +186,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .headersSchema(
-          z.object({
+          z.strictObject({
             authorization: z.string(),
           }),
         )
@@ -168,7 +232,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )

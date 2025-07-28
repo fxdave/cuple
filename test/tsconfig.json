@@ -24,7 +24,5 @@
       "path": "../packages/server"
     }
   ],
-  "include": [
-    "./src/**/*"
-  ]
+  "include": ["./src/**/*"]
 }

@@ -32,7 +32,7 @@ describe("middleware", () => {
     const cs = await createClientAndServer((builder) => ({
       get: builder
         .bodySchema(
-          z.object({
+          z.strictObject({
             id: z.string(),
           }),
         )
