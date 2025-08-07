@@ -44,11 +44,15 @@ export const unexpectedError = () =>
 export type Success<T> = ApiResponse<"success", 200, T>;
 export type ValidationError<T> = ApiResponse<"validation-error", 422, T>;
 export type UnexpectedError = ApiResponse<"unexpected-error", 500, { message: string }>;
-export type ZodValidationError = ValidationError<{
-  message: string;
-  issues: {
-    code: z.core.$ZodIssue["code"];
-    message: z.core.$ZodIssue["message"];
-    path: z.core.$ZodIssue["path"];
-  }[];
-}>;
+export type ZodValidationError = ApiResponse<
+  "validation-error",
+  422,
+  {
+    message: string;
+    issues: {
+      code: z.core.$ZodIssue["code"];
+      message: z.core.$ZodIssue["message"];
+      path: z.core.$ZodIssue["path"];
+    }[];
+  }
+>;

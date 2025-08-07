@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "mocha";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { success, zodValidationError } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -14,7 +14,9 @@ describe("schema validation", () => {
           }),
         )
         .post(async () => {
-          return success({});
+          return success({
+            message: "hey",
+          });
         }),
     }));
     await cs.run(async (client) => {

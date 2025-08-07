@@ -1,4 +1,4 @@
-import { z, ZodError, ZodType } from "zod/v4";
+import { z, ZodError, ZodType } from "zod";
 import { Request, Response, Express } from "express";
 import {
   UnexpectedError,
