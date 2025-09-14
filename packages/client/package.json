@@ -4,7 +4,9 @@
   "description": "typescript-based RPC with REST compatibility",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:browser": "tsc -p tsconfig.browser.json",
+    "build:node": "tsc -p tsconfig.node.json",
+    "build": "npm run build:browser && npm run build:node"
   },
   "repository": {
     "type": "git",
@@ -19,6 +21,19 @@
     "frontend",
     "api"
   ],
+  "exports": {
+    ".": {
+      "browser": {
+        "import": "./dist/browser/index.js",
+        "types": "./dist/browser/index.d.ts"
+      },
+      "node": {
+        "import": "./dist/node/index.js",
+        "types": "./dist/node/index.d.ts"
+      },
+      "default": "./dist/browser/index.js"
+    }
+  },
   "author": "David Biro",
   "license": "MIT",
   "bugs": {

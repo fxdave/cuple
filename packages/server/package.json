@@ -4,7 +4,9 @@
   "description": "typescript-based RPC with REST compatibility",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "scripts": {},
+  "scripts": {
+    "build": "npx tsc"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fxdave/cuple.git"

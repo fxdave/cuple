@@ -3,6 +3,9 @@
   "workspaces": [
     "./packages/*"
   ],
+  "scripts": {
+    "build": "npm run build --workspaces && npx tsc"
+  },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/mocha": "^10.0.6",

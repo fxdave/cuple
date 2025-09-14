@@ -8,10 +8,7 @@ clean-if-needed:
 	sh -c "( test -e packages/client/dist/ && test -e packages/server/dist ) || make clean" 
 
 build:
-	make clean-if-needed
-	cd packages/client && npx tsc
-	cd packages/server && npx tsc
-	npx tsc
+	npm run build
 
 test: build
 	npx mocha
