@@ -33,7 +33,7 @@ export const validationError = <Others extends { message: string }>(others: Othe
 export const zodValidationError = (issues: z.core.$ZodIssue[]): ZodValidationError =>
   validationError({
     message: "We found some incorrect field(s) during validating the form.",
-    issues,
+    issues: issues as (z.core.$ZodIssue & { path: (string | number)[] })[],
   });
 
 export const unexpectedError = () =>
@@ -52,7 +52,7 @@ export type ZodValidationError = ApiResponse<
     issues: {
       code: z.core.$ZodIssue["code"];
       message: z.core.$ZodIssue["message"];
-      path: z.core.$ZodIssue["path"];
+      path: (string | number)[];
     }[];
   }
 >;

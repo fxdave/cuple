@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "mocha";
-import { z } from "zod";
+import z from "zod";
 import { success, zodValidationError } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -36,35 +36,63 @@ describe("schema validation", () => {
           }),
         )
         .post(async ({ data }) => {
-          const time = data.body.birthdate.getTime();
-          return success({ time });
+          const date = data.body.birthdate;
+          assert.ok(typeof date === "string");
+          return success({ date });
         }),
     }));
     await cs.run(async (client) => {
       const response = await client.foo.post({
         body: {
-          birthdate: new Date().toString(),
+          birthdate: new Date().toISOString().split("T")[0],
+        },
+      });
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle string datetime inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.iso.datetime(),
+          }),
+        )
+        .post(async ({ data }) => {
+          const date = data.body.birthdate;
+          assert.ok(typeof date === "string");
+          return success({ date });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await client.foo.post({
+        body: {
+          birthdate: new Date().toISOString(),
         },
       });
       assert.equal(response.statusCode, 200);
     });
   });
   it("should handle date type date inputs", async () => {
+    const now = new Date();
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
           z.strictObject({
-            birthdate: z.coerce.date(),
+            birthdate: z.coerce.date<Date>(),
           }),
         )
-        .post(async () => {
-          return success({});
+        .post(async ({ data }) => {
+          const date = data.body.birthdate;
+          assert.ok(date instanceof Date);
+          assert.ok(Math.abs(date.getTime() - now.getTime()) < 1);
+          return success({ date: date.toString() });
         }),
     }));
     await cs.run(async (client) => {
       const response = await client.foo.post({
         body: {
-          birthdate: new Date(),
+          birthdate: now,
         },
       });
       assert.equal(response.statusCode, 200);
@@ -188,7 +216,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .headersSchema(
-          z.strictObject({
+          z.looseObject({
             authorization: z.string(),
           }),
         )
@@ -204,7 +232,7 @@ describe("schema validation", () => {
           authorization: "42",
         },
       });
-      if (response.result !== "success") assert.ok(false);
+      if (response.result !== "success") assert.ok(false, JSON.stringify(response));
       assert.equal(response.got, 42);
     });
   });

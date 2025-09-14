@@ -13,7 +13,7 @@ const users = [
 
 const auth = builder
   .headersSchema(
-    z.strictObject({
+    z.looseObject({
       authorization: z.string(),
     }),
   )

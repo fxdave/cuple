@@ -9,7 +9,7 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link = builder
         .headersSchema(
-          z.strictObject({
+          z.looseObject({
             authorization: z.string(),
           }),
         )
@@ -62,14 +62,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.strictObject({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.strictObject({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -103,14 +103,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.strictObject({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.strictObject({
+          z.looseObject({
             age: z.number(),
           }),
         )
@@ -119,7 +119,7 @@ describe("chaining", () => {
         .expectChain<typeof link1>()
         .expectChain<typeof link2>()
         .bodySchema(
-          z.strictObject({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -172,6 +172,9 @@ describe("chaining", () => {
             }),
           )
           .buildLink();
+
+        const test = builder.expectChain<typeof link1>();
+
         const link2 = builder
           .expectChain<typeof link1>()
           .bodySchema(
