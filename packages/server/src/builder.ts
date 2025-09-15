@@ -18,7 +18,7 @@ type MiddlewareProps<TData> = {
 
 type BaseData = object;
 
-type Middleware<TData, TResult, TDependecyData = any> = (
+type Middleware<TInput, TData, TResult, TDependecyData = any> = (
   props: MiddlewareProps<TData>,
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
 
@@ -104,7 +104,7 @@ type ValidInputOrError<T> = T extends ValidJson
 
 type BuilderConfig = {
   app: Express;
-  middlewares: Middleware<any, any>[];
+  middlewares: Middleware<any, any, any>[];
   finalware?: Finalware<any, any>;
   method?: HttpVerbs;
   path?: string;
@@ -141,7 +141,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   }
 
   middleware<TResult extends ValidMiddlewareReturnType>(
-    mw: Middleware<TParams["tData"], TResult>,
+    mw: Middleware<any, TParams["tData"], TResult>,
   ) {
     return new Builder<{
       // Keep the current input, if we need to update it, we have to do manually.
@@ -230,13 +230,16 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     });
   }
 
-  expectChain<TChain extends Middleware<any, any, any>>() {
-    type TDataIncoming = TChain extends Middleware<infer TDataIn, any> ? TDataIn : never;
+  expectChain<TChain extends Middleware<any, any, any, any>>() {
+    type TInputIncoming =
+      TChain extends Middleware<infer TInputIn, any, any> ? TInputIn : never;
+    type TDataIncoming =
+      TChain extends Middleware<any, infer TDataIn, any> ? TDataIn : never;
     type TResponsesIncoming =
-      TChain extends Middleware<any, infer TRespIn> ? TRespIn : never;
+      TChain extends Middleware<any, any, infer TRespIn> ? TRespIn : never;
 
     return this as unknown as Builder<{
-      tInput: TParams["tInput"];
+      tInput: TParams["tInput"] & TInputIncoming;
       // The consequent TData will be merged with TResult only when { next: TRUE }
       tData: TParams["tData"] & TDataIncoming;
       // The consequent TResponses can be TResult only when { next: FALSE }
@@ -246,12 +249,12 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     }>;
   }
 
-  chain<TLinkData, TLinkResponses, TLinkDependencyData>(
-    link: Middleware<TLinkData, TLinkResponses, TLinkDependencyData>,
+  chain<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>(
+    link: Middleware<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>,
   ) {
     type AssertedBuilderType = TParams["tData"] extends TLinkDependencyData
       ? Builder<{
-          tInput: TParams["tInput"];
+          tInput: TParams["tInput"] & TLinkInput;
           tData: TParams["tData"] & TLinkData & { next: true };
           tResponses: TParams["tResponses"] | (TLinkResponses & { next: false });
           tMethod: TParams["tMethod"];
@@ -314,6 +317,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     propertyName: TPropertyName,
     parser: TParser,
   ): Middleware<
+    TParams["tInput"] & z.input<TParser>,
     TParams["tData"],
     | ({ [i in TPropertyName]: ValidInputOrError<z.input<TParser>> } & { next: true })
     | (ZodValidationError & { next: false })
@@ -371,6 +375,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   }
 
   private __buildMiddleware(): Middleware<
+    TParams["tInput"],
     TParams["tData"],
     TParams["tResponses"],
     TParams["tDependencyData"]
