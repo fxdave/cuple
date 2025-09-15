@@ -1,7 +1,6 @@
-import { TypeOf, z, ZodError, ZodType } from "zod";
+import z, { ZodError, ZodType } from "zod";
 import { Request, Response, Express } from "express";
 import {
-  ImprovedZodIssue,
   UnexpectedError,
   unexpectedError,
   ZodValidationError,
@@ -17,26 +16,9 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 
-// We could tidy array items,
-// but tuples and arrays are not differentiated,
-// and we can't do the same for tuples.
-// So arrays will be skipped.
-type Tidied_Step1_Array<T> = T extends Array<infer V> ? T : Tidied_Step2_ZodError<T>;
-type Tidied_Step2_ZodError<T> =
-  T extends ZodValidationError<infer V>
-    ? unknown extends V
-      ? Tidied_Step3_Object<T>
-      : Record<string, unknown> extends V
-        ? Tidied_Step3_Object<T>
-        : ZodValidationError<V>
-    : Tidied_Step3_Object<T>;
-type Tidied_Step3_Object<T> = T extends object ? { [i in keyof T]: Tidied<T[i]> } : T;
-/** Tidy type by merging intersections, hiding complex type under a name, to improve developer experience */
-type Tidied<T> = Tidied_Step1_Array<T>;
-
 type BaseData = object;
 
-type Middleware<TData, TResult, TDependecyData = any> = (
+type Middleware<TInput, TData, TResult, TDependecyData = any> = (
   props: MiddlewareProps<TData>,
 ) => Promise<TResult & ({ next: true } | { next: false; statusCode: number })>;
 
@@ -73,14 +55,14 @@ export type ApiCaller<
 };
 
 export type BuiltEndpoint<
-  TData extends BaseData,
+  TInput extends object,
   TResponses,
   TMethod extends HttpVerbs,
 > = ApiCaller<
-  TData extends { body?: unknown } ? TData["body"] : undefined,
-  TData extends { query?: unknown } ? TData["query"] : undefined,
-  TData extends { params?: unknown } ? TData["params"] : undefined,
-  TData extends { headers?: unknown } ? TData["headers"] : undefined,
+  TInput extends { body?: unknown } ? TInput["body"] : undefined,
+  TInput extends { query?: unknown } ? TInput["query"] : undefined,
+  TInput extends { params?: unknown } ? TInput["params"] : undefined,
+  TInput extends { headers?: unknown } ? TInput["headers"] : undefined,
   TResponses,
   TMethod
 > & {
@@ -103,25 +85,52 @@ const DEFAULT_ERROR_HANDLER: ErrorHandler = ({ err }) => {
   return unexpectedError();
 };
 
+type ValidJson =
+  | undefined // undefined means no property, it's here for compatibilitys with other types like "statusCode?: number"
+  | null
+  | string
+  | number
+  | boolean
+  | ValidJson[]
+  | { [K in string]: ValidJson };
+type ValidJsonObject = { [K in string]: ValidJson };
+type ValidMiddlewareReturnType = ValidJsonObject & {
+  next: true | false;
+  statusCode?: number;
+};
+type ValidInputOrError<T> = T extends ValidJson
+  ? T
+  : { _: "You can only use JSON types" };
+
 type BuilderConfig = {
   app: Express;
-  middlewares: Middleware<any, any>[];
+  middlewares: Middleware<any, any, any>[];
   finalware?: Finalware<any, any>;
   method?: HttpVerbs;
   path?: string;
   errorHandler?: ErrorHandler;
 };
 
+type AnyBuilderParams = {
+  tInput: BaseData;
+  tData: BaseData;
+  tResponses: ValidJsonObject;
+  tMethod: HttpVerbs;
+  tDependencyData: any;
+};
+type BuilderParams = {
+  tInput: BaseData;
+  tData: BaseData;
+  tResponses: never;
+  tMethod: HttpVerbs;
+  tDependencyData: object;
+};
+
 /**
  * @template TData - The data object that you can use in request handlers
  * @template TResponses - The possible responses that the endpoint can produce
  */
-export class Builder<
-  TData extends BaseData,
-  TResponses = never,
-  TMethod extends HttpVerbs = "post",
-  TDependencyData = any,
-> {
+export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   private config: BuilderConfig & { errorHandler: ErrorHandler };
 
   constructor(config: BuilderConfig) {
@@ -131,65 +140,126 @@ export class Builder<
     };
   }
 
-  middleware<TResult extends Next>(mw: Middleware<TData, TResult>) {
-    return new Builder<
+  middleware<TResult extends ValidMiddlewareReturnType>(
+    mw: Middleware<any, TParams["tData"], TResult>,
+  ) {
+    return new Builder<{
+      // Keep the current input, if we need to update it, we have to do manually.
+      // Infering inputs from middleware is not possible.
+      tInput: TParams["tInput"];
       // The consequent TData will be merged with TResult only when { next: TRUE }
-      Tidied<TData & TResult & { next: true }>,
+      tData: TParams["tData"] & TResult & { next: true };
       // The consequent TResponses can be TResult only when { next: FALSE }
-      TResponses | (TResult & { next: false }),
-      TMethod,
-      TDependencyData
-    >({
+      tResponses: TParams["tResponses"] | (TResult & { next: false });
+      tMethod: TParams["tMethod"];
+      tDependencyData: TParams["tDependencyData"];
+    }>({
       ...this.config,
       middlewares: [...this.config.middlewares, mw],
     });
   }
 
-  bodySchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Body, parser));
+  bodySchema<TParser extends ZodType<any, any>>(
+    parser: TParser,
+  ): Builder<{
+    tInput: TParams["tInput"] & { [SchemaType.Body]: z.input<TParser> };
+    // The consequent TData will be merged with TResult only when { next: TRUE }
+    tData: TParams["tData"] & {
+      [SchemaType.Body]: z.output<TParser>;
+    };
+    // The consequent TResponses can be TResult only when { next: FALSE }
+    tResponses: TParams["tResponses"] | ZodValidationError;
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }> {
+    return this.middleware(this.__getSchemaMiddleware(SchemaType.Body, parser)) as any;
   }
 
-  querySchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Query, parser));
+  querySchema<TParser extends ZodType<any, any>>(
+    parser: TParser,
+  ): Builder<{
+    tInput: TParams["tInput"] & { [SchemaType.Query]: z.input<TParser> };
+    // The consequent TData will be merged with TResult only when { next: TRUE }
+    tData: TParams["tData"] & {
+      [SchemaType.Query]: z.output<TParser>;
+    };
+    // The consequent TResponses can be TResult only when { next: FALSE }
+    tResponses: TParams["tResponses"] | ZodValidationError;
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }> {
+    return this.middleware(this.__getSchemaMiddleware(SchemaType.Query, parser)) as any;
   }
 
-  paramsSchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Params, parser));
+  paramsSchema<TParser extends ZodType<any, any>>(
+    parser: TParser,
+  ): Builder<{
+    tInput: TParams["tInput"] & { [SchemaType.Params]: z.input<TParser> };
+    // The consequent TData will be merged with TResult only when { next: TRUE }
+    tData: TParams["tData"] & {
+      [SchemaType.Params]: z.output<TParser>;
+    };
+    // The consequent TResponses can be TResult only when { next: FALSE }
+    tResponses: TParams["tResponses"] | ZodValidationError;
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }> {
+    return this.middleware(this.__getSchemaMiddleware(SchemaType.Params, parser)) as any;
   }
 
-  headersSchema<TParser extends ZodType<any, any, any>>(parser: TParser) {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Headers, parser));
+  headersSchema<TParser extends ZodType<any, any>>(
+    parser: TParser,
+  ): Builder<{
+    tInput: TParams["tInput"] & { [SchemaType.Headers]: z.input<TParser> };
+    // The consequent TData will be merged with TResult only when { next: TRUE }
+    tData: TParams["tData"] & {
+      [SchemaType.Headers]: z.output<TParser>;
+    };
+    // The consequent TResponses can be TResult only when { next: FALSE }
+    tResponses: TParams["tResponses"] | ZodValidationError;
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }> {
+    return this.middleware(this.__getSchemaMiddleware(SchemaType.Headers, parser)) as any;
   }
 
   path(path: string) {
-    return new Builder<TData, TResponses, TMethod, TDependencyData>({
+    return new Builder<TParams>({
       ...this.config,
       path,
     });
   }
 
-  expectChain<TChain extends Middleware<any, any, any>>() {
-    type TDataIncoming = TChain extends Middleware<infer TDataIn, any> ? TDataIn : never;
+  expectChain<TChain extends Middleware<any, any, any, any>>() {
+    type TInputIncoming =
+      TChain extends Middleware<infer TInputIn, any, any> ? TInputIn : never;
+    type TDataIncoming =
+      TChain extends Middleware<any, infer TDataIn, any> ? TDataIn : never;
     type TResponsesIncoming =
-      TChain extends Middleware<any, infer TRespIn> ? TRespIn : never;
+      TChain extends Middleware<any, any, infer TRespIn> ? TRespIn : never;
 
-    return this as unknown as Builder<
-      TData & TDataIncoming,
-      TResponsesIncoming | TResponses,
-      TMethod,
-      TDataIncoming
-    >;
+    return this as unknown as Builder<{
+      tInput: TParams["tInput"] & TInputIncoming;
+      // The consequent TData will be merged with TResult only when { next: TRUE }
+      tData: TParams["tData"] & TDataIncoming;
+      // The consequent TResponses can be TResult only when { next: FALSE }
+      tResponses: TResponsesIncoming | TParams["tResponses"];
+      tMethod: TParams["tMethod"];
+      tDependencyData: TParams["tDependencyData"] & TDataIncoming;
+    }>;
   }
 
-  chain<TLinkData, TLinkResponses, TLinkDependencyData>(
-    link: Middleware<TLinkData, TLinkResponses, TLinkDependencyData>,
+  chain<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>(
+    link: Middleware<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>,
   ) {
-    type AssertedBuilderType = TData extends TLinkDependencyData
-      ? Builder<
-          TData & TLinkData & { next: true },
-          TResponses | (TLinkResponses & { next: false }),
-          TMethod
-        >
+    type AssertedBuilderType = TParams["tData"] extends TLinkDependencyData
+      ? Builder<{
+          tInput: TParams["tInput"] & TLinkInput;
+          tData: TParams["tData"] & TLinkData & { next: true };
+          tResponses: TParams["tResponses"] | (TLinkResponses & { next: false });
+          tMethod: TParams["tMethod"];
+          tDependencyData: TParams["tDependencyData"];
+        }>
       : "Chainlink dependencies are not fulfilled";
     return new Builder({
       ...this.config,
@@ -199,7 +269,7 @@ export class Builder<
 
   buildLink = this.__buildMiddleware;
 
-  build(): BuiltEndpoint<Tidied<TData>, Tidied<TResponses>, TMethod> {
+  build(): BuiltEndpoint<TParams["tInput"], TParams["tResponses"], TParams["tMethod"]> {
     const endpoint = this.__buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -242,19 +312,20 @@ export class Builder<
 
   private __getSchemaMiddleware<
     TPropertyName extends SchemaType,
-    TParser extends ZodType<any, any, any>,
+    TParser extends ZodType<any, any>,
   >(
     propertyName: TPropertyName,
     parser: TParser,
   ): Middleware<
-    TData,
-    | Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>
-    | (ZodValidationError<z.infer<TParser>> & { next: false })
+    TParams["tInput"] & z.input<TParser>,
+    TParams["tData"],
+    | ({ [i in TPropertyName]: ValidInputOrError<z.input<TParser>> } & { next: true })
+    | (ZodValidationError & { next: false })
     | (UnexpectedError & { next: false })
   > {
     return async ({ req, res, data }: MiddlewareProps<unknown>) => {
       try {
-        let newData = parser.parse(req[propertyName]) as z.infer<TParser>;
+        let newData = parser.parse(req[propertyName]);
         const existingData = data && (data as any)[propertyName];
         if (typeof newData === "object" && typeof existingData === "object") {
           newData = {
@@ -265,13 +336,13 @@ export class Builder<
         return {
           [propertyName]: newData,
           next: true as const,
-        } as Tidied<{ [i in TPropertyName]: z.infer<TParser> } & { next: true }>;
+        } as { [i in TPropertyName]: z.output<TParser> } & { next: true };
       } catch (e) {
         if (e instanceof ZodError) {
           return {
-            ...zodValidationError(e.issues as ImprovedZodIssue<TypeOf<TParser>>[]),
+            ...zodValidationError(e.issues),
             next: false as const,
-          } as ZodValidationError<z.infer<TParser>> & { next: false };
+          } as ZodValidationError & { next: false };
         }
 
         const response = this.config.errorHandler({ req, res, err: e });
@@ -284,12 +355,16 @@ export class Builder<
   }
 
   private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
-    return <TFinalResponses>(mw: Finalware<TData, TFinalResponses>) => {
-      const builder = new Builder<
-        TData,
-        TFinalResponses | TResponses | UnexpectedError,
-        TMethod
-      >({
+    return <TFinalResponses extends ValidJsonObject>(
+      mw: Finalware<TParams["tData"], TParams["tResponses"] | TFinalResponses>,
+    ) => {
+      const builder = new Builder<{
+        tInput: TParams["tInput"];
+        tData: TParams["tData"];
+        tResponses: TFinalResponses | TParams["tResponses"] | UnexpectedError;
+        tMethod: TParams["tMethod"];
+        tDependencyData: TParams["tDependencyData"];
+      }>({
         ...this.config,
         finalware: mw,
         method,
@@ -300,9 +375,10 @@ export class Builder<
   }
 
   private __buildMiddleware(): Middleware<
-    Tidied<TData>,
-    Tidied<TResponses>,
-    TDependencyData
+    TParams["tInput"],
+    TParams["tData"],
+    TParams["tResponses"],
+    TParams["tDependencyData"]
   > {
     return async ({
       req,
@@ -311,7 +387,7 @@ export class Builder<
     }: {
       req: ExpressRequest;
       res: ExpressResponse;
-      data: Tidied<TData>;
+      data: TParams["tData"];
     }) => {
       let actualData = data;
       for (const mw of this.config.middlewares) {

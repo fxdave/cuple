@@ -1,6 +1,5 @@
 import { success } from "@cuple/server";
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -9,7 +8,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -35,7 +34,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -65,7 +64,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )

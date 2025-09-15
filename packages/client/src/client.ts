@@ -1,3 +1,5 @@
+import { MapApi } from "./map-api";
+
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, []);
 }
@@ -14,40 +16,10 @@ export type RecursiveApi = {
     | RecursiveApi;
 };
 
-type NonEmptyKeys<T> = {
-  [Key in keyof T]-?: [T[Key]] extends [undefined | never] ? never : Key;
-}[keyof T];
-
-type WithoutEmptyProperties<T> = Pick<T, NonEmptyKeys<T>>;
-
-type OmitSameProps<TA, TB> = WithoutEmptyProperties<{
-  [K in keyof TA]: [K] extends [keyof TB]
-    ? [TB[K]] extends [TA[K]]
-      ? undefined
-      : WithoutEmptyProperties<OmitSameProps<TA[K], TB[K]>>
-    : TA[K];
-}>;
-
-type RecursivePartial<T> = {
-  [K in keyof T]?: T[K] extends object ? RecursivePartial<T[K]> : T[K];
-};
-
-type ExcludePreloadedParams<TFrom, TPreloadedData> = OmitSameProps<
-  TFrom,
-  TPreloadedData
-> &
-  RecursivePartial<TPreloadedData>;
-
-type WithPreloadedData<TApi, TPreloadedData> = {
-  [Key in keyof TApi]: TApi[Key] extends (arg: infer IArg) => infer IReturn
-    ? (arg: ExcludePreloadedParams<IArg, TPreloadedData>) => IReturn
-    : WithPreloadedData<TApi[Key], TPreloadedData>;
-};
-
 export type Client<
   TApi extends RecursiveApi,
   TPreloadedData = NonNullable<unknown>,
-> = WithPreloadedData<TApi, TPreloadedData> &
+> = MapApi<TApi, TPreloadedData> &
   (NonNullable<unknown> extends TPreloadedData
     ? {
         with: <TParamsNext>(
@@ -88,12 +60,14 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
         };
       };
 
-      return methodAwareFetch(method, getData, path).then(async (response) => {
-        const res = await response.json();
-        // TODO: differentiate data from response
-        (res as any).statusCode = response.status;
-        return res;
-      });
+      return methodAwareFetch(method, getData, path, argumentsList[0]?.options).then(
+        async (response) => {
+          const res = await response.json();
+          // TODO: differentiate data from response
+          (res as any).statusCode = response.status;
+          return res;
+        },
+      );
     },
   });
 }
@@ -102,6 +76,7 @@ async function methodAwareFetch(
   method: string,
   getData: () => Promise<{ segments: string[]; argument: Record<string, unknown> }>,
   path: string,
+  options?: RequestInit,
 ) {
   const {
     segments,
@@ -117,6 +92,7 @@ async function methodAwareFetch(
         Accept: "application/json",
         ...(typeof headers === "object" ? headers : {}),
       },
+      ...options,
     });
   }
   return await fetch(path, {
@@ -127,5 +103,6 @@ async function methodAwareFetch(
       Accept: "application/json",
       ...(typeof headers === "object" ? headers : {}),
     },
+    ...options,
   });
 }

@@ -1,5 +1,4 @@
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { z } from "zod";
 import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
@@ -9,7 +8,7 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link = builder
         .headersSchema(
-          z.object({
+          z.looseObject({
             authorization: z.string(),
           }),
         )
@@ -62,14 +61,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -103,14 +102,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             age: z.number(),
           }),
         )
@@ -119,7 +118,7 @@ describe("chaining", () => {
         .expectChain<typeof link1>()
         .expectChain<typeof link2>()
         .bodySchema(
-          z.object({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -163,19 +162,22 @@ describe("chaining", () => {
   });
 
   it("should type-check whether a middleware is missing a dependent middleware", async () => {
-    await assert.rejects(async () => {
+    try {
       const cs = await createClientAndServer((builder) => {
         const link1 = builder
           .bodySchema(
-            z.object({
+            z.looseObject({
               id: z.number(),
             }),
           )
           .buildLink();
+
+        const test = builder.expectChain<typeof link1>();
+
         const link2 = builder
           .expectChain<typeof link1>()
           .bodySchema(
-            z.object({
+            z.looseObject({
               name: z.string(),
             }),
           )
@@ -204,11 +206,14 @@ describe("chaining", () => {
             name: "David",
           },
         });
-        if (response.result !== "success") assert.ok(false);
+        if (response.result !== "success") assert.ok(false, JSON.stringify(response));
         assert.equal(response.gotId, 32);
         assert.equal(response.gotName, "David");
         assert.equal(response.gotIdFromPreviousMiddleware, 32);
       });
-    });
+      assert.ok(false, "It should throw");
+    } catch {
+      assert.ok(true);
+    }
   });
 });

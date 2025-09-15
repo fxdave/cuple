@@ -17,7 +17,7 @@ Successfully parsed result will be added to `data.headers`.
 
 ```ts
 builder
-  .headersSchema(z.object({ authorization: z.string() }))
+  .headersSchema(z.looseObject({ authorization: z.string() }))
   .get(async ({ data }) => {
 
     data.headers.authorization // this has a string value
