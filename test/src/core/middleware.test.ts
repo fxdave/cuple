@@ -1,5 +1,4 @@
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 import { z } from "zod";
@@ -97,7 +96,7 @@ describe("middleware", () => {
       const response = await client.get.get({});
       if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.foo, "hello");
-      assert.equal(response.bar, "42");
+      assert.equal(response.bar, 42);
     });
   });
 

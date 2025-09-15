@@ -1,5 +1,4 @@
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import z from "zod";
 import { success, zodValidationError } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
@@ -233,7 +232,7 @@ describe("schema validation", () => {
         },
       });
       if (response.result !== "success") assert.ok(false, JSON.stringify(response));
-      assert.equal(response.got, 42);
+      assert.equal(response.got, "42");
     });
   });
 

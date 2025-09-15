@@ -1,9 +1,7 @@
 import { success } from "@cuple/server";
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
-import { AbortError } from "node-fetch";
 
 describe("Fetch options", () => {
   it("should work with AbortController", async () => {
@@ -28,18 +26,18 @@ describe("Fetch options", () => {
         },
       }));
 
-      const responsePromise = newClient.exampleRoute.get({
-        options: {
-          signal: controller.signal,
-        },
-      });
-      controller.abort();
       try {
+        const responsePromise = newClient.exampleRoute.get({
+          options: {
+            signal: controller.signal,
+          },
+        });
+        controller.abort();
         await responsePromise;
+        assert.ok(false, "AbortError is expected");
       } catch (e) {
         assert.ok(e instanceof DOMException && e.name == "AbortError");
       }
-      assert.ok(false, "AbortError is expected");
     });
   });
 });

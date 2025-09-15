@@ -1,6 +1,10 @@
+.PHONY: all test clean coverage
+
 clean:
 	rm packages/client/tsconfig.tsbuildinfo || echo ok
 	rm packages/server/tsconfig.tsbuildinfo || echo ok
+	rm test/tsconfig.tsbuildinfo || echo ok
+	rm -rf test/dist || echo ok
 	rm -rf packages/client/dist || echo ok
 	rm -rf packages/server/dist || echo ok
 
@@ -9,9 +13,13 @@ clean-if-needed:
 
 build:
 	npm run build
+	cd test && npx tsc
 
-test: build
-	npx mocha
+test: clean build
+	npx vitest --silent="passed-only" test/src
+
+coverage:
+	npx vitest run --coverage
 
 lint:
 	npx eslint ./packages ./test

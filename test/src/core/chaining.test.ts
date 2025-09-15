@@ -1,5 +1,4 @@
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { z } from "zod";
 import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
@@ -163,11 +162,11 @@ describe("chaining", () => {
   });
 
   it("should type-check whether a middleware is missing a dependent middleware", async () => {
-    await assert.rejects(async () => {
+    try {
       const cs = await createClientAndServer((builder) => {
         const link1 = builder
           .bodySchema(
-            z.strictObject({
+            z.looseObject({
               id: z.number(),
             }),
           )
@@ -178,7 +177,7 @@ describe("chaining", () => {
         const link2 = builder
           .expectChain<typeof link1>()
           .bodySchema(
-            z.strictObject({
+            z.looseObject({
               name: z.string(),
             }),
           )
@@ -207,11 +206,14 @@ describe("chaining", () => {
             name: "David",
           },
         });
-        if (response.result !== "success") assert.ok(false);
+        if (response.result !== "success") assert.ok(false, JSON.stringify(response));
         assert.equal(response.gotId, 32);
         assert.equal(response.gotName, "David");
         assert.equal(response.gotIdFromPreviousMiddleware, 32);
       });
-    });
+      assert.ok(false, "It should throw");
+    } catch {
+      assert.ok(true);
+    }
   });
 });
