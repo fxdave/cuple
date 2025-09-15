@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "module": "commonjs",
-    "target": "ES2017",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
