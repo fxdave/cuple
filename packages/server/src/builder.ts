@@ -246,15 +246,30 @@ export class Builder<
   delete = this.__buildFinalMiddlewareSetter("delete");
   put = this.__buildFinalMiddlewareSetter("put");
 
-  /** raw handler gives you more control over the response, but it's not type-safe */
+  /**
+   * Raw handler for direct response control (streaming, downloads, etc.)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
   getRaw = this.__buildFinalMiddlewareSetterRaw("get");
-  /** raw handler gives you more control over the response, but it's not type-safe */
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
   postRaw = this.__buildFinalMiddlewareSetterRaw("post");
-  /** raw handler gives you more control over the response, but it's not type-safe */
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
   patchRaw = this.__buildFinalMiddlewareSetterRaw("patch");
-  /** raw handler gives you more control over the response, but it's not type-safe */
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
   deleteRaw = this.__buildFinalMiddlewareSetterRaw("delete");
-  /** raw handler gives you more control over the response, but it's not type-safe */
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
   putRaw = this.__buildFinalMiddlewareSetterRaw("put");
 
   private __getSchemaMiddleware<

@@ -6,25 +6,28 @@ description: 'Get more control over responses'
 # Raw Handlers
 
 The normal handlers give you JSON responses only.
-You still have access to Request and Response, so you can set, for example, custom headers.
-However, if you need xml, binary, or anything else, you can use raw handlers.
+You still have access to `Request` and `Response` objects, so you can set, for example, custom headers.
+However, if you need xml, binary, or any other kind of response, you can use raw handlers.
+
+```ts
+builder.getRaw(async ({ req, res, data }) => {/* ... */})
+builder.postRaw(async ({ req, res, data }) => {/* ... */})
+builder.putRaw(async ({ req, res, data }) => {/* ... */})
+builder.patchRaw(async ({ req, res, data }) => {/* ... */})
+builder.deleteRaw(async ({ req, res, data }) => {/* ... */})
+```
 
 ## When to Use Raw Handlers
 
 Use raw handlers when you need:
 - **Non-JSON responses** (XML, CSV, binary files, downloads)
 - **Streaming responses** (Server-Sent Events, file streams)
-- **Full HTTP control** (custom headers, status codes)
-
-## Trade-offs
 
 | Feature | Normal Handlers | Raw Handlers |
 |---------|----------------|--------------|
 | Response format | JSON only | Any format |
 | Error handling | Automatic | Manual |
-| HTTP control | Limited | Full control |
-| Ease of use | Simple | More complex |
-| Client support | Full | Must use `fetch()` |
+| Client support | `@cuple/client`, `fetch` | `fetch` |
 
 ## Basic Example
 
@@ -37,14 +40,14 @@ builder
   });
 ```
 
-## Difference in Data Handling
+## Difference in Middleware Behavior ⚠️
 
 With **normal handlers**, if a middleware fails (returns `{ next: false }`), the error response is automatically sent back as JSON.  
 You don’t need to handle it manually.  
 
-With **raw handlers**, this automatic behavior is disabled.  
-That means you must explicitly send **both success and error responses** yourself.  
-The `data` object passed into the raw handler can contain either a success payload or an error payload, depending on how the middleware chain resolved.
+With **raw handlers**, this automatic behavior is disabled.    
+The `data` object passed into the raw handler contains both success and error responses of your middlewares.
+That means you must explicitly send **both success and error responses** of your middlewares yourself.
 
 ### Example
 
@@ -76,5 +79,10 @@ builder
       res.status(200).send(data.bar);
     }
   });
+```
 
-**Key Point:** Normal handlers automatically send JSON error responses when middleware fails. Raw handlers require you to check `data.next` and handle errors yourself.
+## Other Examples
+
+Cuple uses Express under the hood, giving you full access to `req` and `res` objects.
+With raw handlers, all automatic behavior is disabled, allowing you to use Express as designed while benefiting from Cuple's type-safe composition features.
+Please check express tutorials for more.
