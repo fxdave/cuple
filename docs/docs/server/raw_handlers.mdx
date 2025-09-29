@@ -1,0 +1,80 @@
+---
+sidebar_position: 99
+description: 'Get more control over responses'
+---
+
+# Raw Handlers
+
+The normal handlers give you JSON responses only.
+You still have access to Request and Response, so you can set, for example, custom headers.
+However, if you need xml, binary, or anything else, you can use raw handlers.
+
+## When to Use Raw Handlers
+
+Use raw handlers when you need:
+- **Non-JSON responses** (XML, CSV, binary files, downloads)
+- **Streaming responses** (Server-Sent Events, file streams)
+- **Full HTTP control** (custom headers, status codes)
+
+## Trade-offs
+
+| Feature | Normal Handlers | Raw Handlers |
+|---------|----------------|--------------|
+| Response format | JSON only | Any format |
+| Error handling | Automatic | Manual |
+| HTTP control | Limited | Full control |
+| Ease of use | Simple | More complex |
+| Client support | Full | Must use `fetch()` |
+
+## Basic Example
+
+```ts
+builder
+  .path("/my-doc")
+  .getRaw(async ({ res }) => {
+    res.setHeader("Content-Type", "text/xml");
+    res.send(`<message>Hello World</message>`);
+  });
+```
+
+## Difference in Data Handling
+
+With **normal handlers**, if a middleware fails (returns `{ next: false }`), the error response is automatically sent back as JSON.  
+You don’t need to handle it manually.  
+
+With **raw handlers**, this automatic behavior is disabled.  
+That means you must explicitly send **both success and error responses** yourself.  
+The `data` object passed into the raw handler can contain either a success payload or an error payload, depending on how the middleware chain resolved.
+
+### Example
+
+```ts
+builder
+  .path("/test")
+  .middleware(async () => {
+    if (Math.random() < 0.5) {
+      // success case: continue
+      return {
+        next: true,
+        bar: "hey",
+      };
+    }
+
+    // failure case: stop execution
+    return {
+      next: false,
+      statusCode: 400,
+      foo: "hello",
+    };
+  })
+  .getRaw(async ({ res, data }) => {
+    if (data.next === false) {
+      // middleware blocked -> manual error response
+      res.status(data.statusCode).send(data.foo);
+    } else {
+      // middleware passed -> manual success response
+      res.status(200).send(data.bar);
+    }
+  });
+
+**Key Point:** Normal handlers automatically send JSON error responses when middleware fails. Raw handlers require you to check `data.next` and handle errors yourself.
