@@ -200,6 +200,10 @@ export class Builder<
   buildLink = this.__buildMiddleware;
 
   build(): BuiltEndpoint<Tidied<TData>, Tidied<TResponses>, TMethod> {
+    return this.buildRaw(false);
+  }
+
+  buildRaw(isRawHandler: boolean = true): BuiltEndpoint<Tidied<TData>, any, TMethod> {
     const endpoint = this.__buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -207,20 +211,22 @@ export class Builder<
         .then((response) => {
           if (typeof response.next !== "boolean")
             throw new BadMiddlewareReturnTypeError();
-          if (!response.next) return response;
+          if (!isRawHandler && !response.next) return response;
           if (!this.config.finalware) throw new MissingFinalwareError();
           return this.config.finalware({ req, res, data: response });
         })
         .then((response) => {
+          if (isRawHandler) return;
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { next, statusCode, ...rest } = response;
           res.status(statusCode).send(rest);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
+          if (isRawHandler) return;
           const { statusCode, ...rest } = this.config.errorHandler({ err, res, req });
           res.status(statusCode).send(rest);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error("Custom error handler failed, falling back to DEFAULT");
           const { statusCode, ...rest } = DEFAULT_ERROR_HANDLER({ err, res, req });
           res.status(statusCode).send(rest);
@@ -239,6 +245,32 @@ export class Builder<
   patch = this.__buildFinalMiddlewareSetter("patch");
   delete = this.__buildFinalMiddlewareSetter("delete");
   put = this.__buildFinalMiddlewareSetter("put");
+
+  /**
+   * Raw handler for direct response control (streaming, downloads, etc.)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
+  getRaw = this.__buildFinalMiddlewareSetterRaw("get");
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
+  postRaw = this.__buildFinalMiddlewareSetterRaw("post");
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
+  patchRaw = this.__buildFinalMiddlewareSetterRaw("patch");
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
+  deleteRaw = this.__buildFinalMiddlewareSetterRaw("delete");
+  /**
+   * Raw handler for direct response control (streaming, download, etc..)
+   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   */
+  putRaw = this.__buildFinalMiddlewareSetterRaw("put");
 
   private __getSchemaMiddleware<
     TPropertyName extends SchemaType,
@@ -296,6 +328,24 @@ export class Builder<
       });
 
       return builder.build();
+    };
+  }
+
+  private __buildFinalMiddlewareSetterRaw<TMethod extends HttpVerbs>(method: TMethod) {
+    return (
+      mw: Finalware<({ next: true } & TData) | ({ next: false } & TResponses), void>,
+    ) => {
+      const builder = new Builder<
+        ({ next: true } & TData) | ({ next: false } & TResponses),
+        any,
+        TMethod
+      >({
+        ...this.config,
+        finalware: mw,
+        method,
+      });
+
+      return builder.buildRaw();
     };
   }
 

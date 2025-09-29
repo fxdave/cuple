@@ -1,0 +1,88 @@
+---
+sidebar_position: 99
+description: 'Get more control over responses'
+---
+
+# Raw Handlers
+
+The normal handlers give you JSON responses only.
+You still have access to `Request` and `Response` objects, so you can set, for example, custom headers.
+However, if you need xml, binary, or any other kind of response, you can use raw handlers.
+
+```ts
+builder.getRaw(async ({ req, res, data }) => {/* ... */})
+builder.postRaw(async ({ req, res, data }) => {/* ... */})
+builder.putRaw(async ({ req, res, data }) => {/* ... */})
+builder.patchRaw(async ({ req, res, data }) => {/* ... */})
+builder.deleteRaw(async ({ req, res, data }) => {/* ... */})
+```
+
+## When to Use Raw Handlers
+
+Use raw handlers when you need:
+- **Non-JSON responses** (XML, CSV, binary files, downloads)
+- **Streaming responses** (Server-Sent Events, file streams)
+
+| Feature | Normal Handlers | Raw Handlers |
+|---------|----------------|--------------|
+| Response format | JSON only | Any format |
+| Error handling | Automatic | Manual |
+| Client support | `@cuple/client`, `fetch` | `fetch` |
+
+## Basic Example
+
+```ts
+builder
+  .path("/my-doc")
+  .getRaw(async ({ res }) => {
+    res.setHeader("Content-Type", "text/xml");
+    res.send(`<message>Hello World</message>`);
+  });
+```
+
+## Difference in Middleware Behavior ⚠️
+
+With **normal handlers**, if a middleware fails (returns `{ next: false }`), the error response is automatically sent back as JSON.  
+You don’t need to handle it manually.  
+
+With **raw handlers**, this automatic behavior is disabled.    
+The `data` object passed into the raw handler contains both success and error responses of your middlewares.
+That means you must explicitly send **both success and error responses** of your middlewares yourself.
+
+### Example
+
+```ts
+builder
+  .path("/test")
+  .middleware(async () => {
+    if (Math.random() < 0.5) {
+      // success case: continue
+      return {
+        next: true,
+        bar: "hey",
+      };
+    }
+
+    // failure case: stop execution
+    return {
+      next: false,
+      statusCode: 400,
+      foo: "hello",
+    };
+  })
+  .getRaw(async ({ res, data }) => {
+    if (data.next === false) {
+      // middleware blocked -> manual error response
+      res.status(data.statusCode).send(data.foo);
+    } else {
+      // middleware passed -> manual success response
+      res.status(200).send(data.bar);
+    }
+  });
+```
+
+## Other Examples
+
+Cuple uses Express under the hood, giving you full access to `req` and `res` objects.
+With raw handlers, all automatic behavior is disabled, allowing you to use Express as designed while benefiting from Cuple's type-safe composition features.
+Please check express tutorials for more.
