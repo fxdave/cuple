@@ -1,5 +1,5 @@
 import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it } from "vitest";
 import { success } from "@cuple/server";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -13,8 +13,8 @@ describe("raw handlers", () => {
         return success({});
       }),
     }));
-    await cs.run(async (client) => {
-      const response = await fetch("http://localhost:8080/test");
+    await cs.run(async (client, url) => {
+      const response = await fetch(`${url}/test`);
       assert.equal(response.status, 200);
       const text = await response.text();
       assert.equal(text, "text-response");
@@ -38,8 +38,8 @@ describe("raw handlers", () => {
           res.status(200).send(data.foo);
         }),
     }));
-    await cs.run(async (client) => {
-      const response = await fetch("http://localhost:8080/test");
+    await cs.run(async (client, url) => {
+      const response = await fetch(`${url}/test`);
       assert.equal(response.status, 200);
       const text = await response.text();
       assert.equal(text, "hello");
@@ -71,8 +71,8 @@ describe("raw handlers", () => {
           }
         }),
     }));
-    await cs.run(async (client) => {
-      const response = await fetch("http://localhost:8080/test");
+    await cs.run(async (client, url) => {
+      const response = await fetch(`${url}/test`);
       assert.equal(response.status, 400);
       const text = await response.text();
       assert.equal(text, "hello");
@@ -100,11 +100,11 @@ describe("raw handlers", () => {
       }),
     }));
 
-    await cs.run(async (client) => {
+    await cs.run(async (client, url) => {
       // simulating a small image or file
       const binaryData = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-      const response = await fetch("http://localhost:8080/upload", {
+      const response = await fetch(`${url}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/octet-stream" },
         body: binaryData,
@@ -141,10 +141,10 @@ describe("raw handlers", () => {
         }),
     }));
 
-    await cs.run(async (client) => {
+    await cs.run(async (client, url) => {
       const binaryData = new Uint8Array(1024); // 1KB of data
 
-      const response = await fetch("http://localhost:8080/upload-progress", {
+      const response = await fetch(`${url}/upload-progress`, {
         method: "POST",
         body: binaryData,
       });

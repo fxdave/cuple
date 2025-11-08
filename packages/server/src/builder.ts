@@ -409,8 +409,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   }
 
   private __buildFinalMiddlewareSetterRaw<TMethod extends HttpVerbs>(method: TMethod) {
-    return <TFinalResponses extends ValidJsonObject>(
-      mw: Finalware<TParams["tData"], TParams["tResponses"] | TFinalResponses>,
+    return (
+      mw: Finalware<
+        ({ next: true } & TParams["tData"]) | ({ next: false } & TParams["tResponses"]),
+        any
+      >,
     ) => {
       const builder = new Builder<{
         tInput: TParams["tInput"];
