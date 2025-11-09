@@ -36,6 +36,10 @@ type WithoutUndefinedProperties<T extends object> = Pick<T, NotUndefinedProperti
   [Key in UndefinedProperties<T>]?: never;
 };
 
+/**
+ * Type-safe API caller for @cuple/client.
+ * This is typing only, not backed by runtime data.
+ */
 export type ApiCaller<
   TRequestBody,
   TRequestQuery,
@@ -54,6 +58,11 @@ export type ApiCaller<
   ) => Promise<TResponse>;
 };
 
+/**
+ * Built endpoint with server and client types.
+ * Runtime data: `handler` and `method`.
+ * ApiCaller is typing only for @cuple/client.
+ */
 export type BuiltEndpoint<
   TInput extends object,
   TResponses,
@@ -112,10 +121,15 @@ type BuilderConfig = {
 };
 
 type AnyBuilderParams = {
+  /** Request input types. Schema methods add properties here. */
   tInput: BaseData;
+  /** Handler data. Middleware with `next: true` merges here. */
   tData: BaseData;
+  /** Possible responses. Middleware with `next: false` adds here. */
   tResponses: ValidJsonObject;
+  /** HTTP method. Set by get/post/put/patch/delete. */
   tMethod: HttpVerbs;
+  /** Dependencies for chain(). Validates requirements. */
   tDependencyData: any;
 };
 type BuilderParams = {
@@ -127,8 +141,9 @@ type BuilderParams = {
 };
 
 /**
- * @template TData - The data object that you can use in request handlers
- * @template TResponses - The possible responses that the endpoint can produce
+ * Type-safe Express endpoint builder.
+ * Chain methods to add validation and middleware.
+ * Finalize with get/post/put/patch/delete.
  */
 export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   private config: BuilderConfig & { errorHandler: ErrorHandler };
@@ -140,6 +155,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     };
   }
 
+  /**
+   * Add middleware to transform data or return early.
+   * `next: true` passes data to next handler.
+   * `next: false` ends chain and returns response.
+   */
   middleware<TResult extends ValidMiddlewareReturnType>(
     mw: Middleware<any, TParams["tData"], TResult>,
   ) {
@@ -159,6 +179,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     });
   }
 
+  /**
+   * Validate request body with Zod schema.
+   * Parsed data available in handler as `data.body`.
+   */
   bodySchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
@@ -172,9 +196,13 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Body, parser)) as any;
+    return this.middleware(this._getSchemaMiddleware(SchemaType.Body, parser)) as any;
   }
 
+  /**
+   * Validate query parameters with Zod schema.
+   * Parsed data available in handler as `data.query`.
+   */
   querySchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
@@ -188,9 +216,13 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Query, parser)) as any;
+    return this.middleware(this._getSchemaMiddleware(SchemaType.Query, parser)) as any;
   }
 
+  /**
+   * Validate route parameters with Zod schema.
+   * Parsed data available in handler as `data.params`.
+   */
   paramsSchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
@@ -204,9 +236,13 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Params, parser)) as any;
+    return this.middleware(this._getSchemaMiddleware(SchemaType.Params, parser)) as any;
   }
 
+  /**
+   * Validate request headers with Zod schema.
+   * Parsed data available in handler as `data.headers`.
+   */
   headersSchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
@@ -220,9 +256,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
-    return this.middleware(this.__getSchemaMiddleware(SchemaType.Headers, parser)) as any;
+    return this.middleware(this._getSchemaMiddleware(SchemaType.Headers, parser)) as any;
   }
 
+  /** Set route path (e.g., "/users/:id"). */
   path(path: string) {
     return new Builder<TParams>({
       ...this.config,
@@ -230,6 +267,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     });
   }
 
+  /**
+   * Declare dependency on another chain link's data.
+   * Use when building a chain link that requires data
+   * from another link (e.g., role check needs auth data).
+   */
   expectChain<TChain extends Middleware<any, any, any, any>>() {
     type TInputIncoming =
       TChain extends Middleware<infer TInputIn, any, any> ? TInputIn : never;
@@ -249,6 +291,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     }>;
   }
 
+  /**
+   * Add a reusable chain link to the current chain.
+   * Chain links are created with buildLink().
+   * Validates that required dependencies are satisfied.
+   */
   chain<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>(
     link: Middleware<TLinkInput, TLinkData, TLinkResponses, TLinkDependencyData>,
   ) {
@@ -267,16 +314,24 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     }) as AssertedBuilderType;
   }
 
-  buildLink = this.__buildMiddleware;
+  /**
+   * Build as reusable chain link.
+   * Chain links can be added to other chains with chain().
+   */
+  buildLink = this._buildMiddleware;
 
-  build(): BuiltEndpoint<TParams["tInput"], TParams["tResponses"], TParams["tMethod"]> {
-    return this.buildRaw(false);
+  private _build(): BuiltEndpoint<
+    TParams["tInput"],
+    TParams["tResponses"],
+    TParams["tMethod"]
+  > {
+    return this._buildRaw(false);
   }
 
-  buildRaw(
+  private _buildRaw(
     isRawHandler: boolean = true,
   ): BuiltEndpoint<TParams["tInput"], any, TParams["tMethod"]> {
-    const endpoint = this.__buildMiddleware();
+    const endpoint = this._buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
       endpoint({ req, res, data: null as any })
@@ -312,39 +367,49 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     return { handler, method: this.config.method } as any;
   }
 
-  get = this.__buildFinalMiddlewareSetter("get");
-  post = this.__buildFinalMiddlewareSetter("post");
-  patch = this.__buildFinalMiddlewareSetter("patch");
-  delete = this.__buildFinalMiddlewareSetter("delete");
-  put = this.__buildFinalMiddlewareSetter("put");
+  /** Finalize as GET. Handler returns JSON response. */
+  get = this._buildFinalMiddlewareSetter("get");
+  /** Finalize as POST. Handler returns JSON response. */
+  post = this._buildFinalMiddlewareSetter("post");
+  /** Finalize as PATCH. Handler returns JSON response. */
+  patch = this._buildFinalMiddlewareSetter("patch");
+  /** Finalize as DELETE. Handler returns JSON response. */
+  delete = this._buildFinalMiddlewareSetter("delete");
+  /** Finalize as PUT. Handler returns JSON response. */
+  put = this._buildFinalMiddlewareSetter("put");
 
   /**
-   * Raw handler for direct response control (streaming, downloads, etc.)
-   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   * Finalize as GET with raw handler.
+   * For streaming, downloads, custom responses.
+   * Not compatible with @cuple/client, use fetch.
    */
-  getRaw = this.__buildFinalMiddlewareSetterRaw("get");
+  getRaw = this._buildFinalMiddlewareSetterRaw("get");
   /**
-   * Raw handler for direct response control (streaming, download, etc..)
-   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   * Finalize as POST with raw handler.
+   * For streaming, downloads, custom responses.
+   * Not compatible with @cuple/client, use fetch.
    */
-  postRaw = this.__buildFinalMiddlewareSetterRaw("post");
+  postRaw = this._buildFinalMiddlewareSetterRaw("post");
   /**
-   * Raw handler for direct response control (streaming, download, etc..)
-   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   * Finalize as PATCH with raw handler.
+   * For streaming, downloads, custom responses.
+   * Not compatible with @cuple/client, use fetch.
    */
-  patchRaw = this.__buildFinalMiddlewareSetterRaw("patch");
+  patchRaw = this._buildFinalMiddlewareSetterRaw("patch");
   /**
-   * Raw handler for direct response control (streaming, download, etc..)
-   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   * Finalize as DELETE with raw handler.
+   * For streaming, downloads, custom responses.
+   * Not compatible with @cuple/client, use fetch.
    */
-  deleteRaw = this.__buildFinalMiddlewareSetterRaw("delete");
+  deleteRaw = this._buildFinalMiddlewareSetterRaw("delete");
   /**
-   * Raw handler for direct response control (streaming, download, etc..)
-   * It doesn't work with @cuple/client yet, you may use `fetch`.
+   * Finalize as PUT with raw handler.
+   * For streaming, downloads, custom responses.
+   * Not compatible with @cuple/client, use fetch.
    */
-  putRaw = this.__buildFinalMiddlewareSetterRaw("put");
+  putRaw = this._buildFinalMiddlewareSetterRaw("put");
 
-  private __getSchemaMiddleware<
+  private _getSchemaMiddleware<
     TPropertyName extends SchemaType,
     TParser extends ZodType<any, any>,
   >(
@@ -388,7 +453,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     };
   }
 
-  private __buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
+  private _buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
     return <TFinalResponses extends ValidJsonObject>(
       mw: Finalware<TParams["tData"], TParams["tResponses"] | TFinalResponses>,
     ) => {
@@ -404,11 +469,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         method,
       });
 
-      return builder.build();
+      return builder._build();
     };
   }
 
-  private __buildFinalMiddlewareSetterRaw<TMethod extends HttpVerbs>(method: TMethod) {
+  private _buildFinalMiddlewareSetterRaw<TMethod extends HttpVerbs>(method: TMethod) {
     return (
       mw: Finalware<
         ({ next: true } & TParams["tData"]) | ({ next: false } & TParams["tResponses"]),
@@ -427,11 +492,11 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         method,
       });
 
-      return builder.buildRaw();
+      return builder._buildRaw();
     };
   }
 
-  private __buildMiddleware(): Middleware<
+  private _buildMiddleware(): Middleware<
     TParams["tInput"],
     TParams["tData"],
     TParams["tResponses"],
@@ -465,6 +530,11 @@ enum SchemaType {
   Headers = "headers",
 }
 
+/**
+ * Create endpoint builder for Express app.
+ * @param app - Express application instance
+ * @param options - Optional error handler
+ */
 export const createBuilder = (
   app: Express,
   options?: Pick<BuilderConfig, "errorHandler">,
