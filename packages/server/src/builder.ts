@@ -242,6 +242,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   /**
    * Validate request headers with Zod schema.
    * Parsed data available in handler as `data.headers`.
+   * Note: Express lowercases header names (e.g., "Authorization" -> "authorization").
    */
   headersSchema<TParser extends ZodType<any, any>>(
     parser: TParser,
