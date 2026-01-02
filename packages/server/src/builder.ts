@@ -37,28 +37,6 @@ type WithoutUndefinedProperties<T extends object> = Pick<T, NotUndefinedProperti
 };
 
 /**
- * Type-safe API caller for @cuple/client.
- * This is typing only, not backed by runtime data.
- */
-export type ApiCaller<
-  TRequestBody,
-  TRequestQuery,
-  TRequestParams,
-  TRequestHeaders,
-  TResponse,
-  TMethod extends HttpVerbs,
-> = {
-  [Key in TMethod]: (
-    params: WithoutUndefinedProperties<{
-      body: TRequestBody;
-      query: TRequestQuery;
-      params: TRequestParams;
-      headers: TRequestHeaders;
-    }>,
-  ) => Promise<TResponse>;
-};
-
-/**
  * Built endpoint with server and client types.
  * Runtime data: `handler` and `method`.
  * ApiCaller is typing only for @cuple/client.
@@ -67,20 +45,20 @@ export type BuiltEndpoint<
   TInput extends object,
   TResponses,
   TMethod extends HttpVerbs,
-> = ApiCaller<
-  TInput extends { body?: unknown } ? TInput["body"] : undefined,
-  TInput extends { query?: unknown } ? TInput["query"] : undefined,
-  TInput extends { params?: unknown } ? TInput["params"] : undefined,
-  TInput extends { headers?: unknown } ? TInput["headers"] : undefined,
-  TResponses,
-  TMethod
-> & {
-  handler: (req: ExpressRequest, res: ExpressResponse) => void;
-  method: HttpVerbs;
+> = {
+  tInput: WithoutUndefinedProperties<{
+    body: TInput extends { body?: unknown } ? TInput["body"] : undefined;
+    query: TInput extends { query?: unknown } ? TInput["query"] : undefined;
+    params: TInput extends { params?: unknown } ? TInput["params"] : undefined;
+    headers: TInput extends { headers?: unknown } ? TInput["headers"] : undefined;
+  }>;
+  tOutput: TResponses;
+  tMethod: TMethod;
+} & {
+  _handler: (req: ExpressRequest, res: ExpressResponse) => void;
+  _method: TMethod;
 };
 
-/** Middlewares should include next, which tells the handler to continue */
-type Next = { next: true | false };
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 
 type ErrorHandler = (data: {
@@ -95,7 +73,7 @@ const DEFAULT_ERROR_HANDLER: ErrorHandler = ({ err }) => {
 };
 
 type ValidJson =
-  | undefined // undefined means no property, it's here for compatibilitys with other types like "statusCode?: number"
+  | undefined // undefined means no property
   | null
   | string
   | number
@@ -365,7 +343,13 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       this.config.app[this.config.method](this.config.path, handler);
     }
 
-    return { handler, method: this.config.method } as any;
+    return {
+      _handler: handler,
+      _method: this.config.method!,
+      tInput: undefined as any,
+      tMethod: undefined as any,
+      tOutput: undefined as any,
+    };
   }
 
   /** Finalize as GET. Handler returns JSON response. */
@@ -462,7 +446,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         tInput: TParams["tInput"];
         tData: TParams["tData"];
         tResponses: TFinalResponses | TParams["tResponses"] | UnexpectedError;
-        tMethod: TParams["tMethod"];
+        tMethod: TMethod;
         tDependencyData: TParams["tDependencyData"];
       }>({
         ...this.config,

@@ -1,6 +1,7 @@
 import { describe, it, assert } from "vitest";
 import z from "zod";
 import { success, zodValidationError } from "@cuple/server";
+import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("schema validation", () => {
@@ -19,7 +20,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({} as any);
+      const response = await fetchCuple(client.foo.post, {} as any);
       assert.equal(response.statusCode, 422);
       if (response.result !== "validation-error") return assert.ok(false);
       assert.notEqual(response.message.length, 0);
@@ -41,7 +42,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: {
           birthdate: new Date().toISOString().split("T")[0],
         },
@@ -64,7 +65,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: {
           birthdate: new Date().toISOString(),
         },
@@ -89,7 +90,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: {
           birthdate: now,
         },
@@ -110,7 +111,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: {
           birthdate: Date.now(),
         },
@@ -138,7 +139,9 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({ user: { address: { street: 1 } } } as any);
+      const response = await fetchCuple(client.foo.post, {
+        user: { address: { street: 1 } },
+      } as any);
       assert.equal(response.statusCode, 422);
       if (response.result !== "validation-error") assert.ok(false);
       assert.notEqual(response.message.length, 0);
@@ -155,7 +158,7 @@ describe("schema validation", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: 42,
       });
       if (response.result !== "success") assert.ok(false);
@@ -179,7 +182,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         query: { id: 42 },
       });
       if (response.result !== "success") assert.ok(false);
@@ -203,7 +206,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         params: { id: 42 },
       });
       if (response.result !== "success") assert.ok(false);
@@ -226,7 +229,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         headers: {
           authorization: "42",
         },
@@ -246,7 +249,7 @@ describe("schema validation", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({});
+      const response = await fetchCuple(client.foo.post, {});
 
       if (response.result === "validation-error") {
         assert.ok(true);
@@ -281,7 +284,7 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: { name: "David" },
       });
 

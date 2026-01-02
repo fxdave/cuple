@@ -1,6 +1,7 @@
 import { describe, it, assert } from "vitest";
 import { z } from "zod";
 import { success } from "@cuple/server";
+import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("chaining", () => {
@@ -32,22 +33,22 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const badResponse1 = await client.get.get({
+      const badResponse1 = await fetchCuple(client.get.get, {
         headers: {
           authorization: "bar",
         },
       });
       assert.equal(badResponse1.statusCode, 401);
 
-      const badResponse2 = await client.get.get({
+      const badResponse2 = await fetchCuple(client.get.get, {
         headers: {} as any,
       });
       assert.equal(badResponse2.statusCode, 422);
 
-      const badResponse3 = await client.get.get({} as any);
+      const badResponse3 = await fetchCuple(client.get.get, {} as any);
       assert.equal(badResponse3.statusCode, 422);
 
-      const response = await client.get.get({
+      const response = await fetchCuple(client.get.get, {
         headers: {
           authorization: "foo",
         },
@@ -86,7 +87,7 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const response = await client.someRoute.get({
+      const response = await fetchCuple(client.someRoute.get, {
         body: {
           id: 32,
           name: "David",
@@ -146,7 +147,7 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const response = await client.someRoute.get({
+      const response = await fetchCuple(client.someRoute.get, {
         body: {
           id: 32,
           name: "David",
@@ -200,7 +201,7 @@ describe("chaining", () => {
         };
       });
       await cs.run(async (client) => {
-        const response = await client.someRoute.get({
+        const response = await fetchCuple(client.someRoute.get, {
           body: {
             id: 32,
             name: "David",

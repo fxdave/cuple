@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { Express } from "express";
-import { ApiCaller, BuiltEndpoint } from "./builder";
+import { BuiltEndpoint } from "./builder";
 
 export type InitRpcConfig = {
   path: string;
@@ -8,7 +8,15 @@ export type InitRpcConfig = {
 };
 
 type RecursiveApi = {
-  [Key in string]: ApiCaller<any, any, any, any, any, any> | RecursiveApi;
+  [Key in string]:
+    | {
+        tInput: any;
+        tOutput: any;
+        tMethod: any;
+        _handler: (req: any, res: any) => void;
+        _method: any;
+      }
+    | RecursiveApi;
 };
 
 export function initRpc(app: Express, config: InitRpcConfig) {
@@ -29,14 +37,14 @@ export function initRpc(app: Express, config: InitRpcConfig) {
       endpoint = (endpoint as any)[segment] as any;
     }
 
-    if (method !== endpoint.method) {
+    if (method !== endpoint._method) {
       return res.status(400).send({
         message: "Method not allowed",
       });
     }
 
     req.body = requestInto.argument.body;
-    endpoint.handler(req, res);
+    endpoint._handler(req, res);
   };
 
   app.get(config.path, express.json(), createRpcHandler("get"));

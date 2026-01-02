@@ -1,6 +1,7 @@
 import assert from "assert";
 import { describe, it } from "vitest";
 import { success } from "@cuple/server";
+import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("raw handlers", () => {
@@ -19,7 +20,7 @@ describe("raw handlers", () => {
       const text = await response.text();
       assert.equal(text, "text-response");
 
-      const normalRequest = await client.testNormal.get({});
+      const normalRequest = await fetchCuple(client.testNormal.get, {});
       assert.equal(normalRequest.result, "success");
     });
   });

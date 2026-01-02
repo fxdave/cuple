@@ -12,7 +12,9 @@
     "baseUrl": ".",
     "paths": {
       "@cuple/client/*": ["./packages/client/src/*"],
-      "@cuple/server/*": ["./packages/server/src/*"]
+      "@cuple/server/*": ["./packages/server/src/*"],
+      "@cuple/client": ["./packages/client/src/index.ts"],
+      "@cuple/server": ["./packages/server/src/index.ts"]
     }
   },
   "references": [
