@@ -1,4 +1,4 @@
-import { createClient } from "@cuple/client";
+import { createClient, fetchCuple } from "@cuple/client";
 import type { routes } from "./example";
 
 const client = createClient<typeof routes>({
@@ -17,11 +17,11 @@ async function test() {
 }
 
 async function getPosts() {
-  return await client.getPosts.get({});
+  return await fetchCuple(client.getPosts.get, {});
 }
 
 async function getPost(id: number) {
-  return await client.getPost.get({
+  return await fetchCuple(client.getPost.get, {
     params: {
       id,
     },
@@ -29,7 +29,7 @@ async function getPost(id: number) {
 }
 
 async function deletePost(id: number) {
-  return await client.deletePost.delete({
+  return await fetchCuple(client.deletePost.delete, {
     params: {
       id,
     },
@@ -37,7 +37,7 @@ async function deletePost(id: number) {
 }
 
 async function addPost(title: string, content: string) {
-  return await client.addPost.post({
+  return await fetchCuple(client.addPost.post, {
     body: {
       content,
       title,

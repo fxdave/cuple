@@ -47,7 +47,7 @@ To solve this, Cuple introduces a wrapper called **link**, and you can connect l
 ```ts
 const authLink = builder
   .headersSchema(
-    z.object({
+    z.looseObject({
       authorization: z.string(),
     })
   )

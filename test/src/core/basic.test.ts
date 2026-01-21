@@ -1,6 +1,6 @@
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { success } from "@cuple/server";
+import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("basic request response", () => {
@@ -8,14 +8,14 @@ describe("basic request response", () => {
     const cs = await createClientAndServer((builder) => ({
       get: builder.get(async () => {
         return success({
-          foo: "get",
+          foo: "something",
         });
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.get.get({});
+      const response = await fetchCuple(client.get.get, {}).thenUnwrapOn(["success"]);
       if (response.result !== "success") assert.ok(false);
-      assert.equal(response.foo, "get");
+      assert.equal(response.foo, "something");
     });
   });
 
@@ -28,7 +28,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.post.post({});
+      const response = await fetchCuple(client.post.post, {});
       assert.equal(response.statusCode, 200);
     });
   });
@@ -42,7 +42,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.post.post({});
+      const response = await fetchCuple(client.post.post, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "post");
     });
@@ -58,7 +58,7 @@ describe("basic request response", () => {
     }));
 
     await cs.run(async (client) => {
-      const response = await client.patch.patch({});
+      const response = await fetchCuple(client.patch.patch, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "patch");
     });
@@ -73,7 +73,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.put.put({});
+      const response = await fetchCuple(client.put.put, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "put");
     });
@@ -88,7 +88,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.delete.delete({});
+      const response = await fetchCuple(client.delete.delete, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "delete");
     });

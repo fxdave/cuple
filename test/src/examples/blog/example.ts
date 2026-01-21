@@ -18,7 +18,7 @@ export const routes = {
   }),
   getPost: builder
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )
@@ -35,7 +35,7 @@ export const routes = {
     }),
   addPost: builder
     .bodySchema(
-      z.object({
+      z.strictObject({
         title: z.string(),
         content: z.string(),
       }),
@@ -51,7 +51,7 @@ export const routes = {
     }),
   deletePost: builder
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )

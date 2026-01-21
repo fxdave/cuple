@@ -1,4 +1,4 @@
-import { createClient } from "@cuple/client";
+import { createClient, fetchCuple } from "@cuple/client";
 import type { routes } from "./example";
 
 // Fake localstorage for testing
@@ -27,10 +27,10 @@ async function test() {
 }
 
 async function getProfile() {
-  return await authedClient.getProfile.get({});
+  return await fetchCuple(authedClient.getProfile.get, {});
 }
 async function changePassword() {
-  return await authedClient.setUserPassword.post({
+  return await fetchCuple(authedClient.setUserPassword.post, {
     body: {
       oldPassword: "something",
       password1: "newPass",

@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "module": "commonjs",
-    "target": "ES2017",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -13,7 +14,9 @@
     "noErrorTruncation": true,
     "paths": {
       "@cuple/client/*": ["../packages/client/src/*"],
-      "@cuple/server/*": ["../packages/server/src/*"]
+      "@cuple/server/*": ["../packages/server/src/*"],
+      "@cuple/client": ["../packages/client/src/index.ts"],
+      "@cuple/server": ["../packages/server/src/index.ts"]
     }
   },
   "references": [
@@ -24,7 +27,5 @@
       "path": "../packages/server"
     }
   ],
-  "include": [
-    "./src/**/*"
-  ]
+  "include": ["./src/**/*"]
 }

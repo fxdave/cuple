@@ -1,7 +1,7 @@
 import { success } from "@cuple/server";
-import assert from "assert";
-import { describe, it } from "mocha";
+import { describe, it, assert } from "vitest";
 import { z } from "zod";
+import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("client.with(..) (aka Client chaining)", () => {
@@ -9,7 +9,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -26,7 +26,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         },
       }));
 
-      const response = await newClient.exampleRoute.get({});
+      const response = await fetchCuple(newClient.exampleRoute.get);
       assert.equal(response.message, "Hi David!");
     });
   });
@@ -35,7 +35,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -52,7 +52,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         },
       }));
 
-      const response = await newClient.exampleRoute.get({
+      const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {
           name: "Foo",
         },
@@ -65,7 +65,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -82,7 +82,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         },
       }));
 
-      const response = await newClient.exampleRoute.get({
+      const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {
           name: "Foo",
         },
