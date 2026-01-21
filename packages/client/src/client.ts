@@ -76,11 +76,16 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
         return (target as any).with(argumentsList[0]);
       }
 
-      const method = segments.pop();
-      if (!method) throw new Error("Couldn't parse RPC request, method is required");
+      // fixes raceconditions when client.something.something.put is stored and reused.
+      const segmentsCopy = [...segments];
+
+      const method = segmentsCopy.pop();
+      if (!method) {
+        throw new Error("Couldn't parse RPC request, method is required");
+      }
       const getData = async () => {
         return {
-          segments,
+          segments: segmentsCopy,
           argument: {
             ...(preloader !== undefined ? await preloader() : {}),
             ...argumentsList[0],
