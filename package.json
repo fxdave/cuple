@@ -1,10 +1,16 @@
 {
   "name": "cuple",
+  "packageManager": "npm@11.7.0",
   "workspaces": [
-    "./packages/*"
+    "./packages/*",
+    "./test"
   ],
   "scripts": {
-    "build": "npm run build --workspaces && npx tsc"
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "clean": "turbo run clean"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -19,6 +25,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.15.1",
+    "turbo": "^2.7.6",
     "typescript": "^5.9.0",
     "vite-tsconfig-paths": "^6.0.3"
   },

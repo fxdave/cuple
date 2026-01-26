@@ -32,7 +32,7 @@ export function initRpc(app: Express, config: InitRpcConfig) {
     if (requestInto.argument.headers)
       Object.assign(req.headers, requestInto.argument.headers);
 
-    let endpoint: BuiltEndpoint<any, any, any> = config.routes as any;
+    let endpoint: BuiltEndpoint<any, any, any, any> = config.routes as any;
     for (const segment of requestInto.segments) {
       endpoint = (endpoint as any)[segment] as any;
     }

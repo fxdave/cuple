@@ -1,16 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "declaration": true,
-    "module": "commonjs",
-    "target": "ES2017",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "strictNullChecks": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "composite": true,
-    "noErrorTruncation": true
+    "composite": true
   },
-  "include": ["./src/*"]
+  "include": ["src/**/*"]
 }

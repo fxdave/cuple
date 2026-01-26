@@ -1,0 +1,17 @@
+{
+  "name": "@cuple/test",
+  "version": "1.2.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest --silent=passed-only",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src",
+    "lint:fix": "eslint --fix src",
+    "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "dependencies": {
+    "@cuple/client": "*",
+    "@cuple/server": "*"
+  }
+}

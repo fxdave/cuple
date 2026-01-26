@@ -1,13 +1,9 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "declaration": true,
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "esnext",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "strictNullChecks": true,
     "rootDir": "./src",
     "outDir": "./dist",
     "composite": true,
@@ -27,5 +23,5 @@
       "path": "../packages/server"
     }
   ],
-  "include": ["./src/**/*"]
+  "include": ["./src/**/*", "../packages/openapi/test/nested"]
 }

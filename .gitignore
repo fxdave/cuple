@@ -4,3 +4,6 @@ dist
 */tsconfig.tsbuildinfo
 **/*/tsconfig.tsbuildinfo
 coverage
+
+# Turborepo
+.turbo

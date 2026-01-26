@@ -1,0 +1,57 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "tsconfig.json",
+    "tsconfig.base.json"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".tsbuildinfo"],
+      "cache": true
+    },
+    "build:browser": {
+      "outputs": ["dist/browser/**"],
+      "cache": true
+    },
+    "build:node": {
+      "outputs": ["dist/node/**"],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "inputs": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "vitest.config.js",
+        "packages/*/src/**/*.ts"
+      ]
+    },
+    "lint": {
+      "outputs": [],
+      "cache": true,
+      "inputs": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        ".eslintrc.js",
+        "packages/**/*.ts"
+      ]
+    },
+    "lint:fix": {
+      "outputs": [],
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  },
+  "globalEnv": [
+    "NODE_ENV"
+  ]
+}

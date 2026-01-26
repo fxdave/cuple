@@ -5,7 +5,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "npx tsc"
+    "build": "tsc",
+    "lint": "eslint src",
+    "lint:fix": "eslint --fix src",
+    "clean": "rm -rf dist .tsbuildinfo"
   },
   "repository": {
     "type": "git",

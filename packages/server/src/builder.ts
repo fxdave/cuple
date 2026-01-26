@@ -45,7 +45,9 @@ export type BuiltEndpoint<
   TInput extends object,
   TResponses,
   TMethod extends HttpVerbs,
+  TMeta,
 > = {
+  tMeta: TMeta;
   tInput: WithoutUndefinedProperties<{
     body: TInput extends { body?: unknown } ? TInput["body"] : undefined;
     query: TInput extends { query?: unknown } ? TInput["query"] : undefined;
@@ -99,6 +101,7 @@ type BuilderConfig = {
 };
 
 type AnyBuilderParams = {
+  tMeta: object;
   /** Request input types. Schema methods add properties here. */
   tInput: BaseData;
   /** Handler data. Middleware with `next: true` merges here. */
@@ -111,6 +114,7 @@ type AnyBuilderParams = {
   tDependencyData: any;
 };
 type BuilderParams = {
+  tMeta: object;
   tInput: BaseData;
   tData: BaseData;
   tResponses: never;
@@ -133,6 +137,18 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     };
   }
 
+  /** Add custom metadata to the endpoint, e.g. OpenAPI description */
+  meta<const T extends { description?: string; name?: string }>(meta: T) {
+    return this as unknown as Builder<{
+      tMeta: T;
+      tInput: TParams["tInput"];
+      tData: TParams["tData"];
+      tResponses: TParams["tResponses"];
+      tMethod: TParams["tMethod"];
+      tDependencyData: TParams["tDependencyData"];
+    }>;
+  }
+
   /**
    * Add middleware to transform data or return early.
    * `next: true` passes data to next handler.
@@ -142,6 +158,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     mw: Middleware<any, TParams["tData"], TResult>,
   ) {
     return new Builder<{
+      tMeta: TParams["tMeta"];
       // Keep the current input, if we need to update it, we have to do manually.
       // Infering inputs from middleware is not possible.
       tInput: TParams["tInput"];
@@ -164,6 +181,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   bodySchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
+    tMeta: TParams["tMeta"];
     tInput: TParams["tInput"] & { [SchemaType.Body]: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
@@ -184,6 +202,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   querySchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
+    tMeta: TParams["tMeta"];
     tInput: TParams["tInput"] & { [SchemaType.Query]: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
@@ -204,6 +223,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   paramsSchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
+    tMeta: TParams["tMeta"];
     tInput: TParams["tInput"] & { [SchemaType.Params]: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
@@ -225,6 +245,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   headersSchema<TParser extends ZodType<any, any>>(
     parser: TParser,
   ): Builder<{
+    tMeta: TParams["tMeta"];
     tInput: TParams["tInput"] & { [SchemaType.Headers]: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
@@ -260,6 +281,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       TChain extends Middleware<any, any, infer TRespIn> ? TRespIn : never;
 
     return this as unknown as Builder<{
+      tMeta: TParams["tMeta"];
       tInput: TParams["tInput"] & TInputIncoming;
       // The consequent TData will be merged with TResult only when { next: TRUE }
       tData: TParams["tData"] & TDataIncoming;
@@ -280,6 +302,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   ) {
     type AssertedBuilderType = TParams["tData"] extends TLinkDependencyData
       ? Builder<{
+          tMeta: TParams["tMeta"];
           tInput: TParams["tInput"] & TLinkInput;
           tData: TParams["tData"] & TLinkData & { next: true };
           tResponses: TParams["tResponses"] | (TLinkResponses & { next: false });
@@ -302,14 +325,15 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   private _build(): BuiltEndpoint<
     TParams["tInput"],
     TParams["tResponses"],
-    TParams["tMethod"]
+    TParams["tMethod"],
+    TParams["tMeta"]
   > {
     return this._buildRaw(false);
   }
 
   private _buildRaw(
     isRawHandler: boolean = true,
-  ): BuiltEndpoint<TParams["tInput"], any, TParams["tMethod"]> {
+  ): BuiltEndpoint<TParams["tInput"], any, TParams["tMethod"], TParams["tMeta"]> {
     const endpoint = this._buildMiddleware();
 
     const handler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -349,6 +373,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       tInput: undefined as any,
       tMethod: undefined as any,
       tOutput: undefined as any,
+      tMeta: undefined as any,
     };
   }
 
@@ -443,6 +468,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       mw: Finalware<TParams["tData"], TParams["tResponses"] | TFinalResponses>,
     ) => {
       const builder = new Builder<{
+        tMeta: TParams["tMeta"];
         tInput: TParams["tInput"];
         tData: TParams["tData"];
         tResponses: TFinalResponses | TParams["tResponses"] | UnexpectedError;
@@ -466,6 +492,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       >,
     ) => {
       const builder = new Builder<{
+        tMeta: TParams["tMeta"];
         tInput: TParams["tInput"];
         tData: TParams["tData"];
         tResponses: any;
