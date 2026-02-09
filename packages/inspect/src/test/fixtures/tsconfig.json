@@ -1,0 +1,16 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "noEmit": true,
+    "paths": {
+      "@cuple/server": ["../../../../../packages/server/src/index.ts"],
+      "@cuple/server/*": ["../../../../../packages/server/src/*"]
+    }
+  },
+  "include": ["./**/*"],
+  "references": [
+    { "path": "../../../../server" }
+  ]
+}

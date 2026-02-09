@@ -7,15 +7,18 @@
       "@cuple/client/*": ["./packages/client/src/*"],
       "@cuple/server/*": ["./packages/server/src/*"],
       "@cuple/openapi/*": ["./packages/openapi/src/*"],
+      "@cuple/inspect/*": ["./packages/inspect/src/*"],
       "@cuple/client": ["./packages/client/src/index.ts"],
       "@cuple/server": ["./packages/server/src/index.ts"],
-      "@cuple/openapi": ["./packages/openapi/src/index.ts"]
+      "@cuple/openapi": ["./packages/openapi/src/index.ts"],
+      "@cuple/inspect": ["./packages/inspect/src/index.ts"]
     }
   },
   "references": [
     { "path": "./packages/client" },
     { "path": "./packages/server" },
     { "path": "./packages/openapi" },
+    { "path": "./packages/inspect" },
     { "path": "./test" }
   ],
   "files": [],
