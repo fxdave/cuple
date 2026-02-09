@@ -1,4 +1,4 @@
-export { createBuilder, Builder } from "./builder";
+export { createBuilder, Builder, SSEOptions } from "./builder";
 export { initRpc, InitRpcConfig } from "./rpc-handler";
 export {
   apiResponse,

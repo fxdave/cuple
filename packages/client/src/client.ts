@@ -33,7 +33,7 @@ export class CuplePromise<T extends { result: string }> extends Promise<T> {
     });
   }
   /** Keep success result, throw error otherwise. */
-  thenUnwrap(): CuplePromise<T & { result: "success" }> {
+  thenUnwrap(): CuplePromise<Extract<T, { result: "success" }>> {
     return CuplePromise.fromPromise(
       (async () => {
         const response: any = await this;
@@ -88,6 +88,7 @@ export type ClientEndpointRef = {
   tInput: Record<string, unknown>;
   tOutput: any;
   tMethod: any;
+  _sse?: never;
   clientProps: {
     method: any;
     segments: any;
@@ -136,6 +137,103 @@ async function _fetchCuple<TEndpoint extends ClientEndpointRef>(
   const res = await response.json();
   (res as any).statusCode = response.status;
   return res as TEndpoint["tOutput"];
+}
+
+export type ClientSSEEndpointRef = {
+  tInput: Record<string, unknown>;
+  tOutput: any;
+  tMethod: any;
+  _sse: true;
+  clientProps: {
+    method: any;
+    segments: any;
+    path: any;
+    preloader?: () => any;
+  };
+};
+
+export type FetchCupleSSEArgs<TEndpoint extends ClientSSEEndpointRef> =
+  {} extends TEndpoint["tInput"]
+    ? [options?: Merge<TEndpoint["tInput"], GenericOptions>]
+    : [options: Merge<TEndpoint["tInput"], GenericOptions>];
+
+export function fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(
+  endpoint: TEndpoint,
+  ...args: FetchCupleSSEArgs<TEndpoint>
+): CuplePromise<TEndpoint["tOutput"]> {
+  return CuplePromise.fromPromise(_fetchCupleSSE(endpoint, ...args));
+}
+
+async function _fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(
+  endpoint: TEndpoint,
+  ...args: FetchCupleSSEArgs<TEndpoint>
+): Promise<TEndpoint["tOutput"]> {
+  const options = args[0];
+  const method = endpoint.clientProps.method;
+  const getData = async () => {
+    return {
+      segments: endpoint.clientProps.segments,
+      argument: {
+        ...(endpoint.clientProps.preloader !== undefined
+          ? await endpoint.clientProps.preloader()
+          : {}),
+        ...options,
+      },
+    };
+  };
+  const response = await methodAwareFetch(
+    method,
+    getData,
+    endpoint.clientProps.path,
+    options?.options as RequestInit,
+  );
+
+  const contentType = response.headers.get("Content-Type") || "";
+  if (!contentType.includes("text/event-stream")) {
+    // Middleware error - parse as JSON
+    const res = await response.json();
+    (res as any).statusCode = response.status;
+    return res as TEndpoint["tOutput"];
+  }
+
+  // SSE stream
+  const stream = parseSSEStream(response);
+  return Object.assign(stream, {
+    result: "success" as const,
+    statusCode: 200 as const,
+  }) as any;
+}
+
+async function* parseSSEStream(response: Response): AsyncGenerator<any> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop()!;
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          yield JSON.parse(data);
+        }
+      }
+    }
+
+    // Process remaining buffer
+    if (buffer.startsWith("data: ")) {
+      const data = buffer.slice(6);
+      yield JSON.parse(data);
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export type RecursiveApi = {

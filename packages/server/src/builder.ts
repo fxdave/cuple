@@ -91,10 +91,21 @@ type ValidInputOrError<T> = T extends ValidJson
   ? T
   : { _: "You can only use JSON types" };
 
+export type SSEOptions = { returnOnDisconnect?: boolean };
+
+/** Phantom type for SSE streams. On the client, the actual value is an AsyncIterable. */
+export type CupleSSEStream<TEvent> = {
+  result: "success";
+  statusCode: 200;
+  [Symbol.asyncIterator](): AsyncIterator<TEvent>;
+};
+
 type BuilderConfig = {
   app: Express;
   middlewares: Middleware<any, any, any>[];
   finalware?: Finalware<any, any>;
+  sseFinalware?: (props: MiddlewareProps<any>) => AsyncGenerator<any>;
+  sseOptions?: SSEOptions;
   method?: HttpVerbs;
   path?: string;
   errorHandler?: ErrorHandler;
@@ -388,6 +399,17 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   /** Finalize as PUT. Handler returns JSON response. */
   put = this._buildFinalMiddlewareSetter("put");
 
+  /** Finalize as GET with SSE stream. */
+  getSSE = this._buildSSEFinalMiddlewareSetter("get");
+  /** Finalize as POST with SSE stream. */
+  postSSE = this._buildSSEFinalMiddlewareSetter("post");
+  /** Finalize as PUT with SSE stream. */
+  putSSE = this._buildSSEFinalMiddlewareSetter("put");
+  /** Finalize as PATCH with SSE stream. */
+  patchSSE = this._buildSSEFinalMiddlewareSetter("patch");
+  /** Finalize as DELETE with SSE stream. */
+  deleteSSE = this._buildSSEFinalMiddlewareSetter("delete");
+
   /**
    * Finalize as GET with raw handler.
    * For streaming, downloads, custom responses.
@@ -505,6 +527,110 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       });
 
       return builder._buildRaw();
+    };
+  }
+
+  private _buildSSEFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
+    return <TEvent extends ValidJsonObject>(
+      mw: (props: MiddlewareProps<TParams["tData"]>) => AsyncGenerator<TEvent>,
+      options?: SSEOptions,
+    ) => {
+      const builder = new Builder<{
+        tMeta: TParams["tMeta"];
+        tInput: TParams["tInput"];
+        tData: TParams["tData"];
+        tResponses: any;
+        tMethod: TMethod;
+        tDependencyData: TParams["tDependencyData"];
+      }>({
+        ...this.config,
+        sseFinalware: mw,
+        sseOptions: options,
+        method,
+      });
+
+      return builder._buildSSE() as BuiltEndpoint<
+        TParams["tInput"],
+        CupleSSEStream<TEvent> | TParams["tResponses"] | UnexpectedError,
+        TMethod,
+        TParams["tMeta"]
+      > & { _sse: true };
+    };
+  }
+
+  private _buildSSE(): BuiltEndpoint<
+    TParams["tInput"],
+    TParams["tResponses"],
+    TParams["tMethod"],
+    TParams["tMeta"]
+  > & { _sse: true } {
+    const endpoint = this._buildMiddleware();
+
+    const handler = (req: ExpressRequest, res: ExpressResponse) => {
+      endpoint({ req, res, data: null as any })
+        .then(async (response) => {
+          if (typeof response.next !== "boolean")
+            throw new BadMiddlewareReturnTypeError();
+          if (!response.next) {
+            // Middleware rejected - send JSON error
+            const { next, statusCode, ...rest } = response;
+            res.status(statusCode).send(rest);
+            return;
+          }
+
+          if (!this.config.sseFinalware) throw new MissingFinalwareError();
+
+          // Set SSE headers
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.flushHeaders();
+
+          const generator = this.config.sseFinalware({ req, res, data: response });
+          const returnOnDisconnect = this.config.sseOptions?.returnOnDisconnect !== false;
+
+          if (returnOnDisconnect) {
+            req.on("close", () => {
+              generator.return(undefined);
+            });
+          }
+
+          try {
+            for await (const event of generator) {
+              res.write(`data: ${JSON.stringify(event)}\n\n`);
+            }
+          } catch (err) {
+            // If headers already sent, just end
+            if (!res.headersSent) {
+              const { statusCode, ...rest } = this.config.errorHandler({ err, res, req });
+              res.status(statusCode).send(rest);
+              return;
+            }
+          }
+          res.end();
+        })
+        .catch((err: unknown) => {
+          if (!res.headersSent) {
+            const { statusCode, ...rest } = this.config.errorHandler({ err, res, req });
+            res.status(statusCode).send(rest);
+          } else {
+            res.end();
+          }
+        });
+    };
+
+    if (this.config.method && this.config.path) {
+      this.config.app[this.config.method](this.config.path, handler);
+    }
+
+    return {
+      _handler: handler,
+      _method: this.config.method!,
+      _sse: true as const,
+      tInput: undefined as any,
+      tMethod: undefined as any,
+      tOutput: undefined as any,
+      tMeta: undefined as any,
     };
   }
 
