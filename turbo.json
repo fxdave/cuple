@@ -20,6 +20,16 @@
     },
     "test": {
       "dependsOn": ["build"],
+      "cache": true,
+      "inputs": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "vitest.config.js",
+        "packages/*/src/**/*.ts"
+      ]
+    },
+    "test:coverage": {
+      "dependsOn": ["build"],
       "outputs": ["coverage/**"],
       "cache": true,
       "inputs": [

@@ -1,11 +1,12 @@
 import z, { ZodError, ZodType } from "zod";
-import { Request, Response, Express } from "express";
+import express, { Request, Response, Express } from "express";
 import {
   UnexpectedError,
   unexpectedError,
   ZodValidationError,
   zodValidationError,
 } from "./responses";
+import type { RawBodyParser } from "./body-parsers";
 
 type ExpressRequest = Request;
 type ExpressResponse = Response;
@@ -83,10 +84,12 @@ type ValidJson =
   | ValidJson[]
   | { [K in string]: ValidJson };
 type ValidJsonObject = { [K in string]: ValidJson };
-type ValidMiddlewareReturnType = ValidJsonObject & {
-  next: true | false;
-  statusCode?: number;
-};
+type ValidMiddlewareReturnType =
+  | (ValidJsonObject & {
+      next: false;
+      statusCode: number;
+    })
+  | { next: true };
 type ValidInputOrError<T> = T extends ValidJson
   ? T
   : { _: "You can only use JSON types" };
@@ -94,10 +97,9 @@ type ValidInputOrError<T> = T extends ValidJson
 export type SSEOptions = { returnOnDisconnect?: boolean };
 
 /** Phantom type for SSE streams. On the client, the actual value is an AsyncIterable. */
-export type CupleSSEStream<TEvent> = {
+export type CupleSSEStream<TEvent> = AsyncIterable<TEvent> & {
   result: "success";
   statusCode: 200;
-  [Symbol.asyncIterator](): AsyncIterator<TEvent>;
 };
 
 type BuilderConfig = {
@@ -109,6 +111,7 @@ type BuilderConfig = {
   method?: HttpVerbs;
   path?: string;
   errorHandler?: ErrorHandler;
+  bodyParser?: RawBodyParser<any, any> | null;
 };
 
 type AnyBuilderParams = {
@@ -160,6 +163,40 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     }>;
   }
 
+  rawBody(): Builder<{
+    tMeta: TParams["tMeta"];
+    tInput: TParams["tInput"] & { body: Buffer };
+    tData: TParams["tData"];
+    tResponses: TParams["tResponses"];
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }>;
+  rawBody<TData, TInput>(parser: RawBodyParser<TData, TInput>): Builder<{
+    tMeta: TParams["tMeta"];
+    tInput: TParams["tInput"] & (undefined extends TInput ? {} : { body: TInput });
+    tData: TParams["tData"] & (undefined extends TData ? {} : { body: TData });
+    tResponses: TParams["tResponses"];
+    tMethod: TParams["tMethod"];
+    tDependencyData: TParams["tDependencyData"];
+  }>;
+  rawBody<TData, TInput>(parser?: RawBodyParser<TData, TInput>): Builder<any> {
+    const middlewares = parser
+      ? [
+          ...this.config.middlewares,
+          (async ({ req }: MiddlewareProps<unknown>) => ({
+            next: true as const,
+            body: req.body as TData,
+          })) as Middleware<any, any, any>,
+        ]
+      : this.config.middlewares;
+
+    return new Builder({
+      ...this.config,
+      bodyParser: parser ?? null,
+      middlewares,
+    });
+  }
+
   /**
    * Add middleware to transform data or return early.
    * `next: true` passes data to next handler.
@@ -176,7 +213,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       // The consequent TData will be merged with TResult only when { next: TRUE }
       tData: TParams["tData"] & TResult & { next: true };
       // The consequent TResponses can be TResult only when { next: FALSE }
-      tResponses: TParams["tResponses"] | (TResult & { next: false });
+      tResponses:
+        | TParams["tResponses"]
+        | (TResult extends { next: false } ? TResult : never);
       tMethod: TParams["tMethod"];
       tDependencyData: TParams["tDependencyData"];
     }>({
@@ -347,7 +386,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   ): BuiltEndpoint<TParams["tInput"], any, TParams["tMethod"], TParams["tMeta"]> {
     const endpoint = this._buildMiddleware();
 
-    const handler = (req: ExpressRequest, res: ExpressResponse) => {
+    const coreHandler = (req: ExpressRequest, res: ExpressResponse) => {
       endpoint({ req, res, data: null as any })
         .then((response) => {
           if (typeof response.next !== "boolean")
@@ -373,6 +412,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
           res.status(statusCode).send(rest);
         });
     };
+
+    const handler = this._wrapWithBodyParser(coreHandler);
 
     if (this.config.method && this.config.path) {
       this.config.app[this.config.method](this.config.path, handler);
@@ -566,7 +607,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
   > & { _sse: true } {
     const endpoint = this._buildMiddleware();
 
-    const handler = (req: ExpressRequest, res: ExpressResponse) => {
+    const coreHandler = (req: ExpressRequest, res: ExpressResponse) => {
       endpoint({ req, res, data: null as any })
         .then(async (response) => {
           if (typeof response.next !== "boolean")
@@ -619,6 +660,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         });
     };
 
+    const handler = this._wrapWithBodyParser(coreHandler);
+
     if (this.config.method && this.config.path) {
       this.config.app[this.config.method](this.config.path, handler);
     }
@@ -631,6 +674,18 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       tMethod: undefined as any,
       tOutput: undefined as any,
       tMeta: undefined as any,
+    };
+  }
+
+  private _wrapWithBodyParser(
+    coreHandler: (req: ExpressRequest, res: ExpressResponse) => void,
+  ) {
+    if (this.config.bodyParser === null) {
+      return coreHandler;
+    }
+    const middleware = this.config.bodyParser?._expressMiddleware ?? express.json();
+    return (req: ExpressRequest, res: ExpressResponse) => {
+      middleware(req, res, () => coreHandler(req, res));
     };
   }
 

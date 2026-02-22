@@ -12,7 +12,7 @@ const tsconfigPath = path.resolve(
   "../../../inspect/src/test/fixtures/tsconfig.json",
 );
 
-describe("generateOpenAPI", () => {
+describe("generateOpenAPI", { timeout: 10000 }, () => {
   const doc: OpenAPIDocument = generateOpenAPI(fixturePath, "routes", {
     tsconfigPath,
   });

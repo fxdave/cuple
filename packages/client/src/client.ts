@@ -306,8 +306,19 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
   });
 }
 
+function isRawBody(body: unknown): boolean {
+  if (typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) return true;
+  if (typeof Blob !== "undefined" && body instanceof Blob) return true;
+  if (typeof Buffer !== "undefined" && Buffer.isBuffer(body)) return true;
+  if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) return true;
+  return false;
+}
+
 /**
- * Run fetch with data added to body or query depending on the method
+ * Run fetch with RPC routing metadata separated from the body.
+ * GET/DELETE: metadata (segments, params, query, body) in query param `data`.
+ * POST/PUT/PATCH: metadata (segments, params, query) in `X-Cuple-RPC` header,
+ * body sent as actual HTTP body (JSON-stringified or raw).
  * @param method get, post, put, patch, delete
  * @param getData data factory for body, query, headers
  * @param path the path, usually the rpc's endpoint
@@ -319,30 +330,33 @@ async function methodAwareFetch(
   path: string,
   options?: RequestInit,
 ) {
-  const {
-    segments,
-    argument: { headers, ...argument },
-  } = await getData();
-  const data = JSON.stringify({ segments, argument });
+  const { segments, argument } = await getData();
+  const { headers, body, options: _options, ...meta } = argument;
+  const customHeaders = typeof headers === "object" ? (headers as Record<string, string>) : {};
+
   if (method === "get" || method === "delete") {
-    const argument = new URLSearchParams({ data });
-    return await fetch(`${path}?${argument.toString()}`, {
+    const data = JSON.stringify({ segments, ...meta, body });
+    const params = new URLSearchParams({ data });
+    return await fetch(`${path}?${params.toString()}`, {
       method: method.toUpperCase(),
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
-        ...(typeof headers === "object" ? headers : {}),
+        ...customHeaders,
       },
       ...options,
     });
   }
+
+  const rpcMeta = JSON.stringify({ segments, ...meta });
+  const raw = isRawBody(body);
   return await fetch(path, {
-    body: data,
+    body: raw ? (body as RequestInit['body']) : body !== undefined ? JSON.stringify(body) : undefined,
     method: method.toUpperCase(),
     headers: {
-      "Content-Type": "application/json",
+      "X-Cuple-RPC": rpcMeta,
+      ...(raw ? {} : { "Content-Type": "application/json" }),
       Accept: "application/json",
-      ...(typeof headers === "object" ? headers : {}),
+      ...customHeaders,
     },
     ...options,
   });

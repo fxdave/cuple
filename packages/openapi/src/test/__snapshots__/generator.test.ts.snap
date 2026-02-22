@@ -1083,17 +1083,6 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
             },
             "description": "unexpected-error",
           },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {},
-                  "type": "object",
-                },
-              },
-            },
-            "description": "Response",
-          },
         },
       },
     },
@@ -1544,17 +1533,6 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
               },
             },
             "description": "unexpected-error",
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {},
-                  "type": "object",
-                },
-              },
-            },
-            "description": "Response",
           },
         },
       },

@@ -1,6 +1,6 @@
 import { describe, it, assert } from "vitest";
 import z from "zod";
-import { success, zodValidationError } from "@cuple/server";
+import { success, zodValidationError, json } from "@cuple/server";
 import { fetchCuple } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -149,13 +149,16 @@ describe("schema validation", () => {
     });
   });
 
-  it("should allow non-objects", async () => {
+  it("should allow non-objects with rawBody json parser", async () => {
     const cs = await createClientAndServer((builder) => ({
-      foo: builder.bodySchema(z.number()).post(async ({ data }) => {
-        return success({
-          got: data.body,
-        });
-      }),
+      foo: builder
+        .rawBody(json({ strict: false }))
+        .bodySchema(z.number())
+        .post(async ({ data }) => {
+          return success({
+            got: data.body,
+          });
+        }),
     }));
     await cs.run(async (client) => {
       const response = await fetchCuple(client.foo.post, {

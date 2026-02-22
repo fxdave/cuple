@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response } from "express";
 import { Express } from "express";
 import { BuiltEndpoint } from "./builder";
 
@@ -21,19 +21,19 @@ type RecursiveApi = {
 
 export function initRpc(app: Express, config: InitRpcConfig) {
   const createRpcHandler = (method: string) => (req: Request, res: Response) => {
-    let requestInto;
+    let rpcData;
     if (method === "get" || method === "delete") {
-      requestInto = JSON.parse((req.query.data as string) || "");
+      rpcData = JSON.parse((req.query.data as string) || "{}");
+      req.body = rpcData.body;
     } else {
-      requestInto = req.body;
+      rpcData = JSON.parse((req.headers["x-cuple-rpc"] as string) || "{}");
     }
-    req.params = requestInto.argument.params;
-    req.query = requestInto.argument.query;
-    if (requestInto.argument.headers)
-      Object.assign(req.headers, requestInto.argument.headers);
+
+    req.params = rpcData.params || {};
+    req.query = rpcData.query || {};
 
     let endpoint: BuiltEndpoint<any, any, any, any> = config.routes as any;
-    for (const segment of requestInto.segments) {
+    for (const segment of rpcData.segments) {
       endpoint = (endpoint as any)[segment] as any;
     }
 
@@ -43,13 +43,12 @@ export function initRpc(app: Express, config: InitRpcConfig) {
       });
     }
 
-    req.body = requestInto.argument.body;
     endpoint._handler(req, res);
   };
 
-  app.get(config.path, express.json(), createRpcHandler("get"));
-  app.post(config.path, express.json(), createRpcHandler("post"));
-  app.put(config.path, express.json(), createRpcHandler("put"));
-  app.patch(config.path, express.json(), createRpcHandler("patch"));
-  app.delete(config.path, express.json(), createRpcHandler("delete"));
+  app.get(config.path, createRpcHandler("get"));
+  app.post(config.path, createRpcHandler("post"));
+  app.put(config.path, createRpcHandler("put"));
+  app.patch(config.path, createRpcHandler("patch"));
+  app.delete(config.path, createRpcHandler("delete"));
 }
