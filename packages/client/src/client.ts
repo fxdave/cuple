@@ -309,8 +309,9 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
 function isRawBody(body: unknown): boolean {
   if (typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) return true;
   if (typeof Blob !== "undefined" && body instanceof Blob) return true;
-  if (typeof Buffer !== "undefined" && Buffer.isBuffer(body)) return true;
-  if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) return true;
+  if (typeof Uint8Array !== "undefined" && body instanceof Uint8Array) return true;
+  if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream)
+    return true;
   return false;
 }
 
@@ -332,7 +333,8 @@ async function methodAwareFetch(
 ) {
   const { segments, argument } = await getData();
   const { headers, body, options: _options, ...meta } = argument;
-  const customHeaders = typeof headers === "object" ? (headers as Record<string, string>) : {};
+  const customHeaders =
+    typeof headers === "object" ? (headers as Record<string, string>) : {};
 
   if (method === "get" || method === "delete") {
     const data = JSON.stringify({ segments, ...meta, body });
@@ -350,7 +352,11 @@ async function methodAwareFetch(
   const rpcMeta = JSON.stringify({ segments, ...meta });
   const raw = isRawBody(body);
   return await fetch(path, {
-    body: raw ? (body as RequestInit['body']) : body !== undefined ? JSON.stringify(body) : undefined,
+    body: raw
+      ? (body as RequestInit["body"])
+      : body !== undefined
+        ? JSON.stringify(body)
+        : undefined,
     method: method.toUpperCase(),
     headers: {
       "X-Cuple-RPC": rpcMeta,
