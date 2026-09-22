@@ -1,9 +1,9 @@
-import { describe, it, assert } from "vitest";
-import { success } from "@cuple/server";
+import { Worker } from "node:worker_threads";
 import { fetchCuple } from "@cuple/client";
-import createClientAndServer from "../utils/createClientAndServer";
+import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
 import { z } from "zod/v4";
-import { Worker } from "worker_threads";
+import createClientAndServer from "../utils/createClientAndServer";
 
 describe("racecondition test", () => {
   it("should work", async () => {

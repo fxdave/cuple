@@ -1,7 +1,7 @@
-import { success } from "@cuple/server";
-import { describe, it, assert } from "vitest";
-import { z } from "zod";
 import { CupleUnexpectedResponseError, fetchCuple } from "@cuple/client";
+import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("CuplePromise", () => {
@@ -29,7 +29,7 @@ describe("CuplePromise", () => {
         .thenUnwrap()
         .thenWrapAbort();
 
-      if (response.result == "abort") {
+      if (response.result === "abort") {
         return assert.ok(false);
       } else if (response.result === "success") {
         return assert.ok(true);

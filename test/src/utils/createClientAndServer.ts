@@ -1,8 +1,7 @@
+import { Server } from "node:http";
+import { type Client, createClient, type RecursiveApi } from "@cuple/client";
+import { type Builder, createBuilder, initRpc } from "@cuple/server";
 import express from "express";
-import { Client, createClient, RecursiveApi } from "@cuple/client";
-import { createBuilder, initRpc } from "@cuple/server";
-import { Builder } from "@cuple/server";
-import { Server } from "http";
 
 export default async function createClientAndServer<T extends RecursiveApi>(
   createRoutes: (builder: Builder) => T,

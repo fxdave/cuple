@@ -7,7 +7,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["src/test/**/*"],
-  "references": [
-    { "path": "../server" }
-  ]
+  "references": [{ "path": "../server" }]
 }

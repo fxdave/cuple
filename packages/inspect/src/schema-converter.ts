@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { Schema, PropertyInfo } from "./types";
+import type { PropertyInfo, Schema } from "./types";
 
 export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Schema {
   // Handle boolean first (TS represents boolean as union of true | false)

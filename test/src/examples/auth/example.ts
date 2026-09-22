@@ -1,7 +1,12 @@
+import {
+  apiResponse,
+  createBuilder,
+  initRpc,
+  success,
+  zodValidationError,
+} from "@cuple/server";
 import express from "express";
 import { z } from "zod";
-import { createBuilder, initRpc } from "@cuple/server";
-import { apiResponse, success, zodValidationError } from "@cuple/server";
 
 const app = express();
 app.use(express.json());
@@ -18,7 +23,7 @@ const auth = builder
     }),
   )
   .middleware(async ({ data }) => {
-    if (data.headers["authorization"] == "sometoken")
+    if (data.headers.authorization === "sometoken")
       return {
         next: true,
         auth: {

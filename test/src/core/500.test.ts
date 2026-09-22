@@ -1,6 +1,6 @@
-import { describe, it, assert } from "vitest";
-import { success } from "@cuple/server";
 import { fetchCuple } from "@cuple/client";
+import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("500 Internal Server Error handling", () => {
@@ -30,7 +30,7 @@ describe("500 Internal Server Error handling", () => {
       }),
       {
         errorHandler: ({ err }) => {
-          let errorObject;
+          let errorObject: string | undefined;
           if (err instanceof Error)
             errorObject = JSON.stringify(err, Object.getOwnPropertyNames(err));
 

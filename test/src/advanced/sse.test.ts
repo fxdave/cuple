@@ -1,8 +1,8 @@
-import assert from "assert";
+import assert from "node:assert";
+import { fetchCuple, fetchCupleSSE } from "@cuple/client";
+import { success } from "@cuple/server";
 import { describe, it } from "vitest";
 import { z } from "zod";
-import { success } from "@cuple/server";
-import { fetchCuple, fetchCupleSSE } from "@cuple/client";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("SSE handlers", () => {

@@ -6,8 +6,6 @@
     "build:browser": "tsc -p tsconfig.browser.json",
     "build:node": "tsc -p tsconfig.node.json",
     "build": "turbo run build:browser build:node",
-    "lint": "eslint src",
-    "lint:fix": "eslint --fix src",
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "repository": {

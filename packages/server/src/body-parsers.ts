@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 
 export type RawBodyParser<TData, TInput = TData> = {
   _expressMiddleware: (req: Request, res: Response, next: () => void) => void;

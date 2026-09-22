@@ -1,4 +1,4 @@
-import type { Schema, PropertyInfo } from "@cuple/inspect";
+import type { PropertyInfo, Schema } from "@cuple/inspect";
 
 export type OpenAPISchemaObject = {
   type?: string;

@@ -1,6 +1,6 @@
 import * as ts from "typescript";
-import { ResponseVariant, PropertyInfo } from "./types";
 import { convertTypeToSchema } from "./schema-converter";
+import type { PropertyInfo, ResponseVariant } from "./types";
 
 const EXCLUDED_PROPS = new Set(["result", "statusCode", "next"]);
 

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { convertSchemaToOpenAPI, convertPropertiesToOpenAPI } from "../schema-converter";
-import type { Schema, PropertyInfo } from "@cuple/inspect";
+import type { PropertyInfo, Schema } from "@cuple/inspect";
+import { describe, expect, it } from "vitest";
+import { convertPropertiesToOpenAPI, convertSchemaToOpenAPI } from "../schema-converter";
 
 describe("convertSchemaToOpenAPI", () => {
   it("should convert string schema", () => {

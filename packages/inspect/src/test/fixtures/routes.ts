@@ -1,6 +1,6 @@
+import { apiResponse, createBuilder, success } from "@cuple/server";
 import express from "express";
 import z from "zod";
-import { createBuilder, apiResponse, success } from "@cuple/server";
 
 const app = express();
 const builder = createBuilder(app);

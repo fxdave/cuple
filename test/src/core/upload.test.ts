@@ -1,18 +1,16 @@
-import { describe, it, assert } from "vitest";
-import { success, buffer } from "@cuple/server";
 import { fetchCuple } from "@cuple/client";
+import { buffer, success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("Upload", () => {
   it("should upload a file", async () => {
     const cs = await createClientAndServer((builder) => ({
-      foo: builder
-        .rawBody(buffer())
-        .post(async ({ data }) => {
-          return success({
-            size: data.body.length,
-          });
-        }),
+      foo: builder.rawBody(buffer()).post(async ({ data }) => {
+        return success({
+          size: data.body.length,
+        });
+      }),
     }));
     await cs.run(async (client) => {
       const response = await fetchCuple(client.foo.post, {

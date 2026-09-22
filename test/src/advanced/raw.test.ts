@@ -1,7 +1,7 @@
-import assert from "assert";
-import { describe, it } from "vitest";
-import { success } from "@cuple/server";
+import assert from "node:assert";
 import { fetchCuple } from "@cuple/client";
+import { success } from "@cuple/server";
+import { describe, it } from "vitest";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("raw handlers", () => {
@@ -52,7 +52,7 @@ describe("raw handlers", () => {
       testRaw: builder
         .path("/test")
         .middleware(async () => {
-          // eslint-disable-next-line no-constant-condition
+          // biome-ignore lint/correctness/noConstantCondition: intentionally dead branch to exercise middleware typing
           if (1 < 0.5)
             return {
               next: true,

@@ -1,4 +1,4 @@
-import * as z from "zod";
+import type * as z from "zod";
 
 export type ApiResponse<Result extends string, StatusCode extends number, Others> = {
   result: Result;

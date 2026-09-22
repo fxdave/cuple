@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-types */
-import { MapApi } from "./map-api";
+import type { MapApi } from "./map-api";
 
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, [], undefined);
@@ -9,7 +8,6 @@ type Merge<T extends object, U extends object> = Prettify<Omit<T, keyof U> & U>;
 
 type Prettify<T> = {
   [K in keyof T]: T[K];
-  // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};
 
 type GenericOptions = {
@@ -73,7 +71,7 @@ export class CuplePromise<T extends { result: string }> extends Promise<T> {
         try {
           return (await this) as any;
         } catch (e) {
-          if (e instanceof DOMException && e.name == "AbortError") {
+          if (e instanceof DOMException && e.name === "AbortError") {
             return { result: "abort", statusCode: null, message: "Request aborted" };
           } else {
             throw e;

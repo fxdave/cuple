@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/ban-types */
-import z, { ZodError, ZodType } from "zod";
-import express, { Request, Response, Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
+import type z from "zod";
+import { ZodError, type ZodType } from "zod";
+import type { RawBodyParser } from "./body-parsers";
 import {
-  UnexpectedError,
+  type UnexpectedError,
   unexpectedError,
-  ZodValidationError,
+  type ZodValidationError,
   zodValidationError,
 } from "./responses";
-import type { RawBodyParser } from "./body-parsers";
 
 type ExpressRequest = Request;
 type ExpressResponse = Response;
@@ -400,7 +400,6 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         })
         .then((response) => {
           if (isRawHandler) return;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { next, statusCode, ...rest } = response;
           res.status(statusCode).send(rest);
         })

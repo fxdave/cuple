@@ -1,9 +1,9 @@
 export { inspectRoutes, inspectRoutesFromProgram } from "./extractor";
 export type {
-  Schema,
-  PropertyInfo,
   PathInfo,
   PathSegment,
+  PropertyInfo,
   ResponseVariant,
   RouteInfo,
+  Schema,
 } from "./types";

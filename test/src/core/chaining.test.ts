@@ -1,7 +1,7 @@
-import { describe, it, assert } from "vitest";
-import { z } from "zod";
-import { success } from "@cuple/server";
 import { fetchCuple } from "@cuple/client";
+import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("chaining", () => {

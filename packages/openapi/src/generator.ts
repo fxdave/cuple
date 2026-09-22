@@ -1,9 +1,9 @@
-import fs from "fs";
+import fs from "node:fs";
+import type { ResponseVariant, RouteInfo } from "@cuple/inspect";
 import { inspectRoutes } from "@cuple/inspect";
-import type { RouteInfo, ResponseVariant } from "@cuple/inspect";
 import {
-  convertSchemaToOpenAPI,
   convertPropertiesToOpenAPI,
+  convertSchemaToOpenAPI,
   type OpenAPISchemaObject,
 } from "./schema-converter";
 
@@ -115,7 +115,7 @@ function buildResponseSchema(variant: ResponseVariant): OpenAPISchemaObject {
 
   // Add the result field as a literal enum
   if (variant.result !== null) {
-    properties["result"] = { type: "string", enum: [variant.result] };
+    properties.result = { type: "string", enum: [variant.result] };
     required.push("result");
   }
 

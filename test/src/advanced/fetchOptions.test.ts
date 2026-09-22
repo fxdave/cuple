@@ -1,7 +1,7 @@
-import { success } from "@cuple/server";
-import { describe, it, assert } from "vitest";
-import { z } from "zod";
 import { CupleUnexpectedResponseError, fetchCuple } from "@cuple/client";
+import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("Fetch options", () => {
@@ -36,7 +36,7 @@ describe("Fetch options", () => {
         controller.abort();
         await responsePromise;
       } catch (e) {
-        assert.ok(e instanceof DOMException && e.name == "AbortError");
+        assert.ok(e instanceof DOMException && e.name === "AbortError");
         return;
       }
 

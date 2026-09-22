@@ -1,9 +1,9 @@
+import * as path from "node:path";
 import * as ts from "typescript";
-import * as path from "path";
-import { RouteInfo, ResponseVariant, Schema } from "./types";
 import { parsePath } from "./path-parser";
-import { convertTypeToSchema } from "./schema-converter";
 import { extractResponseVariants } from "./response-extractor";
+import { convertTypeToSchema } from "./schema-converter";
+import type { ResponseVariant, RouteInfo, Schema } from "./types";
 
 export function inspectRoutes(
   filePath: string,

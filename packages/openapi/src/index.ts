@@ -1,11 +1,11 @@
-export { generateOpenAPI } from "./generator";
 export type {
+  GenerateOpenAPIOptions,
   OpenAPIDocument,
   OpenAPIInfo,
   OpenAPIOperation,
   OpenAPIParameter,
   OpenAPIResponse,
-  GenerateOpenAPIOptions,
 } from "./generator";
-export { convertSchemaToOpenAPI, convertPropertiesToOpenAPI } from "./schema-converter";
+export { generateOpenAPI } from "./generator";
 export type { OpenAPISchemaObject } from "./schema-converter";
+export { convertPropertiesToOpenAPI, convertSchemaToOpenAPI } from "./schema-converter";

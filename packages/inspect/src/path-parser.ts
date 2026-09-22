@@ -1,4 +1,4 @@
-import { PathInfo, PathSegment } from "./types";
+import type { PathInfo, PathSegment } from "./types";
 
 export function parsePath(raw: string): PathInfo {
   const segments: PathSegment[] = [];

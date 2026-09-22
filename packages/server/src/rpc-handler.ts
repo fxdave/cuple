@@ -1,6 +1,5 @@
-import { Request, Response } from "express";
-import { Express } from "express";
-import { BuiltEndpoint } from "./builder";
+import type { Express, Request, Response } from "express";
+import type { BuiltEndpoint } from "./builder";
 
 export type InitRpcConfig = {
   path: string;
@@ -21,7 +20,7 @@ type RecursiveApi = {
 
 export function initRpc(app: Express, config: InitRpcConfig) {
   const createRpcHandler = (method: string) => (req: Request, res: Response) => {
-    let rpcData;
+    let rpcData: any;
     if (method === "get" || method === "delete") {
       rpcData = JSON.parse((req.query.data as string) || "{}");
       Object.defineProperty(req, "body", {
