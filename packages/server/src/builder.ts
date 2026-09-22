@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import z, { ZodError, ZodType } from "zod";
 import express, { Request, Response, Express } from "express";
 import {
@@ -171,7 +172,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }>;
-  rawBody<TData, TInput>(parser: RawBodyParser<TData, TInput>): Builder<{
+  rawBody<TData, TInput>(
+    parser: RawBodyParser<TData, TInput>,
+  ): Builder<{
     tMeta: TParams["tMeta"];
     tInput: TParams["tInput"] & (undefined extends TInput ? {} : { body: TInput });
     tData: TParams["tData"] & (undefined extends TData ? {} : { body: TData });
