@@ -21,11 +21,13 @@ describe("Fetch options", () => {
     }));
     await cs.run(async (client) => {
       const controller = new AbortController();
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
       try {
         const responsePromise = fetchCuple(newClient.exampleRoute.get, {
@@ -60,11 +62,13 @@ describe("Fetch options", () => {
     }));
     await cs.run(async (client) => {
       const controller = new AbortController();
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
       const responsePromise = fetchCuple(newClient.exampleRoute.get, {
         options: {

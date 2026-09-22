@@ -20,11 +20,13 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
       const response = await fetchCuple(newClient.exampleRoute.get);
       assert.equal(response.message, "Hi David!");
@@ -46,11 +48,13 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
       const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {
@@ -76,11 +80,13 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(async () => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: async () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
       const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {

@@ -12,11 +12,13 @@ const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",
 });
 
-const authedClient = client.with(() => ({
-  headers: {
-    authorization: localStorage.getItem("token") || "nothing",
-  },
-}));
+const authedClient = client.with({
+  middleware: () => ({
+    headers: {
+      authorization: localStorage.getItem("token") || "nothing",
+    },
+  }),
+});
 
 async function test() {
   console.log("BEFORE login getProfile(): ", await getProfile());

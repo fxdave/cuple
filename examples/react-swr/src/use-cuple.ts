@@ -1,4 +1,9 @@
-import { type ClientEndpointRef, type FetchCupleArgs, fetchCuple } from "@cuple/client";
+import {
+  type ClientEndpointRef,
+  cupleRequestKey,
+  type FetchCupleArgs,
+  fetchCuple,
+} from "@cuple/client";
 import useSWR, { type SWRConfiguration, useSWRConfig } from "swr";
 import useSWRMutation, { type SWRMutationConfiguration } from "swr/mutation";
 
@@ -10,45 +15,20 @@ type CupleResult<TEndpoint extends ClientEndpointRef> = Awaited<
   ReturnType<typeof fetchCuple<TEndpoint>>
 >;
 
-/**
- * The SWR cache key of an endpoint call. Same endpoint + same options means
- * the same key, so this is what you hand to `mutate` to revalidate a query.
- */
-export function cupleKey<TEndpoint extends ClientEndpointRef>(
-  endpoint: TEndpoint,
-  options: CupleArgs<TEndpoint>,
-) {
-  const { path, segments, method } = endpoint.clientProps;
-  return [path, ...segments, method, options] as const;
-}
-
-/** True for every cache key belonging to `endpoint`, whatever its options. */
-function keyBelongsTo(endpoint: ClientEndpointRef, key: unknown) {
-  const { path, segments, method } = endpoint.clientProps;
-  const prefix = [path, ...segments, method];
-  return (
-    Array.isArray(key) &&
-    key.length === prefix.length + 1 &&
-    prefix.every((part, i) => key[i] === part)
-  );
-}
-
+/** Null options suspends the fetch. */
 export function useCuple<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,
   options: CupleOptions<TEndpoint>,
   swrConfig?: SWRConfiguration,
 ) {
-  const key = options !== null ? cupleKey(endpoint, options) : null;
+  const key = options !== null ? cupleRequestKey(endpoint, options) : null;
 
   return useSWR(key, () => fetchCuple(endpoint, options as any), swrConfig);
 }
 
 /**
- * Calls a write endpoint and gives you the SWR mutation state around it.
- *
- * `trigger(options)` takes the same options object as `fetchCuple`, and
- * resolves to the usual Cuple discriminated union — a `notFound` result is a
- * value, not a thrown error, so check `result` instead of catching.
+ * `trigger(options)` resolves to the Cuple result union — a `notFound` is a
+ * value, not a throw, so check `result` instead of catching.
  */
 export function useCupleMutation<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,
@@ -59,9 +39,8 @@ export function useCupleMutation<TEndpoint extends ClientEndpointRef>(
     CupleArgs<TEndpoint>
   >,
 ) {
-  const { path, segments, method } = endpoint.clientProps;
-  // Distinct from the query key, so a mutation never overwrites a cached read.
-  const key = [path, ...segments, method, "mutation"] as const;
+  // Query options are always an object, so this sentinel can't collide with one.
+  const key = cupleRequestKey(endpoint, "mutation");
 
   return useSWRMutation(
     key,
@@ -70,36 +49,41 @@ export function useCupleMutation<TEndpoint extends ClientEndpointRef>(
   );
 }
 
-/**
- * Revalidation helpers, for use after a mutation succeeds.
- *
- * - `revalidate(endpoint)` refetches every cached call of that endpoint.
- * - `revalidate(endpoint, options)` refetches just that one call.
- * - `setCache(endpoint, options, data)` writes the cache without a refetch.
- * - `optimistic(endpoint, options, update, action)` shows `update` right away,
- *   runs `action`, then refetches — rolling back if `action` throws.
- */
 export function useCupleCache() {
   const { mutate } = useSWRConfig();
 
   return {
+    /** One call with `options`, otherwise every cached call of the endpoint. */
     revalidate<TEndpoint extends ClientEndpointRef>(
       endpoint: TEndpoint,
       options?: CupleArgs<TEndpoint>,
     ) {
-      if (options === undefined) return mutate((key) => keyBelongsTo(endpoint, key));
-      return mutate(cupleKey(endpoint, options));
+      if (options !== undefined) return mutate(cupleRequestKey(endpoint, options));
+
+      const [endpointKey, principal] = cupleRequestKey(endpoint, undefined);
+      const isThisEndpoint = (key: unknown): key is readonly unknown[] =>
+        Array.isArray(key) && key[0] === endpointKey;
+
+      // Other principals are evicted, not refetched: a refetch would use the
+      // current credential and write the result into their bucket.
+      return mutate((key) => isThisEndpoint(key) && key[1] === principal).then(() =>
+        mutate((key) => isThisEndpoint(key) && key[1] !== principal, undefined, {
+          revalidate: false,
+        }),
+      );
     },
 
+    /** Writes the cache without refetching. */
     setCache<TEndpoint extends ClientEndpointRef>(
       endpoint: TEndpoint,
       options: CupleArgs<TEndpoint>,
       data: CupleResult<TEndpoint>,
       revalidate = false,
     ) {
-      return mutate(cupleKey(endpoint, options), data, { revalidate });
+      return mutate(cupleRequestKey(endpoint, options), data, { revalidate });
     },
 
+    /** Shows `update` at once, runs `action`, refetches. Rolls back on throw. */
     optimistic<TEndpoint extends ClientEndpointRef>(
       endpoint: TEndpoint,
       options: CupleArgs<TEndpoint>,
@@ -107,15 +91,14 @@ export function useCupleCache() {
       action: () => Promise<unknown>,
     ) {
       return mutate(
-        cupleKey(endpoint, options),
+        cupleRequestKey(endpoint, options),
         async () => {
           await action();
           return undefined;
         },
         {
           optimisticData: update as any,
-          // The action's own response has a different shape than the query's,
-          // so drop it and let the revalidation below refill the cache.
+          // `action`'s response has a different shape than the query's.
           populateCache: false,
           revalidate: true,
           rollbackOnError: true,

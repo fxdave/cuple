@@ -1,4 +1,4 @@
-import type { MapApi } from "./map-api";
+import type { ClientProps, MapApi } from "./map-api";
 
 export function createClient<T extends RecursiveApi>(config: { path: string }) {
   return createPathBuilder<T>(config.path, [], undefined);
@@ -82,17 +82,20 @@ export class CuplePromise<T extends { result: string }> extends Promise<T> {
   }
 }
 
+/** Runs a client's middleware, if it has one. */
+async function runMiddleware(
+  middleware?: () => unknown,
+): Promise<Record<string, unknown>> {
+  if (middleware === undefined) return {};
+  return ((await middleware()) ?? {}) as Record<string, unknown>;
+}
+
 export type ClientEndpointRef = {
   tInput: Record<string, unknown>;
   tOutput: any;
   tMethod: any;
   _sse?: never;
-  clientProps: {
-    method: any;
-    segments: any;
-    path: any;
-    preloader?: () => any;
-  };
+  clientProps: ClientProps;
 };
 
 export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
@@ -117,9 +120,7 @@ async function _fetchCuple<TEndpoint extends ClientEndpointRef>(
     return {
       segments: endpoint.clientProps.segments,
       argument: {
-        ...(endpoint.clientProps.preloader !== undefined
-          ? await endpoint.clientProps.preloader()
-          : {}),
+        ...(await runMiddleware(endpoint.clientProps.middleware)),
         ...options,
       },
     };
@@ -142,12 +143,7 @@ export type ClientSSEEndpointRef = {
   tOutput: any;
   tMethod: any;
   _sse: true;
-  clientProps: {
-    method: any;
-    segments: any;
-    path: any;
-    preloader?: () => any;
-  };
+  clientProps: ClientProps;
 };
 
 export type FetchCupleSSEArgs<TEndpoint extends ClientSSEEndpointRef> =
@@ -172,9 +168,7 @@ async function _fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(
     return {
       segments: endpoint.clientProps.segments,
       argument: {
-        ...(endpoint.clientProps.preloader !== undefined
-          ? await endpoint.clientProps.preloader()
-          : {}),
+        ...(await runMiddleware(endpoint.clientProps.middleware)),
         ...options,
       },
     };
@@ -246,14 +240,45 @@ export type RecursiveApi = {
     | RecursiveApi;
 };
 
+/**
+ * Options for `client.with(..)`.
+ *
+ * The two fields are deliberately separate concerns: `data` is about the
+ * *request*, `key` is about the *cache*. A cookie-authenticated app needs only
+ * `key`; a static API-key client needs only `data`.
+ */
+export type CupleWithOptions<TParams> = {
+  /**
+   * Runs before every request this client sends; what it returns is merged into
+   * the request data, under the per-call options. Awaited at fetch time, so it
+   * can refresh a token.
+   */
+  middleware?: () => Promise<TParams> | TParams;
+  /**
+   * Identifies the principal this client acts as, for cache integrations.
+   *
+   * `middleware` runs *per request*, so a cache has no way to tell two users'
+   * responses apart from the endpoint alone — without a key they share one
+   * entry. Supply something that identifies the user (a uid), never the
+   * credential itself: a key that changes on every token refresh would discard
+   * the cache hourly and orphan pending invalidations.
+   *
+   * A getter must be synchronous, since the key is built during render. It is
+   * read on each render, so the identity behind it has to live somewhere that
+   * re-renders the tree — otherwise pass a plain string and build one client
+   * per principal.
+   */
+  key?: string | (() => string);
+};
+
 export type Client<
   TApi extends RecursiveApi,
   TPreloadedData = NonNullable<unknown>,
 > = MapApi<TApi, TPreloadedData> &
   (NonNullable<unknown> extends TPreloadedData
     ? {
-        with: <TParamsNext>(
-          middleware: () => Promise<TParamsNext> | TParamsNext,
+        with: <TParamsNext = NonNullable<unknown>>(
+          options: CupleWithOptions<TParamsNext>,
         ) => Client<TApi, TParamsNext>;
       }
     : NonNullable<unknown>);
@@ -261,12 +286,20 @@ export type Client<
 function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unknown>>(
   path: string,
   segments: string[],
-  preloader?: () => Promise<TParams> | TParams,
+  middleware?: () => Promise<TParams> | TParams,
+  key?: string | (() => string),
 ): Client<TApi, TParams> {
   const target = (() => false) as unknown as Client<TApi, TParams>;
 
-  target.with = <TParamsNext>(preloader: () => Promise<TParamsNext> | TParamsNext) => {
-    return createPathBuilder<TApi, TParamsNext>(path, [], preloader);
+  target.with = <TParamsNext = NonNullable<unknown>>(
+    options: CupleWithOptions<TParamsNext>,
+  ) => {
+    return createPathBuilder<TApi, TParamsNext>(
+      path,
+      [],
+      options.middleware,
+      options.key,
+    );
   };
 
   return new Proxy<Client<TApi, TParams>>(target, {
@@ -282,7 +315,8 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
           method,
           segments: routeSegments,
           path,
-          preloader,
+          middleware,
+          key,
         };
       }
 
@@ -292,10 +326,10 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
       }
 
       // Every other property access adds a segment and returns a new Proxy
-      return createPathBuilder(path, [...segments, nameStr], preloader);
+      return createPathBuilder(path, [...segments, nameStr], middleware, key);
     },
     apply(target, thisArg, argumentsList: any[]) {
-      if (segments[0] === "with" && preloader === undefined) {
+      if (segments[0] === "with" && middleware === undefined && key === undefined) {
         return (target as any).with(argumentsList[0]);
       }
 

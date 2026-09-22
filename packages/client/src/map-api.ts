@@ -27,7 +27,18 @@ export type ClientProps = {
   method: any;
   segments: any;
   path: any;
-  preloader?: () => any;
+  /**
+   * Runs before every request, set by `client.with({ middleware })`. What it
+   * returns is merged into the request data.
+   */
+  middleware?: () => any;
+  /**
+   * Identifies the principal this client acts as, set by `client.with({ key })`.
+   * Cache integrations put it in the cache key so one user's responses are never
+   * served to another. Either a string or a *synchronous* getter — the key has to
+   * be buildable during render, before any request runs.
+   */
+  key?: string | (() => string);
 };
 
 /** Include client-only params */
