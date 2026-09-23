@@ -139,6 +139,29 @@ describe("cupleRequestKey", () => {
     assert.notEqual(cupleRequestKey(other, {})[0], endpointKey);
   });
 
+  it("should leave fetch options out, so an inline signal can't churn the key", () => {
+    const client = plainClient() as any;
+    const withSignal = () => ({
+      params: { id: 1 },
+      options: { signal: new AbortController().signal },
+    });
+
+    assert.deepEqual(
+      cupleRequestKey(client.getPost.get, withSignal()),
+      cupleRequestKey(client.getPost.get, withSignal()),
+    );
+    assert.deepEqual(
+      cupleRequestKey(client.getPost.get, withSignal()),
+      cupleRequestKey(client.getPost.get, { params: { id: 1 } }),
+    );
+  });
+
+  it("should keep a non-object sentinel intact", () => {
+    const client = plainClient() as any;
+
+    assert.equal(cupleRequestKey(client.createPost.post, "mutation")[2], "mutation");
+  });
+
   it("should keep a mutation key apart from any query key", () => {
     const client = plainClient().with({ key: "user-1" }) as any;
 

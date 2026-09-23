@@ -1,5 +1,6 @@
 import {
   type ClientEndpointRef,
+  CupleUnexpectedResponseError,
   cupleRequestKey,
   type FetchCupleArgs,
   fetchCuple,
@@ -15,7 +16,25 @@ type CupleResult<TEndpoint extends ClientEndpointRef> = Awaited<
   ReturnType<typeof fetchCuple<TEndpoint>>
 >;
 
-/** Null options suspends the fetch. */
+/**
+ * SWR retries every rejection, and by default forever: `shouldRetryOnError` is
+ * `true`, the built-in `onErrorRetry` ignores the error, and `errorRetryCount`
+ * has no default, so the count guard never fires. A request cancelled through
+ * `options.signal` would be re-issued indefinitely — so exclude aborts, which
+ * are a decision, not a failure.
+ */
+function notAborted(err: unknown) {
+  return (err as { name?: string })?.name !== "AbortError";
+}
+
+/**
+ * Null options suspends the fetch.
+ *
+ * No AbortController here on purpose: SWR shares one in-flight request per key
+ * between every component using it, so a per-component abort would cancel a
+ * request others are still waiting on. Pass `options.signal` to cancel one
+ * yourself; SWR already discards responses from superseded requests.
+ */
 export function useCuple<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,
   options: CupleOptions<TEndpoint>,
@@ -23,12 +42,53 @@ export function useCuple<TEndpoint extends ClientEndpointRef>(
 ) {
   const key = options !== null ? cupleRequestKey(endpoint, options) : null;
 
-  return useSWR(key, () => fetchCuple(endpoint, options as any), swrConfig);
+  return useSWR(key, () => fetchCuple(endpoint, options as any), {
+    shouldRetryOnError: notAborted,
+    ...swrConfig,
+  });
 }
 
 /**
- * `trigger(options)` resolves to the Cuple result union — a `notFound` is a
- * value, not a throw, so check `result` instead of catching.
+ * `useCuple`, with non-success results surfaced as `error` instead of `data`.
+ *
+ * It wraps `useCuple` rather than replacing the fetcher, so both hooks share one
+ * cache entry: the union is what gets cached, and this only changes how it is
+ * read. Nothing is fetched twice, and a component on `useCuple` with the same
+ * key is unaffected.
+ *
+ * SWR never threw, so its retry and `onError` stay out of it — right for a 404,
+ * which no amount of retrying will fix. Transport failures still reject out of
+ * `fetchCuple`, so those keep SWR's backoff.
+ */
+export function useCupleSuccess<TEndpoint extends ClientEndpointRef>(
+  endpoint: TEndpoint,
+  options: CupleOptions<TEndpoint>,
+  swrConfig?: SWRConfiguration,
+) {
+  const { data, error, ...rest } = useCuple(endpoint, options, swrConfig);
+  const failure =
+    data && data.result !== "success"
+      ? new CupleUnexpectedResponseError(data)
+      : undefined;
+
+  // Suspense renders errors at the boundary, and SWR only throws the ones it
+  // raised itself. Without this a network failure reaches the boundary and a
+  // `notFound` quietly does not.
+  if (swrConfig?.suspense && failure) throw failure;
+
+  return {
+    ...rest,
+    data:
+      data?.result === "success"
+        ? (data as Extract<CupleResult<TEndpoint>, { result: "success" }>)
+        : undefined,
+    error: (error ?? failure) as unknown,
+  };
+}
+
+/**
+ * `trigger(options)` resolves to the Cuple result union — every API failure is a
+ * value, so check `result` instead of catching. Only a network failure rejects.
  */
 export function useCupleMutation<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,

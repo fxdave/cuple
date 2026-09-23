@@ -43,7 +43,12 @@ export class CuplePromise<T extends { result: string }> extends Promise<T> {
       })(),
     );
   }
-  /** Keep the expected results, throw error otherwise. */
+  /**
+   * Keep the expected results, throw error otherwise.
+   *
+   * The list is the complete allowlist — `"success"` is not implied, so
+   * `thenUnwrapOn(["notFound"])` rejects a successful response too.
+   */
   thenUnwrapOn<TResult extends T["result"]>(
     results: TResult[],
   ): CuplePromise<T & { result: TResult }> {
@@ -103,6 +108,35 @@ export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
     ? [options?: Merge<TEndpoint["tInput"], GenericOptions>]
     : [options: Merge<TEndpoint["tInput"], GenericOptions>];
 
+/**
+ * Sends one request.
+ *
+ * API failures are values, transport failures are exceptions. The HTTP status is
+ * never interpreted — it is copied onto the result as `statusCode`, and which
+ * `result` goes with which status is the server's choice, set by `apiResponse`.
+ *
+ * | Outcome                                     |          | With                                  |
+ * | ------------------------------------------- | -------- | ------------------------------------- |
+ * | Body parses as JSON — any status            | resolves | the parsed body, plus `statusCode`    |
+ * | No response: unreachable, DNS, CORS         | rejects  | `TypeError` ("fetch failed")          |
+ * | Body is not JSON: proxy HTML, gateway page  | rejects  | `SyntaxError`                         |
+ * | `options.signal` aborted                    | rejects  | `DOMException` (`name: "AbortError"`) |
+ *
+ * The returned {@link CuplePromise} has modifiers that move a case from one
+ * column to the other. Each narrows the type to match.
+ *
+ * | Modifier                      | Changes                                                                  |
+ * | ----------------------------- | ------------------------------------------------------------------------ |
+ * | `.thenUnwrap()`               | non-`success` results now reject, as `CupleUnexpectedResponseError`       |
+ * | `.thenUnwrapOn([...])`        | only the listed results resolve — include `"success"` to keep it          |
+ * | `.thenWrapAbort()`            | an abort now resolves, as `{ result: "abort", statusCode: null }`         |
+ *
+ * A non-JSON body is always an error here — `fetchCuple` only speaks Cuple's
+ * envelope. For downloads, streams and any other custom response, define the
+ * route with `getRaw`/`postRaw`/… on the server and call it with plain `fetch`;
+ * raw routes are not part of the client API. (Raw *request* bodies are fine:
+ * pass an `ArrayBuffer`, `Blob`, `Uint8Array` or `ReadableStream` as `body`.)
+ */
 export function fetchCuple<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,
   ...args: FetchCupleArgs<TEndpoint>
