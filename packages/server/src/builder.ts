@@ -263,10 +263,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     parser: TParser,
   ): Builder<{
     tMeta: TParams["tMeta"];
-    tInput: TParams["tInput"] & { [SchemaType.Body]: z.input<TParser> };
+    tInput: TParams["tInput"] & { body: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
-      [SchemaType.Body]: z.output<TParser>;
+      body: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
     tResponses: TParams["tResponses"] | ZodValidationError;
@@ -284,10 +284,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     parser: TParser,
   ): Builder<{
     tMeta: TParams["tMeta"];
-    tInput: TParams["tInput"] & { [SchemaType.Query]: z.input<TParser> };
+    tInput: TParams["tInput"] & { query: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
-      [SchemaType.Query]: z.output<TParser>;
+      query: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
     tResponses: TParams["tResponses"] | ZodValidationError;
@@ -305,10 +305,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     parser: TParser,
   ): Builder<{
     tMeta: TParams["tMeta"];
-    tInput: TParams["tInput"] & { [SchemaType.Params]: z.input<TParser> };
+    tInput: TParams["tInput"] & { params: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
-      [SchemaType.Params]: z.output<TParser>;
+      params: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
     tResponses: TParams["tResponses"] | ZodValidationError;
@@ -327,10 +327,10 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     parser: TParser,
   ): Builder<{
     tMeta: TParams["tMeta"];
-    tInput: TParams["tInput"] & { [SchemaType.Headers]: z.input<TParser> };
+    tInput: TParams["tInput"] & { headers: z.input<TParser> };
     // The consequent TData will be merged with TResult only when { next: TRUE }
     tData: TParams["tData"] & {
-      [SchemaType.Headers]: z.output<TParser>;
+      headers: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
     tResponses: TParams["tResponses"] | ZodValidationError;
