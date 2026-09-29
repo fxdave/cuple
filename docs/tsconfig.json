@@ -5,5 +5,7 @@
     "paths": {
       "@site/*": ["./*"]
     }
-  }
+  },
+  // The homepage demo's recorder runs from the repo root, with the root's packages.
+  "exclude": ["demo"]
 }
