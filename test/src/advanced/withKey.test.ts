@@ -3,13 +3,14 @@ import {
   cupleEndpointKey,
   cupleRequestKey,
   fetchCuple,
+  type RecursiveApi,
 } from "@cuple/client";
 import { success } from "@cuple/server";
 import { assert, describe, it } from "vitest";
 import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
-const routes = {} as never;
+const routes = {} as RecursiveApi;
 
 function plainClient() {
   return createClient<typeof routes>({ path: "/rpc" });
@@ -61,7 +62,7 @@ describe("client.with({ middleware, key })", () => {
 });
 
 describe("cupleEndpointKey", () => {
-  it("should identify the route and ignore principal and options", () => {
+  it("should identify the route and ignore the client key and options", () => {
     const base = plainClient();
     const anon = (base as any).getPosts.get;
     const keyed = (base.with({ key: "user-1" }) as any).getPosts.get;
@@ -84,7 +85,7 @@ describe("cupleEndpointKey", () => {
 });
 
 describe("cupleRequestKey", () => {
-  it("should separate two principals of the same endpoint", () => {
+  it("should separate two client keys of the same endpoint", () => {
     const base = plainClient();
     const a = (base.with({ key: "user-1" }) as any).getPosts.get;
     const b = (base.with({ key: "user-2" }) as any).getPosts.get;
@@ -92,7 +93,7 @@ describe("cupleRequestKey", () => {
     assert.notDeepEqual(cupleRequestKey(a, {}), cupleRequestKey(b, {}));
   });
 
-  it("should be stable for the same principal and options", () => {
+  it("should be stable for the same client key and options", () => {
     const client = plainClient().with({ key: "user-1" }) as any;
 
     assert.deepEqual(
@@ -122,7 +123,7 @@ describe("cupleRequestKey", () => {
     assert.deepEqual(before, cupleRequestKey(client.getPosts.get, {}));
   });
 
-  it("should be an empty principal without a key", () => {
+  it("should be an empty client key when none is set", () => {
     const client = plainClient() as any;
 
     assert.equal(cupleRequestKey(client.getPosts.get, {})[1], "");

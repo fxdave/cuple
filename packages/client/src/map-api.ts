@@ -33,12 +33,17 @@ export type ClientProps = {
    */
   middleware?: () => any;
   /**
-   * Identifies the principal this client acts as, set by `client.with({ key })`.
-   * Cache integrations put it in the cache key so one user's responses are never
-   * served to another. Either a string or a *synchronous* getter — the key has to
-   * be buildable during render, before any request runs.
+   * Identifies what `middleware` injects, set by `client.with({ key })`. Cache
+   * integrations put it in the cache key, so responses that differ only by
+   * injected data are never mixed up. Either a string or a *synchronous* getter
+   * — the key has to be buildable during render, before any request runs.
    */
   key?: string | (() => string);
+  /**
+   * Runs after every response, set by `client.with({ finalware })`. Its return
+   * value replaces the response; the declared types do not follow it.
+   */
+  finalware?: (response: any) => unknown | Promise<unknown>;
 };
 
 /** Include client-only params */

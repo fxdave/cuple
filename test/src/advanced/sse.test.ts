@@ -152,6 +152,37 @@ describe("SSE handlers", () => {
     });
   });
 
+  it("should abort disconnectSignal when the client goes away", async () => {
+    // A generator parked on an await cannot be closed by `returnOnDisconnect`,
+    // so without the signal this never unblocks and the subscription leaks.
+    let released = false;
+
+    const cs = await createClientAndServer((builder) => ({
+      feed: builder.path("/feed").getSSE(async function* ({ disconnectSignal }) {
+        yield { hello: true };
+        try {
+          await new Promise((_resolve, reject) => {
+            disconnectSignal.addEventListener("abort", () => reject(new Error("abort")));
+          });
+        } catch {
+          released = true;
+        }
+      }),
+    }));
+
+    await cs.run(async (_client, url) => {
+      const controller = new AbortController();
+      const response = await fetch(`${url}/feed`, { signal: controller.signal });
+      const reader = response.body!.getReader();
+      await reader.read();
+      reader.releaseLock();
+      controller.abort();
+
+      await new Promise((r) => setTimeout(r, 200));
+      assert.equal(released, true);
+    });
+  });
+
   it("should work through RPC via fetchCupleSSE", async () => {
     const cs = await createClientAndServer((builder) => ({
       counter: builder.getSSE(async function* () {

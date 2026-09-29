@@ -13,7 +13,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {}).thenUnwrapOn(["success"]);
+      const response = await fetchCuple(client.get.get, {}).thenResolveOn(["success"]);
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "something");
     });

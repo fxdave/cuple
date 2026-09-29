@@ -24,6 +24,48 @@ export class CupleUnexpectedResponseError extends Error {
   }
 }
 
+/**
+ * The server did not answer in Cuple's format: it was unreachable (DNS, CORS,
+ * offline), or it answered with a body that is not JSON (a proxy's HTML error
+ * page). The original error is kept as `cause`.
+ *
+ * A bug in your own code never produces this, so it is safe to treat as
+ * "retry later" rather than "report".
+ */
+export class CupleTransportError extends Error {
+  override name = "CupleTransportError";
+  /** What failed underneath: fetch's `TypeError`, or the JSON `SyntaxError`. */
+  readonly cause: unknown;
+  /** The HTTP status, when a response arrived but its body was not JSON. */
+  readonly statusCode: number | null;
+  // Not `super(message, { cause })`: that needs the ES2022 lib in every consumer.
+  constructor(message: string, options: { cause: unknown; statusCode?: number | null }) {
+    super(message);
+    this.cause = options.cause;
+    this.statusCode = options.statusCode ?? null;
+  }
+}
+
+/**
+ * A network failure as a result, for code that handles it as a value: list
+ * `"transport-error"` in `thenResolveAlso`/`thenResolveOn` (or `resolveAlso` on
+ * a read). `statusCode` is set when a response arrived but wasn't Cuple's
+ * (a proxy's error page); `null` when there was no response at all.
+ */
+export type TransportErrorResult = {
+  result: "transport-error";
+  statusCode: number | null;
+  message: string;
+};
+
+export function transportErrorResult(error: CupleTransportError): TransportErrorResult {
+  return {
+    result: "transport-error",
+    statusCode: error.statusCode,
+    message: error.message,
+  };
+}
+
 export class CuplePromise<T extends { result: string }> extends Promise<T> {
   static fromPromise<U extends { result: string }>(p: Promise<U>) {
     return new CuplePromise<U>((resolve, reject) => {
@@ -44,28 +86,57 @@ export class CuplePromise<T extends { result: string }> extends Promise<T> {
     );
   }
   /**
-   * Keep the expected results, throw error otherwise.
+   * Keep exactly the listed results, reject the rest as
+   * {@link CupleUnexpectedResponseError}.
    *
-   * The list is the complete allowlist — `"success"` is not implied, so
-   * `thenUnwrapOn(["notFound"])` rejects a successful response too.
+   * The list is complete — `"success"` is not implied, so
+   * `thenResolveOn(["not-found-error"])` rejects a successful response too.
+   * To add results next to success, use {@link thenResolveAlso}.
+   *
+   * `"transport-error"` can be listed too: a network failure then resolves as
+   * `{ result: "transport-error", statusCode, message }` instead of rejecting.
    */
-  thenUnwrapOn<TResult extends T["result"]>(
-    results: TResult[],
-  ): CuplePromise<T & { result: TResult }> {
+  thenResolveOn<const TResult extends T["result"] | "transport-error">(
+    results: readonly TResult[],
+  ): CuplePromise<Extract<T | TransportErrorResult, { result: TResult }>> {
+    const listed = results as readonly string[];
     return CuplePromise.fromPromise(
       (async () => {
-        const response: any = await this;
+        let response: any;
+        try {
+          response = await this;
+        } catch (error) {
+          if (error instanceof CupleTransportError && listed.includes("transport-error"))
+            return transportErrorResult(error);
+          throw error;
+        }
         if (
           response &&
           typeof response === "object" &&
-          results.includes(response?.result)
+          listed.includes(response.result)
         ) {
           return response;
-        } else {
-          throw new CupleUnexpectedResponseError(response);
         }
+        throw new CupleUnexpectedResponseError(response);
       })(),
     );
+  }
+
+  /**
+   * Keep success and the listed results, reject the rest as
+   * {@link CupleUnexpectedResponseError}.
+   *
+   * `fetchCuple(e).thenResolveAlso(["validation-error"])` resolves to
+   * `success | validation-error`: the failures your code handles become values,
+   * everything else stays an exception. List `"transport-error"` to handle a
+   * network failure as a value too.
+   */
+  thenResolveAlso<const TResult extends T["result"] | "transport-error">(
+    results: readonly TResult[],
+  ): CuplePromise<Extract<T | TransportErrorResult, { result: "success" | TResult }>> {
+    return this.thenResolveOn(["success", ...results] as TResult[]) as CuplePromise<
+      Extract<T | TransportErrorResult, { result: "success" | TResult }>
+    >;
   }
 
   thenWrapAbort(): CuplePromise<
@@ -103,6 +174,21 @@ export type ClientEndpointRef = {
   clientProps: ClientProps;
 };
 
+/** Everything an endpoint can resolve to. */
+export type CupleResult<TEndpoint extends ClientEndpointRef> = TEndpoint["tOutput"];
+
+/** Just the successful case, the way `.thenUnwrap()` narrows it. */
+export type CupleSuccess<TEndpoint extends ClientEndpointRef> = Extract<
+  CupleResult<TEndpoint>,
+  { result: "success" }
+>;
+
+/** One named case, e.g. `CupleResultOf<typeof e, "notFound">`. */
+export type CupleResultOf<
+  TEndpoint extends ClientEndpointRef,
+  TResult extends string,
+> = Extract<CupleResult<TEndpoint>, { result: TResult }>;
+
 export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
   {} extends TEndpoint["tInput"]
     ? [options?: Merge<TEndpoint["tInput"], GenericOptions>]
@@ -118,8 +204,8 @@ export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
  * | Outcome                                     |          | With                                  |
  * | ------------------------------------------- | -------- | ------------------------------------- |
  * | Body parses as JSON — any status            | resolves | the parsed body, plus `statusCode`    |
- * | No response: unreachable, DNS, CORS         | rejects  | `TypeError` ("fetch failed")          |
- * | Body is not JSON: proxy HTML, gateway page  | rejects  | `SyntaxError`                         |
+ * | No response: unreachable, DNS, CORS         | rejects  | `CupleTransportError`                 |
+ * | Body is not JSON: proxy HTML, gateway page  | rejects  | `CupleTransportError` (`statusCode`)  |
  * | `options.signal` aborted                    | rejects  | `DOMException` (`name: "AbortError"`) |
  *
  * The returned {@link CuplePromise} has modifiers that move a case from one
@@ -128,7 +214,8 @@ export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
  * | Modifier                      | Changes                                                                  |
  * | ----------------------------- | ------------------------------------------------------------------------ |
  * | `.thenUnwrap()`               | non-`success` results now reject, as `CupleUnexpectedResponseError`       |
- * | `.thenUnwrapOn([...])`        | only the listed results resolve — include `"success"` to keep it          |
+ * | `.thenResolveOn([...])`       | only the listed results resolve — `"success"` is not implied              |
+ * | `.thenResolveAlso([...])`     | success and the listed results resolve                                    |
  * | `.thenWrapAbort()`            | an abort now resolves, as `{ result: "abort", statusCode: null }`         |
  *
  * A non-JSON body is always an error here — `fetchCuple` only speaks Cuple's
@@ -159,17 +246,64 @@ async function _fetchCuple<TEndpoint extends ClientEndpointRef>(
       },
     };
   };
-  const response = await methodAwareFetch(
-    method,
-    getData,
-    endpoint.clientProps.path,
-    options?.options as RequestInit,
+  const response = await transportFetch(() =>
+    methodAwareFetch(
+      method,
+      getData,
+      endpoint.clientProps.path,
+      options?.options as RequestInit,
+    ),
   );
-
-  // parsing should throw an error as it's unexpected
-  const res = await response.json();
+  const res = await readJson(response);
   (res as any).statusCode = response.status;
-  return res as TEndpoint["tOutput"];
+  return (await runFinalware(
+    endpoint.clientProps.finalware,
+    res,
+  )) as TEndpoint["tOutput"];
+}
+
+function isAbort(error: unknown) {
+  return (error as { name?: string } | null)?.name === "AbortError";
+}
+
+/** Runs a network step; anything but an abort becomes a {@link CupleTransportError}. */
+async function transportFetch<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (isAbort(error) || error instanceof CupleTransportError) throw error;
+    throw new CupleTransportError(
+      `The server could not be reached: ${(error as Error)?.message ?? error}`,
+      { cause: error },
+    );
+  }
+}
+
+/** A body that is not JSON is not a Cuple response: a proxy or gateway answered. */
+async function readJson(response: Response): Promise<any> {
+  const text = await transportFetch(() => response.text());
+  return parseJson(text, response.status);
+}
+
+function parseJson(text: string, statusCode: number): any {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new CupleTransportError(
+      `The server answered ${statusCode} with a body that is not JSON`,
+      { cause: error, statusCode },
+    );
+  }
+}
+
+/** A finalware's return value replaces the response; returning nothing keeps it. */
+async function runFinalware(
+  finalware: ((response: any) => unknown | Promise<unknown>) | undefined,
+  response: unknown,
+) {
+  if (finalware === undefined) return response;
+  const replaced = await finalware(response);
+  return replaced === undefined ? response : replaced;
 }
 
 export type ClientSSEEndpointRef = {
@@ -207,27 +341,34 @@ async function _fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(
       },
     };
   };
-  const response = await methodAwareFetch(
-    method,
-    getData,
-    endpoint.clientProps.path,
-    options?.options as RequestInit,
+  const response = await transportFetch(() =>
+    methodAwareFetch(
+      method,
+      getData,
+      endpoint.clientProps.path,
+      options?.options as RequestInit,
+      "stream",
+    ),
   );
 
   const contentType = response.headers.get("Content-Type") || "";
   if (!contentType.includes("text/event-stream")) {
     // Middleware error - parse as JSON
-    const res = await response.json();
+    const res = await readJson(response);
     (res as any).statusCode = response.status;
-    return res as TEndpoint["tOutput"];
+    return (await runFinalware(
+      endpoint.clientProps.finalware,
+      res,
+    )) as TEndpoint["tOutput"];
   }
 
   // SSE stream
   const stream = parseSSEStream(response);
-  return Object.assign(stream, {
+  const result = Object.assign(stream, {
     result: "success" as const,
     statusCode: 200 as const,
-  }) as any;
+  });
+  return (await runFinalware(endpoint.clientProps.finalware, result)) as any;
 }
 
 async function* parseSSEStream(response: Response): AsyncGenerator<any> {
@@ -237,7 +378,7 @@ async function* parseSSEStream(response: Response): AsyncGenerator<any> {
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await transportFetch(() => reader.read());
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
@@ -246,16 +387,14 @@ async function* parseSSEStream(response: Response): AsyncGenerator<any> {
 
       for (const line of lines) {
         if (line.startsWith("data: ")) {
-          const data = line.slice(6);
-          yield JSON.parse(data);
+          yield parseJson(line.slice(6), response.status);
         }
       }
     }
 
     // Process remaining buffer
     if (buffer.startsWith("data: ")) {
-      const data = buffer.slice(6);
-      yield JSON.parse(data);
+      yield parseJson(buffer.slice(6), response.status);
     }
   } finally {
     reader.releaseLock();
@@ -289,20 +428,40 @@ export type CupleWithOptions<TParams> = {
    */
   middleware?: () => Promise<TParams> | TParams;
   /**
-   * Identifies the principal this client acts as, for cache integrations.
+   * Identifies what `middleware` injects, for cache integrations.
    *
-   * `middleware` runs *per request*, so a cache has no way to tell two users'
-   * responses apart from the endpoint alone — without a key they share one
-   * entry. Supply something that identifies the user (a uid), never the
-   * credential itself: a key that changes on every token refresh would discard
-   * the cache hourly and orphan pending invalidations.
+   * `middleware` runs *per request*, so nothing it returns reaches the cache
+   * key: two calls that differ only in what it injected would share one entry.
+   * This is how a cache tells them apart. Most often that is who the request is
+   * for, but it is whatever the middleware actually varies by — a tenant, a
+   * locale, an API version.
+   *
+   * Key what the response depends on, not the injected bytes. A refreshed token
+   * is new data but the same identity; a key that moved with it would discard
+   * the cache on every refresh and orphan pending invalidations.
    *
    * A getter must be synchronous, since the key is built during render. It is
-   * read on each render, so the identity behind it has to live somewhere that
+   * read on each render, so whatever it reads has to live somewhere that
    * re-renders the tree — otherwise pass a plain string and build one client
-   * per principal.
+   * per value.
    */
   key?: string | (() => string);
+  /**
+   * Runs after every response this client receives, before it is handed back.
+   *
+   * For the cross-cutting work that has to happen whether or not a hook is
+   * involved: redirecting on an expired session, reporting failures. Throwing
+   * from here turns a result into an exception, which is how a redirect works.
+   *
+   * Returning a value replaces the response; returning nothing keeps it.
+   *
+   * **The types do not follow it.** A replaced response still has the endpoint's
+   * declared type, because the response type is fixed by the route definition
+   * and there is no way to thread a per-client transformation back through it.
+   * Reshaping data here will lie to every caller — observe, throw, or narrow by
+   * hand at the call site.
+   */
+  finalware?: (response: any) => unknown | Promise<unknown>;
 };
 
 export type Client<
@@ -322,6 +481,7 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
   segments: string[],
   middleware?: () => Promise<TParams> | TParams,
   key?: string | (() => string),
+  finalware?: (response: any) => unknown | Promise<unknown>,
 ): Client<TApi, TParams> {
   const target = (() => false) as unknown as Client<TApi, TParams>;
 
@@ -333,6 +493,7 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
       [],
       options.middleware,
       options.key,
+      options.finalware,
     );
   };
 
@@ -351,6 +512,7 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
           path,
           middleware,
           key,
+          finalware,
         };
       }
 
@@ -360,10 +522,15 @@ function createPathBuilder<TApi extends RecursiveApi, TParams = NonNullable<unkn
       }
 
       // Every other property access adds a segment and returns a new Proxy
-      return createPathBuilder(path, [...segments, nameStr], middleware, key);
+      return createPathBuilder(path, [...segments, nameStr], middleware, key, finalware);
     },
     apply(target, thisArg, argumentsList: any[]) {
-      if (segments[0] === "with" && middleware === undefined && key === undefined) {
+      if (
+        segments[0] === "with" &&
+        middleware === undefined &&
+        key === undefined &&
+        finalware === undefined
+      ) {
         return (target as any).with(argumentsList[0]);
       }
 
@@ -390,14 +557,25 @@ function isRawBody(body: unknown): boolean {
  * @param getData data factory for body, query, headers
  * @param path the path, usually the rpc's endpoint
  * @param options fetch's options
+ * @param expects `"stream"` for SSE: asks for an event stream and bypasses the
+ *   HTTP cache, as `EventSource` does, so a browser never holds one tab's
+ *   stream behind another's identical request.
  */
 async function methodAwareFetch(
   method: string,
   getData: () => Promise<{ segments: string[]; argument: Record<string, unknown> }>,
   path: string,
   options?: RequestInit,
+  expects: "json" | "stream" = "json",
 ) {
   const { segments, argument } = await getData();
+  const negotiation: { headers: Record<string, string>; init: RequestInit } =
+    expects === "stream"
+      ? {
+          headers: { Accept: "text/event-stream", "Cache-Control": "no-cache" },
+          init: { cache: "no-store" },
+        }
+      : { headers: { Accept: "application/json" }, init: {} };
   const { headers, body, options: _options, ...meta } = argument;
   const customHeaders =
     typeof headers === "object" ? (headers as Record<string, string>) : {};
@@ -408,9 +586,10 @@ async function methodAwareFetch(
     return await fetch(`${path}?${params.toString()}`, {
       method: method.toUpperCase(),
       headers: {
-        Accept: "application/json",
+        ...negotiation.headers,
         ...customHeaders,
       },
+      ...negotiation.init,
       ...options,
     });
   }
@@ -427,9 +606,10 @@ async function methodAwareFetch(
     headers: {
       "X-Cuple-RPC": rpcMeta,
       ...(raw ? {} : { "Content-Type": "application/json" }),
-      Accept: "application/json",
+      ...negotiation.headers,
       ...customHeaders,
     },
+    ...negotiation.init,
     ...options,
   });
 }

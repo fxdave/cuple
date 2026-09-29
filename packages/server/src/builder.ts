@@ -18,6 +18,17 @@ type MiddlewareProps<TData> = {
   res: ExpressResponse;
 };
 
+/**
+ * `disconnectSignal` aborts when the client goes away.
+ *
+ * A generator parked on `yield` is closed by `returnOnDisconnect`, but one
+ * parked on an `await` cannot be: the close request is queued behind the
+ * pending promise, and a generator waiting on an event that never comes stays
+ * waiting, holding its subscription. Pass this signal to whatever is awaited
+ * (`events.on`, `fetch`, `addEventListener`) so it is released on disconnect.
+ */
+type SSEProps<TData> = MiddlewareProps<TData> & { disconnectSignal: AbortSignal };
+
 type BaseData = object;
 
 type Middleware<TInput, TData, TResult, TDependecyData = any> = (
@@ -95,7 +106,24 @@ type ValidInputOrError<T> = T extends ValidJson
   ? T
   : { _: "You can only use JSON types" };
 
-export type SSEOptions = { returnOnDisconnect?: boolean };
+export type SSEOptions = {
+  /**
+   * Whether to close the handler's generator when the client disconnects.
+   * Defaults to `true`.
+   *
+   * `false` is for a generator that ends on its own — one draining a finite
+   * job, say, that should finish its work whether or not anyone is still
+   * reading. A generator that loops forever must not opt out: nothing will stop
+   * it, and after the client is gone it keeps running at full speed, one
+   * runaway loop per disconnected request, for the life of the process.
+   *
+   * A generator that needs to outlive the disconnect only briefly should check
+   * `disconnectSignal.aborted` on each pass and return once it is set. That is
+   * also the only way to end one parked on an `await` rather than a `yield`,
+   * which `returnOnDisconnect` cannot reach either way.
+   */
+  returnOnDisconnect?: boolean;
+};
 
 /** Phantom type for SSE streams. On the client, the actual value is an AsyncIterable. */
 export type CupleSSEStream<TEvent> = AsyncIterable<TEvent> & {
@@ -107,7 +135,7 @@ type BuilderConfig = {
   app: Express;
   middlewares: Middleware<any, any, any>[];
   finalware?: Finalware<any, any>;
-  sseFinalware?: (props: MiddlewareProps<any>) => AsyncGenerator<any>;
+  sseFinalware?: (props: SSEProps<any>) => AsyncGenerator<any>;
   sseOptions?: SSEOptions;
   method?: HttpVerbs;
   path?: string;
@@ -575,7 +603,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
 
   private _buildSSEFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
     return <TEvent extends ValidJsonObject>(
-      mw: (props: MiddlewareProps<TParams["tData"]>) => AsyncGenerator<TEvent>,
+      mw: (props: SSEProps<TParams["tData"]>) => AsyncGenerator<TEvent>,
       options?: SSEOptions,
     ) => {
       const builder = new Builder<{
@@ -628,8 +656,23 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
           res.setHeader("Cache-Control", "no-cache");
           res.setHeader("Connection", "keep-alive");
           res.flushHeaders();
+          // A comment, which clients ignore. Proxies (Vite's dev server among
+          // them) hold the headers until the first body bytes, so without it a
+          // quiet stream looks unanswered, and a browser queues other tabs'
+          // identical requests behind it.
+          res.write(":\n\n");
 
-          const generator = this.config.sseFinalware({ req, res, data: response });
+          // Fired on disconnect whatever `returnOnDisconnect` says: that option
+          // governs whether we close the generator, not what the handler is told.
+          const disconnected = new AbortController();
+          req.on("close", () => disconnected.abort());
+
+          const generator = this.config.sseFinalware({
+            req,
+            res,
+            data: response,
+            disconnectSignal: disconnected.signal,
+          });
           const returnOnDisconnect = this.config.sseOptions?.returnOnDisconnect !== false;
 
           if (returnOnDisconnect) {

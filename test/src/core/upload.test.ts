@@ -15,7 +15,7 @@ describe("Upload", () => {
     await cs.run(async (client) => {
       const response = await fetchCuple(client.foo.post, {
         body: Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
-      }).thenUnwrapOn(["success"]);
+      }).thenResolveOn(["success"]);
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.size, 6);
     });
