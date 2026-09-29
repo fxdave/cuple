@@ -98,7 +98,7 @@ The first argument is an object containing 3 elements:
 builder
     .chain(auth)
     .bodySchema(
-      z.object({
+      z.strictObject({
         oldPassword: z.string(),
         password1: z.string().min(6),
         password2: z.string().min(6),

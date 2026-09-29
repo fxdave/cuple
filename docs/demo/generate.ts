@@ -154,7 +154,7 @@ function publishDiagnostics() {
 }
 
 /** The completion popup's content for what's been typed since it opened. */
-function completions(file: FileName, start: number) {
+function completions(file: FileName, start: number, choose?: string) {
   const pos = cursor[file];
   const typed = text(file).slice(start, pos);
   const all = service.getCompletionsAtPosition(fullPath(file), start, preferences) ?? {
@@ -164,7 +164,8 @@ function completions(file: FileName, start: number) {
     .filter((e) => e.name.toLowerCase().startsWith(typed.toLowerCase()))
     .filter((e) => !e.name.startsWith("__"))
     .sort((a, b) => a.sortText.localeCompare(b.sortText) || a.name.localeCompare(b.name));
-  const first = matching[0];
+  const selected = Math.max(0, choose ? matching.findIndex((e) => e.name === choose) : 0);
+  const first = matching[selected];
   const details = first
     ? service.getCompletionEntryDetails(
         fullPath(file),
@@ -177,6 +178,7 @@ function completions(file: FileName, start: number) {
       )
     : undefined;
   return {
+    selected,
     items: matching.slice(0, 8).map((e) => ({ name: e.name, kind: e.kind })),
     detail: display(details?.displayParts),
   };
@@ -215,7 +217,7 @@ function typeText(file: FileName, value: string, perChar: number) {
         if (list.items.length === 0) {
           completionStart = null;
           emit({ d: delay, k: "close" });
-        } else emit({ d: delay, k: "completions", file, pos: completionStart, selected: 0, ...list });
+        } else emit({ d: delay, k: "completions", file, pos: completionStart, ...list });
       }
     }
   }
@@ -256,11 +258,17 @@ function runStep(step: (typeof steps)[number]) {
     typeText(file, step.type, step.perChar ?? 70);
   } else if ("suggest" in step) {
     completionStart = cursor[file];
-    emit({ d: delay, k: "completions", file, pos: completionStart, selected: 0, ...completions(file, completionStart) });
+    emit({ d: delay, k: "completions", file, pos: completionStart, ...completions(file, completionStart) });
   } else if ("accept" in step) {
     if (completionStart === null) throw new Error("accept without an open completion list");
     const typed = text(file).slice(completionStart, cursor[file]);
     const start = completionStart;
+    // Arrow down to the item first, when it isn't the one highlighted.
+    const list = completions(file, start, step.accept);
+    if (list.selected > 0) {
+      emit({ d: delay, k: "completions", file, pos: start, ...list });
+      wait(450);
+    }
     completionStart = null;
     emit({ d: delay, k: "close" });
     if (!step.accept.startsWith(typed))

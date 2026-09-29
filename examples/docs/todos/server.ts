@@ -18,7 +18,7 @@ export const routes = {
   getTodos: builder.get(async () => success({ todos })),
 
   createTodo: builder
-    .bodySchema(z.object({ text: z.string().min(1, "Write something first.") }))
+    .bodySchema(z.strictObject({ text: z.string().min(1, "Write something first.") }))
     .post(async ({ data }) => {
       if (todos.some((todo) => todo.text === data.body.text)) {
         return zodValidationError([
@@ -31,7 +31,7 @@ export const routes = {
     }),
 
   toggleTodo: builder
-    .paramsSchema(z.object({ id: z.number() }))
+    .paramsSchema(z.strictObject({ id: z.number() }))
     .patch(async ({ data }) => {
       const todo = todos.find((todo) => todo.id === data.params.id)!;
       todo.done = !todo.done;

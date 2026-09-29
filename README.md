@@ -36,7 +36,7 @@ export const routes = {
   getPost: builder
     .path("/post/:id") // optional for REST compatibility
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )
