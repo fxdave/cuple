@@ -36,6 +36,9 @@
         "packages/*/src/**/*.ts"
       ]
     },
+    "typecheck": {
+      "cache": true
+    },
     "clean": {
       "cache": false
     },

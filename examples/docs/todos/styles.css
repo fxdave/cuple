@@ -1,0 +1,90 @@
+/* Loading indication for the todos example. Markup only says what is busy
+   (`aria-busy`, `.pending`, `.skeleton`); how it looks lives here. */
+
+:root {
+  --wash: #f1f3f6;
+  --wash-strong: #e6e9ef;
+  --danger: #b8322a;
+  /* Fast responses never flash a placeholder. */
+  --reveal-delay: 150ms;
+}
+
+.error {
+  color: var(--danger);
+}
+
+/* Something already on screen is being changed: dim it in place. */
+.pending {
+  opacity: 0.5;
+  transition: opacity 150ms;
+}
+
+/* First load: placeholders shaped like the content. */
+.skeleton {
+  display: block;
+  height: 0.85em;
+  margin: 0.5em 0;
+  border-radius: 4px;
+  list-style: none;
+  background:
+    linear-gradient(90deg, var(--wash) 25%, var(--wash-strong) 50%, var(--wash) 75%) 0 0 /
+    200% 100%;
+  animation:
+    reveal 200ms var(--reveal-delay) both,
+    shimmer 1.4s linear infinite;
+}
+
+/* A busy button keeps its size: the label hides, a spinner takes its place. */
+button[aria-busy="true"] {
+  position: relative;
+  color: transparent;
+}
+
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 0.8em;
+  height: 0.8em;
+  margin: auto;
+  border: 2px solid CanvasText;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+/* A busy input keeps what was typed, marked as busy. */
+input[aria-busy="true"] {
+  background: var(--wash);
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: reveal 200ms var(--reveal-delay) both;
+  }
+
+  button[aria-busy="true"]::after {
+    animation-duration: 2s;
+  }
+}

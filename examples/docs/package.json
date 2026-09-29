@@ -1,0 +1,30 @@
+{
+  "name": "@cuple/example-docs",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The code shown in the docs. Pages import regions of these files, so every snippet is type-checked.",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"vite\"",
+    "dev:server": "cd ../.. && tsx watch examples/docs/todos/server.ts",
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cuple/client": "file:../../packages/client",
+    "@cuple/react": "file:../../packages/react",
+    "@cuple/server": "file:../../packages/server",
+    "express": "^5.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  }
+}
