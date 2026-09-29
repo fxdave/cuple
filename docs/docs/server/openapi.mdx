@@ -1,0 +1,90 @@
+---
+sidebar_position: 7
+description: 'Generate OpenAPI specs'
+---
+
+# OpenAPI
+
+Since Cuple is REST compatible, you can generate an [OpenAPI 3.0](https://spec.openapis.org/oas/v3.0.0) spec from your routes.
+It reads your TypeScript source at build time, so there's nothing to add at runtime.
+
+```bash
+npm i -D @cuple/openapi typescript
+```
+
+## Example
+
+```ts
+// routes.ts
+export const routes = {
+  getPost: builder
+    .path("/api/posts/:id")
+    .paramsSchema(z.object({ id: z.coerce.number() }))
+    .get(async ({ data }) => {
+      const post = await getPost(data.params.id);
+      if (!post) return apiResponse("not-found", 404, { message: "Post not found" });
+      return success({ post });
+    }),
+
+  createPost: builder
+    .meta({ description: "Creates a new blog post" })
+    .path("/api/posts")
+    .bodySchema(z.object({ title: z.string(), content: z.string() }))
+    .post(async ({ data }) => {
+      return success({ id: 1 });
+    }),
+};
+```
+
+```ts
+// scripts/openapi.ts
+import { generateOpenAPI } from "@cuple/openapi";
+
+generateOpenAPI("./src/routes.ts", "routes", {
+  tsconfigPath: "./tsconfig.json",
+  info: { title: "Blog API", version: "1.0.0" },
+  outputFile: "./openapi.json",
+});
+```
+
+In this example:
+
+ - `"routes"` is the name of the exported variable that holds your routes.
+ - `/api/posts/:id` becomes `/api/posts/{id}`.
+ - Every possible response is included, grouped by status code, so `404 not-found` is in the spec as well.
+ - `.meta({ description })` becomes the operation's description.
+ - The operation id is the name of the route, e.g. `getPost`, or `posts.getPost` if it's nested.
+
+ - NOTE: Only routes with `.path()` are included, the others are only reachable through the RPC endpoint.
+ - NOTE: `generateOpenAPI` returns the document as well, so `outputFile` is optional.
+
+## What goes where
+
+| Cuple | OpenAPI |
+|---|---|
+| `.path("/posts/:id")` | path `/posts/{id}` |
+| `.get()` / `.post()` / ... | operation with that method |
+| `.paramsSchema(...)` | path parameters |
+| `.querySchema(...)` | query parameters |
+| `.headersSchema(...)` | header parameters |
+| `.bodySchema(...)` | `application/json` request body |
+| return values | responses by status code |
+| `.meta({ description })` | description |
+
+## Inspecting routes
+
+`@cuple/openapi` is built on `@cuple/inspect`, which you can use directly if you need the route information for something else:
+
+```ts
+import { inspectRoutes } from "@cuple/inspect";
+
+for (const route of inspectRoutes("./src/routes.ts", "routes")) {
+  console.log(route.method.toUpperCase(), route.path.raw);
+}
+```
+
+:::note[Why it works this way]
+
+- **Generated from the source, not annotated.** The spec comes from the same types the client uses, so it can't drift from what the server actually returns.
+
+:::

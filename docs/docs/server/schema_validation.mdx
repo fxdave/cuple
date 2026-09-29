@@ -78,3 +78,10 @@ An example response:
     }]
 }
 ```
+
+:::note[Why it works this way]
+
+- **Validate at the edge, trust inside.** After the schema, `data` is parsed and typed, so the handler never re-checks input.
+- **Validation errors are a normal result.** They come back as `validation-error` with paths, so a form can put each message on its field without a special error channel.
+
+:::

@@ -36,6 +36,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: "./sidebars.ts",
+          remarkPlugins: [require("./src/remark/code-region")],
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl: "https://github.com/fxdave/cuple/tree/main/docs",
@@ -86,6 +87,12 @@ const config: Config = {
           sidebarId: "serverSidebar",
           position: "left",
           label: "Server Docs",
+        },
+        {
+          type: "docSidebar",
+          sidebarId: "reactSidebar",
+          position: "left",
+          label: "React",
         },
         {
           href: "https://github.com/fxdave/react-express-cuple-boilerplate",

@@ -42,3 +42,10 @@ app.listen(8080, () => {
 });
 
 ```
+
+:::note[Why it works this way]
+
+- **Plain Express underneath.** Cuple adds types and routing to an app you already know how to deploy, log and extend, instead of replacing your server.
+- **Routes are a value.** `routes` is an ordinary object; its type is the API contract the client, OpenAPI and MCP all read from, so there's one source of truth.
+
+:::

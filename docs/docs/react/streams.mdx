@@ -1,0 +1,28 @@
+---
+sidebar_position: 7
+description: 'useStream, realtime refresh'
+---
+
+# Streams
+
+For endpoints made with [getSSE](../server/sse).
+
+```tsx file=../../../examples/react/src/App.tsx#activity
+```
+
+In this example:
+
+ - The callback runs for every event. Events are not stored: you decide what to keep, and what to refresh.
+ - `store.refresh(...)` refetches what's on screen when someone else changed it.
+ - The connection is closed when the component unmounts, and opened again when the arguments change.
+ - A rejected connection (e.g. `401`) throws to the nearest `<Boundary>`, like a failed read.
+ - A network failure is kept as `error`, with `isStreaming: false`: streams drop, and the page should stay. `reconnect()` tries again.
+ - `StreamEvent` gives you the event type from the server.
+
+:::note[Why it works this way]
+
+- **Events aren't cached.** A stream is a feed of changes, not a value; storing it would grow without bound and hide what the component actually needs. You keep what matters and refresh the reads it affects.
+- **A rejected connection is an error, a dropped one is a state.** A `401` means something is wrong and belongs to the boundary; a flaky network is normal for a long-lived connection and shouldn't replace the page.
+- **The lifetime follows the component.** Open while mounted, closed on unmount, reopened on new arguments or a new key: no manual subscription bookkeeping.
+
+:::

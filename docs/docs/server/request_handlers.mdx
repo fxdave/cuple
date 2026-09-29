@@ -114,3 +114,10 @@ builder
 
     })
 ```
+
+:::note[Why it works this way]
+
+- **`result` names the outcome, `statusCode` is for HTTP.** A string like `"not-found-error"` is what code switches on and what TypeScript narrows by; the status keeps the API REST-compatible for tools and proxies.
+- **Return, don't `res.send`.** A returned value is typed and ends up in the client's union; a response sent by hand is invisible to the types.
+
+:::

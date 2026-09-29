@@ -1,39 +1,49 @@
 ---
 sidebar_position: 4
-description: 'Include headers for each request.'
+description: 'Headers for every request, cache keys, finalware'
 ---
-# Client chaining (Middleware)
+# Client chaining
 
-You don't have to specify authorization header every time.
-With client chaining, you can get a new client that includes the necessary parameters for every request.
-
-## Example
+`client.with({ ... })` returns a client that adds the same data to every request, like an authorization header.
 
 ```ts
 const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",
 });
 
-const authedClient = client.with(() => ({
-  headers: {
-    authorization: localStorage.getItem("token") || "nothing",
-  },
-}));
-
-// GOOD:
-await authedClient.getProfile.get({});
-
-// THIS IS ALSO GOOD:
-await client.getProfile.get({
-  headers: {
-    authorization: localStorage.getItem("token") || "nothing",
-  },
+const authedClient = client.with({
+  middleware: () => ({
+    headers: { authorization: localStorage.getItem("token") || "nothing" },
+  }),
 });
 
-// BAD EXAMPLE:
-// Calling the handler which requires auth headers without auth headers cause type error:
-await client.getProfile.get({}); // TYPE ERROR
+// GOOD:
+await fetchCuple(authedClient.getProfile.get);
+
+// ALSO GOOD:
+await fetchCuple(client.getProfile.get, {
+  headers: { authorization: localStorage.getItem("token") || "nothing" },
+});
+
+// A route that requires the header, called without it, is a type error:
+await fetchCuple(client.getProfile.get); // TYPE ERROR
 ```
 
- - NOTE: `with` can handle async callbacks, which will be evaluated every time you make a request.
- - NOTE: Having more than one chain link is experimental.
+## Options
+
+| Option | Runs | For |
+| ------ | ---- | --- |
+| `middleware` | Before every request; awaited, so it can refresh a token. | Data every request needs: headers, a tenant id. |
+| `key` | When a cache needs it (a string, or a synchronous getter). | Telling caches whose data a response is. See [Switching and signing out](../react/installation#switching-and-signing-out). |
+| `finalware` | After every response, before it's handed back. | Cross-cutting reactions: redirect on an expired session, report failures. Throwing turns a result into an exception. |
+
+ - NOTE: `key` is what the response depends on (who the user is), not the injected bytes (the token). A refreshed token is the same user.
+ - NOTE: `finalware` can replace the response, but the types don't follow it. Observe or throw; don't reshape.
+
+:::note[Why it works this way]
+
+- **Required headers are part of the type.** A route whose schema needs `authorization` can't be called without it, so a forgotten header is a compile error, not a `401` in production.
+- **`middleware` runs per request.** Tokens expire and refresh; reading them at request time means a long-lived client never sends a stale one.
+- **`key` is separate from `middleware`.** A cache can't see what middleware injects, and shouldn't: the token changes, the user doesn't. Naming the identity explicitly keeps cached data from leaking between accounts without discarding it on every token refresh.
+
+:::

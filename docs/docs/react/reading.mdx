@@ -1,0 +1,93 @@
+---
+sidebar_position: 2
+description: 'useGet, resolveAlso, combined read, polling'
+---
+
+# Reading
+
+## useGet
+
+```tsx file=../../../examples/docs/todos/app.tsx#todo-list
+```
+
+In this example:
+
+ - `todos` is there, typed, with no loading or error checks. Until it arrives, the component suspends and the nearest `<Boundary>` shows its `fallback`.
+ - Anything but `success` throws to the nearest `<Boundary>`. For a list that should always render, a failure means something is broken.
+ - Every component that reads the same call shares one request and one cached result, so `NewTodo` and `TodoItem` don't need anything passed down.
+
+## Routes and endpoints
+
+Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine(async (_, q: string) => fetchCuple(client.search.post, { body: { q } }).thenUnwrap())`.
+
+A route stands for its GET endpoint: `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, and both are the same cached call. The short form works wherever something is read or refreshed: `useGet`, `usePages`, `get` inside `combine`, `refresh` lists, `store.refresh` and `store.preload`.
+
+ - NOTE: A route that is itself named like an HTTP method (`client.get`) needs `.get` written out: at runtime, that's the only way to tell a route from an endpoint.
+
+## Expected failures
+
+When a failure is a normal outcome, list it with `resolveAlso`. It becomes a typed value, and everything else still throws:
+
+```tsx file=../../../examples/react/src/App.tsx#note-detail
+```
+
+ - `"transport-error"` can be listed too, for a read that should render something when the server can't be reached. See [Errors](./errors).
+ - NOTE: `resolveOn: [...]` is the complete list instead: `"success"` is not implied.
+ - These are the same idea as `fetchCuple(...).thenResolveAlso([...])` / `.thenResolveOn([...])`: an option on a hook, a method on a request.
+
+## New arguments
+
+When the arguments change, the component suspends again: the old data belongs to other arguments, and showing it under the new ones could lead to a write against the wrong item.
+
+To keep old results on screen while new ones load, like in a search box, defer the arguments:
+
+```tsx
+const deferred = useDeferredValue(query);
+const { results } = useGet(client.search, { query: { q: deferred } });
+const stale = deferred !== query; // e.g. dim the list
+```
+
+## Fetching only sometimes
+
+Render the component only sometimes. There is no `enabled` flag:
+
+```tsx
+{openId !== null && <NoteDetail id={openId} />}
+```
+
+## Several fetches, one value
+
+A `combine` is a plain async function that reads through the cache. Use `await` for a fetch that depends on another, and `Promise.all` for parallel ones:
+
+```ts
+export const loadOrderWithCustomer = combine(async ({ get }, id: number) => {
+  const { order } = await get(client.getOrder, { params: { id } });
+  const { customer } = await get(client.getCustomer, { params: { id: order.customerId } });
+  return { order, customer };
+});
+
+const { order, customer } = useGet(loadOrderWithCustomer, id);
+```
+
+ - `get` shares requests with every other reader, and it's how refreshing `client.getOrder` knows to re-run this combined read.
+ - NOTE: Create combined reads at module level. A combined read's identity is its cache key.
+ - One failed `get` fails the whole combined read: it throws to the `<Boundary>` like any read. To go on without it, list the result: `get(client.getOrder, args, { resolveAlso: ["not-found-error"] })`.
+ - Args must be JSON (numbers, strings, plain objects and arrays): they are the cache key. A `Date` or a class instance would never match itself later.
+
+## Polling
+
+```tsx
+const { count } = useGet(client.getStats, undefined, { config: { loading: { every: 30_000 } } });
+```
+
+It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
+
+:::note[Why it works this way]
+
+- **Data first, not flags.** `useGet` returns the data, typed, or suspends. A component never renders a half-loaded state it has to guard against.
+- **The call is the cache key.** Endpoint, client key and arguments identify cached data, so two components reading the same thing share it without a hand-written key that can drift.
+- **Reads are GET only.** A read can run again at any time (a refresh, a poll, a retry). Only a request that is safe to repeat belongs there; writes go through actions.
+- **No `enabled`, no `select`.** Conditional fetching is conditional rendering, and deriving data is plain code in the component or a `combine`. Fewer options, fewer ways for two readers of the same data to disagree.
+- **New arguments suspend.** Showing the previous item's data under a new id invites a write to the wrong item; keeping old data is opt-in with `useDeferredValue`, where it's visibly stale.
+
+:::

@@ -30,13 +30,24 @@ export const client = createClient<typeof routes>({
 ## Use it like a fetch
 
 ```ts
-async function getPost(id: number) {
-  const response = await client.getPosts.get({ params: { id } });
+import { fetchCuple } from "@cuple/client";
 
-  console.log(postsResponse.posts); // type error
+async function getPost(id: number) {
+  const response = await fetchCuple(client.getPost.get, { params: { id } });
+
+  console.log(response.post); // type error: it may be an error result
 
   if (response.result === "success") {
-    console.log(postsResponse.posts); // no type error
+    console.log(response.post); // no type error
   }
 }
 ```
+
+See [Handling results](./handling_results) for keeping only the results you handle.
+
+:::note[Why it works this way]
+
+- **No code generator.** The client's types come straight from `typeof routes`, so a server change shows up as a type error on the client the moment you save, with no build step to forget.
+- **One RPC path.** Without generated code the client can't know each route's URL, so requests go to one path (`/rpc`) and name the route. Routes with `.path()` are still plain REST for everyone else.
+
+:::

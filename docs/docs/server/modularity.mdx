@@ -60,3 +60,9 @@ export function createAuthModule(db: PrismaClient, builder: Builder) {
   };
 }
 ```
+
+:::note[Why it works this way]
+
+- **Modules are plain objects and functions.** Nesting objects is the whole module system, so any structure (and any dependency injection style) you already use works.
+
+:::

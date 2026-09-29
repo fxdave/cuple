@@ -1,0 +1,99 @@
+---
+sidebar_position: 8
+description: 'refresh, preload, clear, useIsFetching, Boundary'
+---
+
+# The store
+
+The store is the cache. Components reach it through `<CupleProvider>`; plain code uses it directly.
+
+## refresh
+
+```ts
+await store.refresh([client.getNotes, client.getNote]);
+```
+
+ - Calls something is reading are refetched, and keep their old data on screen until the new data lands.
+ - Calls nobody reads are dropped, and fetched fresh when next read.
+ - It resolves when the refetches have landed, and never rejects: a failure goes to whoever reads the data.
+ - A network failure during a refresh keeps the old data on screen, and is retried when the browser comes back online.
+
+## preload
+
+Start a fetch before anything renders it:
+
+```tsx
+<li onMouseEnter={() => store.preload(loadOrderWithCustomer, order.id)}>
+```
+
+ - It never rejects, and a failed preload isn't kept: nobody was waiting for it, so the next read fetches again.
+ - In a router loader, call it without returning it (`void store.preload(...)`), so loading and errors stay with `<Boundary>` instead of the router.
+ - NOTE: A read of `{ id: 5 }` doesn't hit a preload of `{ id: "5" }`. When that happens, the store warns in the console.
+
+## refreshKeys
+
+```ts
+signedInAs = "linus";
+store.refreshKeys();
+```
+
+Checks every cached call's key again, for when whatever a `with({ key })` getter returns has changed:
+
+ - Key unchanged: stays as it is. No request, no re-render.
+ - Key changed: its readers read again under the new key, even memoized ones. Cached data for the new key shows at once; anything else loads.
+ - The old key's data is dropped, or kept with `cache.onKeyChange: "keep"`. It's never refetched under the new key.
+ - Combined reads built from a changed call run again; streams reconnect.
+
+Wrap it in `startTransition` to keep the current screen until the new data is ready.
+
+## clear
+
+```ts
+store.clear();
+```
+
+Drops everything; readers suspend and fetch again. For sign-out and tests.
+
+## Boundary
+
+```tsx
+<Boundary fallback={<Spinner />} error={(error, retry) => <Failed onRetry={retry} />}>
+```
+
+ - Without `fallback`, loading goes to the boundary above.
+ - Without `error`, errors go to the boundary above.
+ - `retry` drops the data that failed from the cache and renders again, so it's fetched fresh. Other data is untouched.
+ - Place boundaries where the layout wants loading and error UI: a failing widget shouldn't take the page with it.
+
+## Full-page loading
+
+Most loading should stay local: skeletons, busy buttons. For the few steps the user must wait for, opt in with `loading: { blocking: true }`, and cover the page only then:
+
+```tsx file=../../../examples/react/src/contacts.tsx#import-samples
+```
+
+```tsx file=../../../examples/react/src/loading.tsx#page-overlay
+```
+
+ - `config.loading.blocking` works on actions, on reads (`useGet(x, args, { config: { loading: { blocking: true } } })` blocks while that data refetches), and on a whole `<Boundary config>`. For plain code: `store.refresh(targets, { blocking: true })`.
+ - A first load shows the `<Boundary>` fallback, as always, never the overlay.
+
+## useIsFetching
+
+```tsx
+function Progress() {
+  return useIsFetching() ? <TopBar /> : null;
+}
+```
+
+True while any read, refresh or action runs. For a global progress bar.
+
+:::note[Why it works this way]
+
+- **A store object, not a hidden singleton.** You create it, so tests get a fresh one and plain code (sign-in, SSE handlers, router loaders) can use it without React.
+- **Refresh keeps data on screen.** Replacing content with a spinner on every refetch makes pages jump; the old data stays until the new data lands, and background work is shown with `useIsFetching()`.
+- **Only what's read is refetched.** Unread data is dropped and loads fresh later, so a refresh never fetches data for screens nobody is looking at, and deleted items don't 404.
+- **Keys instead of clearing.** Switching accounts with `refreshKeys` refetches only what depends on the account, and keeps the rest; `clear` is for when nothing may stay, like sign-out.
+- **Blocking loading is opt-in.** A full-page overlay stops the user from working, so it's reserved for the few steps that must finish first.
+
+:::

@@ -86,3 +86,9 @@ builder
 Cuple uses Express under the hood, giving you full access to `req` and `res` objects.
 With raw handlers, all automatic behavior is disabled, allowing you to use Express as designed while benefiting from Cuple's type-safe composition features.
 Please check express tutorials for more.
+
+:::note[Why it works this way]
+
+- **An escape hatch, clearly marked.** Non-JSON responses can't be typed as results, so they live in separate handlers you call with `fetch`, instead of weakening the types of every other route.
+
+:::

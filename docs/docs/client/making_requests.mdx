@@ -17,11 +17,11 @@ const routes = {
 };
 
 // Client:
-await client.foo.get({});
-await client.bar.post({});
-await client.baz.put({});
-await client.qux.patch({});
-await client.quux.delete({});
+await fetchCuple(client.foo.get);
+await fetchCuple(client.bar.post);
+await fetchCuple(client.baz.put);
+await fetchCuple(client.qux.patch);
+await fetchCuple(client.quux.delete);
 ```
 
 ## Why specify the method on the client-side?
@@ -35,12 +35,13 @@ It's type-checked so you cannot specify methods other than what the server speci
 **body**: The request body  
 **headers**: HTTP headers  
 **params**: URL parameters (e.g.: in case of `/post/:id`, it can be `{ id: "1" }`)  
-**query**: query parameters (e.g.: in case of `?id=2`, it can be `{ id: "2" }`)
+**query**: query parameters (e.g.: in case of `?id=2`, it can be `{ id: "2" }`)  
+**signal**: an `AbortSignal`
 
 Every parameter's type is auto-infered from the server.
 
 ```ts
-await client.user.updateUser.patch({
+await fetchCuple(client.user.updateUser.patch, {
     body: { name: 'David' },
     headers: { authorization: 'Bearer ...' },
     params: { id: 12 },
@@ -71,4 +72,11 @@ This lets you handle errors type-safely.
 
 For example, when you need to get the path of a problematic field in a ZodValidationError, you can access it.
 
-However, generic error handlers can reduce complexity of the client.
+To keep only the results a call site handles, see [Handling results](./handling_results).
+
+:::note[Why it works this way]
+
+- **The method is written at the call site.** It's what the request actually does on the wire, and seeing `.post` next to `.get` in a review tells you which calls change data.
+- **Every response is in the type.** Errors the server can send are part of the union, so handling them is checked like handling success.
+
+:::
