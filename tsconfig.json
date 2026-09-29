@@ -7,11 +7,13 @@
       "@cuple/server/*": ["./packages/server/src/*"],
       "@cuple/openapi/*": ["./packages/openapi/src/*"],
       "@cuple/inspect/*": ["./packages/inspect/src/*"],
+      "@cuple/react/*": ["./packages/react/src/*"],
       "@cuple/mcp/*": ["./packages/mcp/src/*"],
       "@cuple/client": ["./packages/client/src/index.ts"],
       "@cuple/server": ["./packages/server/src/index.ts"],
       "@cuple/openapi": ["./packages/openapi/src/index.ts"],
       "@cuple/inspect": ["./packages/inspect/src/index.ts"],
+      "@cuple/react": ["./packages/react/src/index.ts"],
       "@cuple/mcp": ["./packages/mcp/src/index.ts"]
     }
   },
@@ -20,6 +22,7 @@
     { "path": "./packages/server" },
     { "path": "./packages/openapi" },
     { "path": "./packages/inspect" },
+    { "path": "./packages/react" },
     { "path": "./packages/mcp" },
     { "path": "./test" }
   ],

@@ -8,6 +8,7 @@
     "outDir": "./dist",
     "composite": true,
     "noErrorTruncation": true,
+    "jsx": "react-jsx",
     "paths": {
       "@cuple/client/*": ["../packages/client/src/*"],
       "@cuple/server/*": ["../packages/server/src/*"],
@@ -15,7 +16,9 @@
       "@cuple/server": ["../packages/server/src/index.ts"],
       "@cuple/inspect": ["../packages/inspect/src/index.ts"],
       "@cuple/openapi": ["../packages/openapi/src/index.ts"],
-      "@cuple/mcp": ["../packages/mcp/src/index.ts"]
+      "@cuple/mcp": ["../packages/mcp/src/index.ts"],
+      "@cuple/react/testing": ["../packages/react/src/testing.tsx"],
+      "@cuple/react": ["../packages/react/src/index.ts"]
     }
   },
   "references": [
@@ -27,7 +30,8 @@
     },
     { "path": "../packages/inspect" },
     { "path": "../packages/openapi" },
-    { "path": "../packages/mcp" }
+    { "path": "../packages/mcp" },
+    { "path": "../packages/react" }
   ],
   "include": ["./src/**/*", "../packages/openapi/test/nested"]
 }

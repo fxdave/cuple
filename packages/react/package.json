@@ -1,0 +1,64 @@
+{
+  "name": "@cuple/react",
+  "version": "2.0.0",
+  "description": "React bindings for Cuple RPC: Suspense reads, typed actions, explicit refresh",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxdave/cuple.git"
+  },
+  "keywords": [
+    "rpc",
+    "react",
+    "suspense",
+    "hooks",
+    "type",
+    "sharing",
+    "frontend",
+    "api"
+  ],
+  "author": "David Biro",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fxdave/cuple/issues"
+  },
+  "homepage": "https://github.com/fxdave/cuple#readme",
+  "peerDependencies": {
+    "@cuple/client": "*",
+    "react": ">=19",
+    "@testing-library/react": ">=16"
+  },
+  "devDependencies": {
+    "@cuple/client": "file:../client",
+    "@types/react": "^19.2.0",
+    "react": "^19.2.0",
+    "@testing-library/react": "^16.3.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "testing": [
+        "dist/testing.d.ts"
+      ]
+    }
+  },
+  "peerDependenciesMeta": {
+    "@testing-library/react": {
+      "optional": true
+    }
+  }
+}
