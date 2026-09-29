@@ -63,7 +63,7 @@ function buildParameters(route: RouteInfo): OpenAPIParameter[] {
   const params: OpenAPIParameter[] = [];
 
   // Path params from segments
-  for (const seg of route.path.segments) {
+  for (const seg of route.path?.segments ?? []) {
     if (seg.type === "param") {
       let schema: OpenAPISchemaObject = { type: "string" };
       // Try to get schema from paramsSchema
@@ -213,6 +213,8 @@ export function generateOpenAPI(
   };
 
   for (const route of routes) {
+    // Without `.path()` a route has no REST URL to describe.
+    if (route.path === null) continue;
     const path = toOpenAPIPath(route.path.raw);
     if (!doc.paths[path]) {
       doc.paths[path] = {};

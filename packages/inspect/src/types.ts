@@ -28,7 +28,8 @@ export type ResponseVariant = {
 export type RouteInfo = {
   name: string;
   description: string | undefined;
-  path: PathInfo;
+  /** `null` when the route has no `.path()`: it is only reachable through the RPC endpoint. */
+  path: PathInfo | null;
   method: string;
   bodySchema: Schema | null;
   querySchema: Schema | null;

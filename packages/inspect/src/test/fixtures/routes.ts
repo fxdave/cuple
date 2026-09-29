@@ -138,6 +138,11 @@ const deletePost = builder
     return success({ deleted: true });
   });
 
+// --- Route without path: only reachable through the RPC endpoint ---
+const rpcOnly = builder.post(async () => {
+  return success({ ok: true });
+});
+
 export const routes = {
   getHealth,
   getStatus,
@@ -151,4 +156,5 @@ export const routes = {
   getProfile,
   protectedRoute,
   updatePost,
+  rpcOnly,
 };

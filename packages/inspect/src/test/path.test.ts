@@ -11,15 +11,15 @@ describe("path extraction", () => {
   it("should extract simple path", () => {
     const route = routes.find((r) => r.name === "getHealth");
     expect(route).toBeDefined();
-    expect(route!.path.raw).toBe("/health");
-    expect(route!.path.segments).toEqual([{ type: "static", value: "health" }]);
+    expect(route!.path!.raw).toBe("/health");
+    expect(route!.path!.segments).toEqual([{ type: "static", value: "health" }]);
   });
 
   it("should extract path with single param", () => {
     const route = routes.find((r) => r.name === "posts.getPost");
     expect(route).toBeDefined();
-    expect(route!.path.raw).toBe("/api/posts/:id");
-    expect(route!.path.segments).toEqual([
+    expect(route!.path!.raw).toBe("/api/posts/:id");
+    expect(route!.path!.segments).toEqual([
       { type: "static", value: "api" },
       { type: "static", value: "posts" },
       { type: "param", name: "id" },
@@ -29,8 +29,8 @@ describe("path extraction", () => {
   it("should extract path with multiple params", () => {
     const route = routes.find((r) => r.name === "posts.getComment");
     expect(route).toBeDefined();
-    expect(route!.path.raw).toBe("/api/posts/:postId/comments/:commentId");
-    expect(route!.path.segments).toEqual([
+    expect(route!.path!.raw).toBe("/api/posts/:postId/comments/:commentId");
+    expect(route!.path!.segments).toEqual([
       { type: "static", value: "api" },
       { type: "static", value: "posts" },
       { type: "param", name: "postId" },

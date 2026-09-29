@@ -110,10 +110,7 @@ function extractRoutesFromType(
     const methodProp = propType.getProperty("_method");
 
     if (methodProp) {
-      const routeInfo = extractRouteInfo(prop, propType, node, fullName, checker);
-      if (routeInfo) {
-        routes.push(routeInfo);
-      }
+      routes.push(extractRouteInfo(prop, propType, node, fullName, checker));
     } else {
       // Nested object, recurse
       const nestedRoutes = extractRoutesFromType(
@@ -136,12 +133,9 @@ function extractRouteInfo(
   node: ts.Node,
   name: string,
   checker: ts.TypeChecker,
-): RouteInfo | null {
+): RouteInfo {
   // Extract path from AST
   const pathValue = extractPathFromSymbol(symbol);
-  if (!pathValue) {
-    return null;
-  }
 
   // Extract method from tMethod
   const methodProp = routeType.getProperty("tMethod");
@@ -203,7 +197,7 @@ function extractRouteInfo(
   return {
     name,
     description,
-    path: parsePath(pathValue),
+    path: pathValue === null ? null : parsePath(pathValue),
     method,
     bodySchema,
     querySchema,

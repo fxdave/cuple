@@ -96,13 +96,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -323,13 +323,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -515,13 +515,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -707,13 +707,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -951,13 +951,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -1155,13 +1155,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -1402,13 +1402,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },
@@ -1602,13 +1602,13 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               {
                                 "enum": [
-                                  "unrecognized_keys",
+                                  "invalid_type",
                                 ],
                                 "type": "string",
                               },
                               {
                                 "enum": [
-                                  "invalid_type",
+                                  "unrecognized_keys",
                                 ],
                                 "type": "string",
                               },

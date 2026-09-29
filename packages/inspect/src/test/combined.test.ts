@@ -22,8 +22,8 @@ describe("combined route inspection", () => {
     expect(route!.method).toBe("put");
 
     // Path
-    expect(route!.path.raw).toBe("/api/posts/:postId");
-    expect(route!.path.segments).toEqual([
+    expect(route!.path!.raw).toBe("/api/posts/:postId");
+    expect(route!.path!.segments).toEqual([
       { type: "static", value: "api" },
       { type: "static", value: "posts" },
       { type: "param", name: "postId" },
@@ -60,14 +60,13 @@ describe("combined route inspection", () => {
 
   it("should extract all routes from the fixture", () => {
     // Total routes: getHealth, getStatus, posts.getComment, posts.createPost,
-    // posts.listPosts, posts.getPost, posts.deletePost, getProfile, protectedRoute, updatePost
-    expect(routes.length).toBe(10);
+    // posts.listPosts, posts.getPost, posts.deletePost, getProfile, protectedRoute, updatePost, rpcOnly
+    expect(routes.length).toBe(11);
   });
 
-  it("should not include routes without path", () => {
-    // All routes in fixture have paths, so every route should be present
-    for (const route of routes) {
-      expect(route.path.raw).toBeTruthy();
-    }
+  it("should keep routes without path, with a null path", () => {
+    const route = routes.find((r) => r.name === "rpcOnly");
+    expect(route?.path).toBeNull();
+    expect(route?.method).toBe("post");
   });
 });
