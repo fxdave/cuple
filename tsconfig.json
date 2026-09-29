@@ -2,23 +2,25 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "baseUrl": ".",
     "paths": {
       "@cuple/client/*": ["./packages/client/src/*"],
       "@cuple/server/*": ["./packages/server/src/*"],
       "@cuple/openapi/*": ["./packages/openapi/src/*"],
       "@cuple/inspect/*": ["./packages/inspect/src/*"],
+      "@cuple/mcp/*": ["./packages/mcp/src/*"],
       "@cuple/client": ["./packages/client/src/index.ts"],
       "@cuple/server": ["./packages/server/src/index.ts"],
       "@cuple/openapi": ["./packages/openapi/src/index.ts"],
-      "@cuple/inspect": ["./packages/inspect/src/index.ts"]
+      "@cuple/inspect": ["./packages/inspect/src/index.ts"],
+      "@cuple/mcp": ["./packages/mcp/src/index.ts"]
     }
   },
   "references": [
-    { "path": "./packages/client" },
+    { "path": "./packages/client/tsconfig.node.json" },
     { "path": "./packages/server" },
     { "path": "./packages/openapi" },
     { "path": "./packages/inspect" },
+    { "path": "./packages/mcp" },
     { "path": "./test" }
   ],
   "files": [],

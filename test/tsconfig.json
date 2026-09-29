@@ -1,8 +1,8 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "target": "esnext",
     "rootDir": "./src",
     "outDir": "./dist",
@@ -12,16 +12,22 @@
       "@cuple/client/*": ["../packages/client/src/*"],
       "@cuple/server/*": ["../packages/server/src/*"],
       "@cuple/client": ["../packages/client/src/index.ts"],
-      "@cuple/server": ["../packages/server/src/index.ts"]
+      "@cuple/server": ["../packages/server/src/index.ts"],
+      "@cuple/inspect": ["../packages/inspect/src/index.ts"],
+      "@cuple/openapi": ["../packages/openapi/src/index.ts"],
+      "@cuple/mcp": ["../packages/mcp/src/index.ts"]
     }
   },
   "references": [
     {
-      "path": "../packages/client"
+      "path": "../packages/client/tsconfig.node.json"
     },
     {
       "path": "../packages/server"
-    }
+    },
+    { "path": "../packages/inspect" },
+    { "path": "../packages/openapi" },
+    { "path": "../packages/mcp" }
   ],
   "include": ["./src/**/*", "../packages/openapi/test/nested"]
 }

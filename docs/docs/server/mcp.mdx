@@ -1,0 +1,51 @@
+---
+sidebar_position: 8
+description: 'Expose routes as MCP tools'
+---
+
+# MCP
+
+With `@cuple/mcp`, AI agents can call your routes as [MCP](https://modelcontextprotocol.io) tools.
+
+```bash
+npm i @cuple/mcp @cuple/inspect typescript
+```
+
+## Example
+
+```ts
+import { createClient } from "@cuple/client";
+import { inspectRoutes } from "@cuple/inspect";
+import { createCupleMcpServer } from "@cuple/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { routes } from "./routes";
+
+const client = createClient<typeof routes>({ path: "http://localhost:8080/rpc" }).with({
+  middleware: () => ({ headers: { authorization: process.env.API_TOKEN } }),
+});
+
+const server = createCupleMcpServer({
+  routes: inspectRoutes("./src/routes.ts", "routes"),
+  client,
+});
+
+await server.connect(new StdioServerTransport());
+```
+
+In this example:
+
+ - Every route becomes a tool, named after the route, e.g. `posts.getPost`.
+ - `.meta({ description })` becomes the tool's description.
+ - The tool's input is `params`, `query` and `body`, the same as `fetchCuple`'s.
+ - The tools call your server through the client, so routes without `.path()` work as well.
+ - The response is given back as JSON. If it's not `success`, the tool call is marked as an error.
+
+ - NOTE: Headers are not part of the tools' input, so the agent can't send or change them. Add them with the client's `middleware`.
+ - NOTE: `inspectRoutes` reads your TypeScript source, so run the MCP server where the source is available.
+
+:::note[Why it works this way]
+
+- **Through the client, not around it.** Tools call the same endpoints your app does, with the same middlewares and validation, so an agent can't do anything a client couldn't.
+- **No headers in tool input.** Credentials come from your code, never from what an agent decides to send.
+
+:::
