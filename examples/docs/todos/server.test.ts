@@ -11,23 +11,27 @@ const client = createClient<typeof routes>({
 });
 
 it("works as the docs describe it", async () => {
-  const empty = await fetchCuple(client.createTodo.post, { body: { text: "" } });
+  const empty = await fetchCuple(client.createTodo.post, {
+    body: { text: "" },
+  }).thenResolveAlso(["validation-error"]);
   expect(empty).toMatchObject({
     result: "validation-error",
     issues: [{ path: ["text"], message: "Write something first." }],
   });
 
-  await fetchCuple(client.createTodo.post, { body: { text: "Milk" } }).thenUnwrap();
-  const duplicate = await fetchCuple(client.createTodo.post, { body: { text: "Milk" } });
+  await fetchCuple(client.createTodo.post, { body: { text: "Milk" } });
+  const duplicate = await fetchCuple(client.createTodo.post, {
+    body: { text: "Milk" },
+  }).thenResolveAlso(["validation-error"]);
   expect(duplicate).toMatchObject({
     issues: [{ path: ["text"], message: "You already have this todo." }],
   });
 
   const { todo } = await fetchCuple(client.toggleTodo.patch, {
     params: { id: 1 },
-  }).thenUnwrap();
+  });
   expect(todo.done).toBe(true);
 
-  await fetchCuple(client.clearCompleted.post).thenUnwrap();
-  expect((await fetchCuple(client.getTodos.get).thenUnwrap()).todos).toEqual([]);
+  await fetchCuple(client.clearCompleted.post);
+  expect((await fetchCuple(client.getTodos.get)).todos).toEqual([]);
 });

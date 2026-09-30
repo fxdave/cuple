@@ -40,7 +40,7 @@ describe("blocking actions", () => {
     const { wrapper } = setup();
     let run!: () => Promise<unknown>;
     function Mover() {
-      run = useAction(() => fetchCuple(client.moveProperty.post).thenUnwrap(), {
+      run = useAction(() => fetchCuple(client.moveProperty.post), {
         config: { loading: { blocking: true } },
       }).run;
       return null;
@@ -69,7 +69,7 @@ describe("blocking actions", () => {
     const { wrapper } = setup();
     let run!: () => Promise<unknown>;
     function Saver() {
-      run = useAction(() => fetchCuple(client.moveProperty.post).thenUnwrap()).run;
+      run = useAction(() => fetchCuple(client.moveProperty.post)).run;
       return null;
     }
     await renderAsync(

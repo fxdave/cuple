@@ -107,7 +107,7 @@ function TodoItem({ todo }: { todo: Todo }) {
     () =>
       fetchCuple(client.toggleTodo.patch, {
         params: { id: todo.id },
-      }).thenUnwrap(),
+      }),
     { refresh: [client.getTodos] },
   );
 
@@ -130,7 +130,7 @@ function TodoItem({ todo }: { todo: Todo }) {
 
 // #region clear-completed
 function ClearCompleted() {
-  const clear = useAction(() => fetchCuple(client.clearCompleted.post).thenUnwrap(), {
+  const clear = useAction(() => fetchCuple(client.clearCompleted.post), {
     refresh: [client.getTodos],
   });
 

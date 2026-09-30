@@ -17,7 +17,7 @@ async function test() {
 }
 
 async function getPosts() {
-  return await fetchCuple(client.getPosts.get, {});
+  return await fetchCuple(client.getPosts.get, {}).thenResolveAll();
 }
 
 async function getPost(id: number) {
@@ -25,7 +25,7 @@ async function getPost(id: number) {
     params: {
       id,
     },
-  });
+  }).thenResolveAll();
 }
 
 async function deletePost(id: number) {
@@ -33,7 +33,7 @@ async function deletePost(id: number) {
     params: {
       id,
     },
-  });
+  }).thenResolveAll();
 }
 
 async function addPost(title: string, content: string) {
@@ -42,7 +42,7 @@ async function addPost(title: string, content: string) {
       content,
       title,
     },
-  });
+  }).thenResolveAll();
 }
 
 test();

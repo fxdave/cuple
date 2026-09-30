@@ -178,7 +178,7 @@ describe("useIsFetching", () => {
     const { result } = renderHook(
       () => ({
         busy: useIsFetching(),
-        bump: useAction(() => fetchCuple(client.bump.post).thenUnwrap()),
+        bump: useAction(() => fetchCuple(client.bump.post)),
       }),
       { wrapper },
     );

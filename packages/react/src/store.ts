@@ -421,7 +421,10 @@ export class Store implements CupleStore {
     try {
       const value = isCombined(entry.readable)
         ? await entry.readable.load(this.contextFor(entry), entry.args)
-        : await fetchCuple(entry.readable as ClientEndpointRef, entry.args as never);
+        : await fetchCuple(
+            entry.readable as ClientEndpointRef,
+            entry.args as never,
+          ).thenResolveAll();
       this.land(entry, { value });
     } catch (error) {
       this.land(entry, { error });
@@ -641,7 +644,7 @@ function toTarget(readable: Readable): Readable {
     const name = [...(segments ?? []), method].join(".");
     throw new Error(
       `@cuple/react: reads are GET only, but ${name} is a ${method.toUpperCase()}: a write, which would run on every render, refresh and poll. ` +
-        "For a POST that only reads, wrap it: combine(() => fetchCuple(...).thenUnwrap()).",
+        "For a POST that only reads, wrap it: combine(() => fetchCuple(...)).",
     );
   }
   return readable;

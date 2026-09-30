@@ -5,7 +5,7 @@ import {
 } from "@cuple/client";
 import { apiResponse, success } from "@cuple/server";
 import express from "express";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -19,6 +19,107 @@ const routes = (builder: Parameters<Parameters<typeof createClientAndServer>[0]>
           ? apiResponse("not-found-error", 404, { message: "gone" })
           : apiResponse("forbidden-error", 403, { message: "not yours" }),
     ),
+});
+
+describe("fetchCuple: success by default", () => {
+  it("resolves success, typed as success only", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const order = await fetchCuple(client.getOrder.get, { params: { id: 1 } });
+      expectTypeOf(order.result).toEqualTypeOf<"success">();
+      expect(order.title).toBe("Desk");
+    });
+  });
+
+  it("rejects any other result as CupleUnexpectedResponseError, keeping the response", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const error = await fetchCuple(client.getOrder.get, { params: { id: 2 } }).catch(
+        (e) => e,
+      );
+      expect(error).toBeInstanceOf(CupleUnexpectedResponseError);
+      expect(error.response.result).toBe("not-found-error");
+      expect(error.statusCode).toBe(404);
+    });
+  });
+
+  it("has no thenUnwrap: unwrapping is the default", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const request = fetchCuple(client.getOrder.get, { params: { id: 1 } });
+      // @ts-expect-error success-only is the default, there's nothing to unwrap
+      expect(request.thenUnwrap).toBeUndefined();
+      await request;
+    });
+  });
+
+  it("widening a request doesn't also leave its default rejection unhandled", async () => {
+    const unhandled: unknown[] = [];
+    const record = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", record);
+    try {
+      const cs = await createClientAndServer(routes);
+      await cs.run(async (client) => {
+        const missing = await fetchCuple(client.getOrder.get, {
+          params: { id: 2 },
+        }).thenResolveAlso(["not-found-error"]);
+        expect(missing.result).toBe("not-found-error");
+      });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", record);
+    }
+  });
+});
+
+describe("thenResolveAll", () => {
+  it("resolves every result the server sent, typed as the full union", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.getOrder.get, {
+        params: { id: 3 },
+      }).thenResolveAll();
+      expectTypeOf(response.result).toEqualTypeOf<
+        | "success"
+        | "not-found-error"
+        | "forbidden-error"
+        | "validation-error"
+        | "unexpected-error"
+      >();
+      expect(response.result).toBe("forbidden-error");
+    });
+  });
+
+  it("still rejects a network failure unless it's listed too", async () => {
+    const { createClient } = await import("@cuple/client");
+    const offline = createClient<ReturnType<typeof routes>>({
+      path: "http://localhost:1/rpc",
+    });
+    await expect(
+      fetchCuple(offline.getOrder.get, { params: { id: 1 } }).thenResolveAll(),
+    ).rejects.toBeInstanceOf(CupleTransportError);
+    const listed = await fetchCuple(offline.getOrder.get, { params: { id: 1 } })
+      .thenResolveAll()
+      .thenResolveAlso(["transport-error"]);
+    expect(listed.result).toBe("transport-error");
+  });
+});
+
+describe("thenWrapAbort", () => {
+  it("adds the abort to what the request already resolves", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const controller = new AbortController();
+      controller.abort();
+      const aborted = await fetchCuple(client.getOrder.get, {
+        params: { id: 1 },
+        options: { signal: controller.signal },
+      }).thenWrapAbort();
+      expectTypeOf(aborted.result).toEqualTypeOf<"success" | "abort">();
+      expect(aborted.result).toBe("abort");
+    });
+  });
 });
 
 describe("thenResolveAlso", () => {

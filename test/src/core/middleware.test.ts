@@ -21,7 +21,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
 
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "hi");
@@ -53,7 +53,7 @@ describe("middleware", () => {
         body: {
           id: "test",
         },
-      });
+      }).thenResolveAll();
 
       if (response.result === "success") assert.equal(response.foo, "hi");
     });
@@ -73,7 +73,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       assert.equal((response as any).foo, undefined);
     });
   });
@@ -94,7 +94,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.foo, "hello");
       assert.equal(response.bar, 42);
@@ -123,7 +123,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.mw, 1);
     });
@@ -149,7 +149,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       if (response.statusCode !== 400) assert.ok(false, "statusCode should be 400");
       assert.equal(response.mw, 2);
     });
@@ -180,7 +180,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       assert.equal(response.result, "success");
     });
     assert.equal(tested, true);
@@ -210,7 +210,7 @@ describe("middleware", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {});
+      const response = await fetchCuple(client.get.get, {}).thenResolveAll();
       assert.equal(response.result, "success");
     });
     assert.equal(tested, true);

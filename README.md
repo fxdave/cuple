@@ -68,13 +68,17 @@ const client = createClient<typeof routes>({
 });
 
 async function getPost(id: number) {
-  const response = await fetchCuple(client.getPost.get, { params: { id } });
+  // Resolves with success; any other result throws.
+  const { post } = await fetchCuple(client.getPost.get, { params: { id } });
+  return post;
+}
 
-  console.log(response.post); // type error: it may be an error result
-
-  if (response.result === "success") {
-    console.log(response.post); // no type error
-  }
+async function findPost(id: number) {
+  // A failure you handle is listed, and typed.
+  const res = await fetchCuple(client.getPost.get, { params: { id } }).thenResolveAlso([
+    "not-found-error",
+  ]);
+  return res.result === "not-found-error" ? null : res.post;
 }
 ```
 

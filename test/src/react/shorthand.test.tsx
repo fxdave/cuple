@@ -78,7 +78,7 @@ describe("route shorthand", () => {
     const { store, wrapper } = setup();
     let rename!: () => Promise<unknown>;
     function Order() {
-      rename = useAction(() => fetchCuple(client.rename.post).thenUnwrap(), {
+      rename = useAction(() => fetchCuple(client.rename.post), {
         refresh: [client.getOrder],
       }).run;
       return <p>{useGet(client.getOrder, { params: { id: 1 } }).order.title}</p>;

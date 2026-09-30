@@ -50,10 +50,9 @@ describe("renderWithCuple", () => {
     vi.stubGlobal("fetch", mockCuple<typeof routes>({}).fetch);
     let run!: () => Promise<unknown>;
     function Adder() {
-      run = useAction(
-        () => fetchCuple(client.addTodo.post, { body: { text: "x" } }).thenUnwrap(),
-        { config: { errors: { unhandled: "notify" } } },
-      ).run;
+      run = useAction(() => fetchCuple(client.addTodo.post, { body: { text: "x" } }), {
+        config: { errors: { unhandled: "notify" } },
+      }).run;
       return null;
     }
     await renderWithCuple(<Adder />, { config: { errors: { notify } } });
@@ -80,11 +79,11 @@ describe("mockCuple", () => {
     });
     vi.stubGlobal("fetch", mock.fetch);
 
-    const todo = await fetchCuple(client.getTodo.get, { params: { id: 3 } }).thenUnwrap();
+    const todo = await fetchCuple(client.getTodo.get, { params: { id: 3 } });
     const added = await fetchCuple(client.addTodo.post, {
       body: { text: "jam" },
-    }).thenUnwrap();
-    const stats = await fetchCuple(client.admin.stats.get).thenUnwrap();
+    });
+    const stats = await fetchCuple(client.admin.stats.get);
 
     expect(todo).toMatchObject({ id: 3, text: "tea" });
     expect(added).toMatchObject({ text: "jam" });
@@ -109,13 +108,17 @@ describe("mockCuple", () => {
       },
     });
     vi.stubGlobal("fetch", mock.fetch);
-    const res = await fetchCuple(client.getTodo.get, { params: { id: 1 } });
+    const res = await fetchCuple(client.getTodo.get, {
+      params: { id: 1 },
+    }).thenResolveAll();
     expect(res).toMatchObject({ result: "validation-error", statusCode: 422 });
   });
 
   it("fails a request with no handler, naming the endpoint", async () => {
     vi.stubGlobal("fetch", mockCuple<typeof routes>({}).fetch);
-    await expect(fetchCuple(client.getTodos.get)).rejects.toThrow(/getTodos\.get/);
+    await expect(fetchCuple(client.getTodos.get).thenResolveAll()).rejects.toThrow(
+      /getTodos\.get/,
+    );
   });
 
   it("types handlers against the routes", () => {

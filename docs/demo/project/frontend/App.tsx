@@ -6,7 +6,7 @@ import { client } from "./cuple";
 export function App() {
   const [name, setName] = useState("");
   const greet = useAction(() =>
-    fetchCuple(client.sayHi.get, {}).thenUnwrap(),
+    fetchCuple(client.sayHi.get, {}),
   );
 
   return (

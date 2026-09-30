@@ -71,13 +71,10 @@ export function Contacts() {
 // #region import-samples
 /** A bulk step the user must wait for: blocks the page while it runs. */
 function ImportSamples() {
-  const importSamples = useAction(
-    () => fetchCuple(client.importContacts.post).thenUnwrap(),
-    {
-      refresh: refreshes.contacts,
-      config: { loading: { blocking: true }, errors: { unhandled: "notify" } },
-    },
-  );
+  const importSamples = useAction(() => fetchCuple(client.importContacts.post), {
+    refresh: refreshes.contacts,
+    config: { loading: { blocking: true }, errors: { unhandled: "notify" } },
+  });
   return (
     <button type="button" onClick={() => importSamples.run()}>
       Import sample contacts
@@ -112,7 +109,7 @@ function ContactRow(props: {
     async () => {
       await fetchCuple(client.deleteContact.delete, {
         params: { id: props.contact.id },
-      }).thenUnwrap();
+      });
       props.onDeleted(props.contact.id); // close its form if it's open
     },
     { refresh: refreshes.contacts, config: { errors: { unhandled: "notify" } } },

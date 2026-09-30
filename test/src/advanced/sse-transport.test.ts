@@ -39,7 +39,7 @@ describe("SSE transport", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const stream = await fetchCupleSSE(client.echo.get).thenUnwrap();
+      const stream = await fetchCupleSSE(client.echo.get);
       const events: unknown[] = [];
       for await (const event of stream) events.push(event);
       // Without these, a browser can hold a second tab's identical request

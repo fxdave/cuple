@@ -26,7 +26,7 @@ describe("CuplePromise", () => {
         },
       })
         .thenResolveOn(["success", "validation-error"])
-        .thenUnwrap()
+        .thenResolveOn(["success"])
         .thenWrapAbort();
 
       if (response.result === "abort") {
@@ -56,7 +56,7 @@ describe("CuplePromise", () => {
         query: {
           name: "An",
         },
-      });
+      }).thenResolveAll();
 
       try {
         await responsePromise.thenResolveOn(["success"]);
@@ -76,7 +76,7 @@ describe("CuplePromise", () => {
       }
     });
   });
-  it("thenUnwrap validation-error", async () => {
+  it("rejects validation-error by default", async () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
@@ -98,7 +98,7 @@ describe("CuplePromise", () => {
       });
 
       try {
-        await responsePromise.thenUnwrap();
+        await responsePromise;
         assert.ok(false, 'The response should not be "success"');
       } catch (e) {
         assert.ok(true);
@@ -125,7 +125,7 @@ describe("CuplePromise", () => {
         query: {
           name: "David",
         },
-      });
+      }).thenResolveAll();
 
       try {
         await responsePromise.thenResolveOn(["validation-error"]);
@@ -142,7 +142,7 @@ describe("CuplePromise", () => {
       }
     });
   });
-  it("thenUnwrap success", async () => {
+  it("resolves success by default", async () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
@@ -164,7 +164,7 @@ describe("CuplePromise", () => {
       });
 
       try {
-        await responsePromise.thenUnwrap();
+        await responsePromise;
         assert.ok(true);
       } catch (e) {
         assert.ok(false, 'The response should be "success"');

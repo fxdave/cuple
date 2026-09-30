@@ -239,7 +239,7 @@ function NoteRow(props: {
     () =>
       fetchCuple(client.deleteNote.delete, {
         params: { id: props.note.id },
-      }).thenUnwrap(),
+      }),
     // A failed row action shouldn't take the page with it.
     { refresh: refreshes.notes, config: { errors: { unhandled: "notify" } } },
   );

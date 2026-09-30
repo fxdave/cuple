@@ -66,95 +66,140 @@ export function transportErrorResult(error: CupleTransportError): TransportError
   };
 }
 
-export class CuplePromise<T extends { result: string }> extends Promise<T> {
-  static fromPromise<U extends { result: string }>(p: Promise<U>) {
-    return new CuplePromise<U>((resolve, reject) => {
-      p.then(resolve).catch(reject);
+/** An aborted request, as a result: see {@link CuplePromise.thenWrapAbort}. */
+export type AbortResult = { result: "abort"; statusCode: null; message: string };
+
+/**
+ * What a {@link CuplePromise} resolves with: the server results in `TKept`
+ * (`string` for all of them), plus `TExtra`, the transport error or abort it
+ * listed.
+ */
+export type Kept<TAll extends { result: string }, TKept extends string, TExtra> =
+  | (string extends TKept ? TAll : Extract<TAll, { result: TKept }>)
+  | TExtra;
+
+/** `TransportErrorResult` when `"transport-error"` is among the listed results. */
+type ListedTransport<TResult> = "transport-error" extends TResult
+  ? TransportErrorResult
+  : never;
+
+type Keep = { all: boolean; listed: ReadonlySet<string> };
+
+/**
+ * A request's result. It resolves with `success` and rejects with anything
+ * else, unless you list more:
+ *
+ * | Method                   | Resolves with                                        |
+ * | ------------------------ | ---------------------------------------------------- |
+ * | (default)                | `success`                                            |
+ * | `.thenResolveAlso([...])`| what it resolved with so far, plus the listed results |
+ * | `.thenResolveOn([...])`  | exactly the listed results; `"success"` isn't implied |
+ * | `.thenResolveAll()`      | every result the server sent                         |
+ * | `.thenWrapAbort()`       | what it resolved with so far, plus an abort          |
+ *
+ * Results it doesn't keep reject as {@link CupleUnexpectedResponseError}; no
+ * answer at all rejects as {@link CupleTransportError} (list `"transport-error"`
+ * to keep it); an abort rejects as `AbortError`.
+ *
+ * Each method starts from the response again, so they chain in any order.
+ */
+export class CuplePromise<
+  TAll extends { result: string },
+  TKept extends string = "success",
+  TExtra = never,
+> extends Promise<Kept<TAll, TKept, TExtra>> {
+  // `.then()` and friends return plain promises: the methods below only make
+  // sense on the request itself.
+  static get [Symbol.species]() {
+    return Promise;
+  }
+
+  private response!: Promise<TAll>;
+  private keep!: Keep;
+
+  /** `response` is everything the server answered; `keep` says what resolves. */
+  static of<
+    TAll extends { result: string },
+    TKept extends string = "success",
+    TExtra = never,
+  >(
+    response: Promise<TAll>,
+    keep: Keep = { all: false, listed: new Set(["success"]) },
+  ): CuplePromise<TAll, TKept, TExtra> {
+    const promise = new CuplePromise<TAll, TKept, TExtra>((resolve, reject) => {
+      response.then(
+        (value) => {
+          if (keep.all || keep.listed.has(value?.result)) resolve(value as never);
+          else reject(new CupleUnexpectedResponseError(value as never));
+        },
+        (error) => {
+          if (error instanceof CupleTransportError && keep.listed.has("transport-error"))
+            resolve(transportErrorResult(error) as never);
+          else if (isAbort(error) && keep.listed.has("abort"))
+            resolve({
+              result: "abort",
+              statusCode: null,
+              message: "Request aborted",
+            } as never);
+          else reject(error);
+        },
+      );
     });
+    promise.response = response;
+    promise.keep = keep;
+    return promise;
   }
-  /** Keep success result, throw error otherwise. */
-  thenUnwrap(): CuplePromise<Extract<T, { result: "success" }>> {
-    return CuplePromise.fromPromise(
-      (async () => {
-        const response: any = await this;
-        if (response && typeof response === "object" && response?.result === "success") {
-          return response;
-        } else {
-          throw new CupleUnexpectedResponseError(response);
-        }
-      })(),
-    );
+
+  /** The same request, keeping something else. This one's rejection is superseded. */
+  private rekeep<TNext extends string, TNextExtra>(
+    keep: Keep,
+  ): CuplePromise<TAll, TNext, TNextExtra> {
+    this.catch(() => {});
+    return CuplePromise.of<TAll, TNext, TNextExtra>(this.response, keep);
   }
+
   /**
-   * Keep exactly the listed results, reject the rest as
-   * {@link CupleUnexpectedResponseError}.
-   *
-   * The list is complete — `"success"` is not implied, so
-   * `thenResolveOn(["not-found-error"])` rejects a successful response too.
-   * To add results next to success, use {@link thenResolveAlso}.
+   * Also resolve with the listed results. `thenResolveAlso(["validation-error"])`
+   * resolves with `success | validation-error`: the failures your code handles
+   * become values, and everything else stays an exception.
    *
    * `"transport-error"` can be listed too: a network failure then resolves as
-   * `{ result: "transport-error", statusCode, message }` instead of rejecting.
+   * `{ result: "transport-error", statusCode, message }`.
    */
-  thenResolveOn<const TResult extends T["result"] | "transport-error">(
+  thenResolveAlso<const TResult extends TAll["result"] | "transport-error">(
     results: readonly TResult[],
-  ): CuplePromise<Extract<T | TransportErrorResult, { result: TResult }>> {
-    const listed = results as readonly string[];
-    return CuplePromise.fromPromise(
-      (async () => {
-        let response: any;
-        try {
-          response = await this;
-        } catch (error) {
-          if (error instanceof CupleTransportError && listed.includes("transport-error"))
-            return transportErrorResult(error);
-          throw error;
-        }
-        if (
-          response &&
-          typeof response === "object" &&
-          listed.includes(response.result)
-        ) {
-          return response;
-        }
-        throw new CupleUnexpectedResponseError(response);
-      })(),
-    );
+  ): CuplePromise<
+    TAll,
+    TKept | Exclude<TResult, "transport-error">,
+    TExtra | ListedTransport<TResult>
+  > {
+    return this.rekeep({
+      all: this.keep.all,
+      listed: new Set([...this.keep.listed, ...results]),
+    });
   }
 
   /**
-   * Keep success and the listed results, reject the rest as
-   * {@link CupleUnexpectedResponseError}.
-   *
-   * `fetchCuple(e).thenResolveAlso(["validation-error"])` resolves to
-   * `success | validation-error`: the failures your code handles become values,
-   * everything else stays an exception. List `"transport-error"` to handle a
-   * network failure as a value too.
+   * Resolve with exactly the listed results. The list is complete:
+   * `thenResolveOn(["not-found-error"])` rejects a success too.
    */
-  thenResolveAlso<const TResult extends T["result"] | "transport-error">(
+  thenResolveOn<const TResult extends TAll["result"] | "transport-error">(
     results: readonly TResult[],
-  ): CuplePromise<Extract<T | TransportErrorResult, { result: "success" | TResult }>> {
-    return this.thenResolveOn(["success", ...results] as TResult[]) as CuplePromise<
-      Extract<T | TransportErrorResult, { result: "success" | TResult }>
-    >;
+  ): CuplePromise<TAll, Exclude<TResult, "transport-error">, ListedTransport<TResult>> {
+    return this.rekeep({ all: false, listed: new Set(results) });
   }
 
-  thenWrapAbort(): CuplePromise<
-    T | { result: "abort"; statusCode: null; message: string }
-  > {
-    return CuplePromise.fromPromise(
-      (async () => {
-        try {
-          return (await this) as any;
-        } catch (e) {
-          if (e instanceof DOMException && e.name === "AbortError") {
-            return { result: "abort", statusCode: null, message: "Request aborted" };
-          } else {
-            throw e;
-          }
-        }
-      })(),
-    );
+  /** Resolve with every result the server sent. Network failures still reject. */
+  thenResolveAll(): CuplePromise<TAll, string, TExtra> {
+    return this.rekeep({ all: true, listed: this.keep.listed });
+  }
+
+  /** Resolve an abort as `{ result: "abort", statusCode: null }` instead of rejecting. */
+  thenWrapAbort(): CuplePromise<TAll, TKept, TExtra | AbortResult> {
+    return this.rekeep({
+      all: this.keep.all,
+      listed: new Set([...this.keep.listed, "abort"]),
+    });
   }
 }
 
@@ -177,7 +222,7 @@ export type ClientEndpointRef = {
 /** Everything an endpoint can resolve to. */
 export type CupleResult<TEndpoint extends ClientEndpointRef> = TEndpoint["tOutput"];
 
-/** Just the successful case, the way `.thenUnwrap()` narrows it. */
+/** Just the successful case: what `fetchCuple` resolves with by default. */
 export type CupleSuccess<TEndpoint extends ClientEndpointRef> = Extract<
   CupleResult<TEndpoint>,
   { result: "success" }
@@ -195,28 +240,20 @@ export type FetchCupleArgs<TEndpoint extends ClientEndpointRef> =
     : [options: Merge<TEndpoint["tInput"], GenericOptions>];
 
 /**
- * Sends one request.
+ * Sends one request. It resolves with `success`, and rejects otherwise:
  *
- * API failures are values, transport failures are exceptions. The HTTP status is
- * never interpreted — it is copied onto the result as `statusCode`, and which
- * `result` goes with which status is the server's choice, set by `apiResponse`.
+ * | Outcome                                     | Rejects with                          |
+ * | ------------------------------------------- | ------------------------------------- |
+ * | Any other result (a 404, a validation error) | `CupleUnexpectedResponseError`       |
+ * | No response: unreachable, DNS, CORS         | `CupleTransportError`                 |
+ * | Body is not JSON: proxy HTML, gateway page  | `CupleTransportError` (`statusCode`)  |
+ * | `options.signal` aborted                    | `DOMException` (`name: "AbortError"`) |
  *
- * | Outcome                                     |          | With                                  |
- * | ------------------------------------------- | -------- | ------------------------------------- |
- * | Body parses as JSON — any status            | resolves | the parsed body, plus `statusCode`    |
- * | No response: unreachable, DNS, CORS         | rejects  | `CupleTransportError`                 |
- * | Body is not JSON: proxy HTML, gateway page  | rejects  | `CupleTransportError` (`statusCode`)  |
- * | `options.signal` aborted                    | rejects  | `DOMException` (`name: "AbortError"`) |
- *
- * The returned {@link CuplePromise} has modifiers that move a case from one
- * column to the other. Each narrows the type to match.
- *
- * | Modifier                      | Changes                                                                  |
- * | ----------------------------- | ------------------------------------------------------------------------ |
- * | `.thenUnwrap()`               | non-`success` results now reject, as `CupleUnexpectedResponseError`       |
- * | `.thenResolveOn([...])`       | only the listed results resolve — `"success"` is not implied              |
- * | `.thenResolveAlso([...])`     | success and the listed results resolve                                    |
- * | `.thenWrapAbort()`            | an abort now resolves, as `{ result: "abort", statusCode: null }`         |
+ * List the outcomes your code handles, and they resolve as typed values
+ * instead: `.thenResolveAlso(["validation-error", "transport-error"])`. See
+ * {@link CuplePromise}. The HTTP status is never interpreted: it is copied onto
+ * the result as `statusCode`, and which `result` goes with which status is the
+ * server's choice, set by `apiResponse`.
  *
  * A non-JSON body is always an error here — `fetchCuple` only speaks Cuple's
  * envelope. For downloads, streams and any other custom response, define the
@@ -228,7 +265,7 @@ export function fetchCuple<TEndpoint extends ClientEndpointRef>(
   endpoint: TEndpoint,
   ...args: FetchCupleArgs<TEndpoint>
 ): CuplePromise<TEndpoint["tOutput"]> {
-  return CuplePromise.fromPromise(_fetchCuple(endpoint, ...args));
+  return CuplePromise.of(_fetchCuple(endpoint, ...args));
 }
 
 async function _fetchCuple<TEndpoint extends ClientEndpointRef>(
@@ -323,7 +360,7 @@ export function fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(
   endpoint: TEndpoint,
   ...args: FetchCupleSSEArgs<TEndpoint>
 ): CuplePromise<TEndpoint["tOutput"]> {
-  return CuplePromise.fromPromise(_fetchCupleSSE(endpoint, ...args));
+  return CuplePromise.of(_fetchCupleSSE(endpoint, ...args));
 }
 
 async function _fetchCupleSSE<TEndpoint extends ClientSSEEndpointRef>(

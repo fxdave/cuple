@@ -74,7 +74,10 @@ export function createCupleMcpServer(options: CreateCupleMcpServerOptions) {
     const args = request.params.arguments ?? {};
     const input = Object.fromEntries(INPUTS.map((key) => [key, args[key]]));
     try {
-      const response = await fetchCuple(endpointOf(options.client, route), input);
+      const response = await fetchCuple(
+        endpointOf(options.client, route),
+        input,
+      ).thenResolveAll();
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
         isError: response.result !== "success",

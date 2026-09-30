@@ -240,8 +240,8 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 
 ## Why it works this way
 
-- **`fetchCuple` with memory.** The hooks add a cache and a loading state to a request you already know how to write. No query language, no second way to call the server.
-- **Explicit over automatic.** Refetch-on-focus and invalidation guesses change screens for reasons you can't see in the code. Here data changes only when something you wrote says so.
-- **Suspense for loading, boundaries for errors.** Components read data as if it's there, so there are no loading and error branches to forget, and the layout decides where that UI appears.
-- **Typed errors where you handle them, one readable error where you don't.** Listing a result makes it part of the return type; everything else reaches a `<Boundary>` with a message it can always show. Nothing ends up only in the console.
-- **Few concepts.** Reads, actions, a store, a boundary, one config. Each has one job, so a large app stays as predictable as a small one.
+- **Most data bugs are timing bugs.** Refetching on focus, on mount or on a timer changes a screen while the user reads it. Here data changes only for a reason written in the code: an action's `refresh`, a poll you set, a call to the store.
+- **Loading and errors belong to the layout.** With `isLoading` in every component, a page with five reads pops in five times. Components read data as if it's there; a `<Boundary>` decides what the user sees meanwhile.
+- **The call is the cache key.** Hand-written keys drift from the request, and two different requests end up sharing one entry. Here the endpoint, the client's key and the arguments are the key.
+- **List what you handle.** `catch (error)` gives you `unknown`. A listed result is in the return type with its real shape, and whatever nobody listed goes to a boundary instead of the console.
+- **Writes are your own async function, with an explicit refresh list.** Mutation configs split a sequence into callbacks, and guessed invalidation either misses something or refetches everything. A function reads top to bottom, and a list can be reviewed.

@@ -29,7 +29,7 @@ async function test() {
 }
 
 async function getProfile() {
-  return await fetchCuple(authedClient.getProfile.get, {});
+  return await fetchCuple(authedClient.getProfile.get, {}).thenResolveAll();
 }
 async function changePassword() {
   return await fetchCuple(authedClient.setUserPassword.post, {
@@ -38,7 +38,7 @@ async function changePassword() {
       password1: "newPass",
       password2: "newPass",
     },
-  });
+  }).thenResolveAll();
 }
 
 test();

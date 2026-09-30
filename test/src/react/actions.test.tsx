@@ -206,7 +206,7 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
         config={{ errors: { message: "Couldn't save." } }}
         error={(error) => <p>{`boundary: ${error.kind} ${error.message}`}</p>}
       >
-        <Saver fn={() => fetchCuple(offline.getStats.get).thenUnwrap()} />
+        <Saver fn={() => fetchCuple(offline.getStats.get)} />
       </Boundary>,
       { wrapper },
     );
@@ -263,7 +263,7 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
       },
     });
     const { result } = renderHook(
-      () => useAction(() => fetchCuple(offline.getStats.get).thenUnwrap()),
+      () => useAction(() => fetchCuple(offline.getStats.get)),
       { wrapper },
     );
     await act(() => result.current.run());
@@ -410,7 +410,7 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenUnwrap(),
+          }),
         { refresh: [client.getOrder.get] },
       );
       return (
@@ -490,7 +490,7 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenUnwrap(),
+          }),
         { refresh: [client.getOrder.get, client.getStats.get] },
       );
       return (
@@ -541,7 +541,7 @@ describe("deleting the item a pane shows", () => {
       const { order } = useGet(client.getOrder.get, { params: { id } });
       const remove = useAction(
         async () => {
-          await fetchCuple(client.deleteOrder.delete, { params: { id } }).thenUnwrap();
+          await fetchCuple(client.deleteOrder.delete, { params: { id } });
           onClose();
         },
         { refresh: [client.getOrder.get, client.getStats.get] },
