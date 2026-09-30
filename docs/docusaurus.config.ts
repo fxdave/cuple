@@ -35,6 +35,35 @@ const config: Config = {
     locales: ["en"],
   },
 
+  // The API reference is generated from each package's exports and doc comments.
+  plugins: [
+    ["server", "server", "src/index.ts"],
+    ["client", "client", "src/index.ts"],
+    ["react", "react", "src/index.ts"],
+    ["react/testing", "react-testing", "src/testing.tsx"],
+    ["openapi", "openapi", "src/index.ts"],
+    ["mcp", "mcp", "src/index.ts"],
+  ].map(([name, folder, entry]) => [
+    "docusaurus-plugin-typedoc",
+    {
+      id: `api-${folder}`,
+      name: `@cuple/${name}`,
+      entryPoints: [`../packages/${name.split("/")[0]}/${entry}`],
+      tsconfig: `../packages/${name.split("/")[0]}/tsconfig.json`,
+      out: `docs/api/${folder}`,
+      sourceLinkTemplate: "https://github.com/fxdave/cuple/blob/{gitRevision}/{path}#L{line}",
+      readme: "none",
+      excludePrivate: true,
+      // Not Promise's own methods on CuplePromise, and so on.
+      excludeExternals: true,
+      // One page per package; its exports are sections, listed on the right.
+      outputFileStrategy: "modules",
+      groupOrder: ["Functions", "Classes", "Variables", "*"],
+      excludeInternal: true,
+      sidebar: { autoConfiguration: false },
+    },
+  ]),
+
   presets: [
     [
       "classic",

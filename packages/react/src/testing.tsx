@@ -1,3 +1,8 @@
+/**
+ * Helpers for testing components that use `@cuple/react`.
+ *
+ * @packageDocumentation
+ */
 import {
   act,
   type RenderOptions,

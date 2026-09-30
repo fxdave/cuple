@@ -43,7 +43,7 @@ export function Boundary(props: {
    */
   config?: CupleConfig;
   children?: ReactNode;
-}) {
+}): ReactNode {
   const { store } = useCupleContext();
   const parent = useContext(ConfigContext);
   const config = useMemo(() => mergeConfig(parent, props.config), [parent, props.config]);

@@ -1,3 +1,8 @@
+/**
+ * Reads, actions and a cache for React 19, built on `fetchCuple`.
+ *
+ * @packageDocumentation
+ */
 export { Boundary, useIsFetching } from "./boundary";
 export { combine } from "./combine";
 export type { CupleConfig, Unhandled, UnhandledPolicy } from "./config";

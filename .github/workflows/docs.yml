@@ -45,6 +45,9 @@ jobs:
       # dependencies from the root workspace.
       - name: Install workspace dependencies
         run: npm ci
+      # The API reference is generated from the packages; one imports another's types.
+      - name: Build packages
+        run: npm run build -- --filter='./packages/*'
       - name: Install docs dependencies
         run: npm ci
         working-directory: ./docs

@@ -32,7 +32,7 @@ export function CupleProvider(props: {
    */
   config?: CupleConfig;
   children: ReactNode;
-}) {
+}): ReactNode {
   if (!(props.store instanceof Store))
     throw new Error(
       "@cuple/react: <CupleProvider store> needs a store made by createCupleStore()",
