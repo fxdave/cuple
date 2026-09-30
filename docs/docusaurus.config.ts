@@ -2,6 +2,11 @@ import { themes as prismThemes } from "prism-react-renderer";
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
+// Every major version is built from its own branch into its own folder:
+// /cuple/v1/, /cuple/v2/. See scripts/publish-version.mjs.
+const siteRoot = "/cuple/";
+const docsVersion = process.env.DOCS_VERSION;
+
 const config: Config = {
   title: "Cuple RPC",
   tagline:
@@ -10,9 +15,9 @@ const config: Config = {
 
   // Set the production url of your site here
   url: "https://fxdave.github.io",
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/cuple",
+  // The deployed build lives in its version's folder; locally, at the root.
+  baseUrl: docsVersion ? `${siteRoot}v${docsVersion}/` : siteRoot,
+  customFields: { siteRoot, docsVersion: docsVersion ?? null },
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -87,6 +92,7 @@ const config: Config = {
           position: "left",
           label: "Server Docs",
         },
+        { type: "custom-versions", position: "right" },
         {
           href: "https://github.com/fxdave/react-express-cuple-boilerplate",
           label: "Try the Boilerplate",
