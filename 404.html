@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Cuple RPC</title>
+<script>
+  var root = "/cuple/";
+  var rest = location.pathname.startsWith(root) ? location.pathname.slice(root.length) : "";
+  var versions = [1];
+  var version = /^v(\d+)\//.exec(rest);
+  if (version && versions.indexOf(Number(version[1])) !== -1) location.replace(root + version[0]);
+  else location.replace("/cuple/v1/" + (version ? "" : rest) + location.search + location.hash);
+</script>
+<a href="/cuple/v1/">Cuple RPC documentation</a>
