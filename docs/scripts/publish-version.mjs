@@ -67,6 +67,12 @@ fs.writeFileSync(
 `,
 );
 
+// Search engines verify the site by files at its root, not in a version folder.
+for (const file of fs.readdirSync(build)) {
+  if (/^google[0-9a-f]+\.html$|^BingSiteAuth\.xml$/.test(file))
+    fs.copyFileSync(path.join(build, file), path.join(site, file));
+}
+
 // Serve folders starting with "_" as they are.
 fs.writeFileSync(path.join(site, ".nojekyll"), "");
 
