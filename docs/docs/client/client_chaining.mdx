@@ -34,7 +34,7 @@ await fetchCuple(client.getProfile.get); // TYPE ERROR
 | Option | Runs | For |
 | ------ | ---- | --- |
 | `middleware` | Before every request; awaited, so it can refresh a token. | Data every request needs: headers, a tenant id. |
-| `key` | When a cache needs it (a string, or a synchronous getter). | Telling caches whose data a response is. See [Switching and signing out](../react/installation#switching-and-signing-out). |
+| `key` | When a cache needs it (a string, or a synchronous getter). | Telling caches whose data a response is. See [Switching accounts](../react/store#switching-accounts). |
 | `finalware` | After every response, before it's handed back. | Cross-cutting reactions: redirect on an expired session, report failures. Throwing turns a result into an exception. |
 
  - NOTE: `key` is what the response depends on (who the user is), not the injected bytes (the token). A refreshed token is the same user.

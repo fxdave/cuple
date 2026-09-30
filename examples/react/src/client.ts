@@ -9,6 +9,7 @@ export const ACCOUNTS = {
 
 export type AccountId = keyof typeof ACCOUNTS;
 
+// #region client
 let signedInAs: AccountId | null = null;
 
 export const client = createClient<typeof routes>({ path: "/rpc" }).with({
@@ -18,6 +19,8 @@ export const client = createClient<typeof routes>({ path: "/rpc" }).with({
     headers: { authorization: signedInAs ? ACCOUNTS[signedInAs].token : "" },
   }),
 });
+
+// #endregion
 
 // #region store
 /** The cache. One per app; plain code (sign-in, SSE handlers) uses it directly. */

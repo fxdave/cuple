@@ -1,32 +1,13 @@
 import { fetchCuple } from "@cuple/client";
-import {
-  Boundary,
-  type CupleConfig,
-  CupleProvider,
-  createCupleStore,
-  useAction,
-  useGet,
-} from "@cuple/react";
+import { Boundary, CupleProvider, useAction, useGet } from "@cuple/react";
 import { useState } from "react";
-import { client } from "./client";
+import { client, store } from "./client";
 import type { Todo } from "./server";
 
 // #region setup
-export const store = createCupleStore();
-
-const config: CupleConfig = {
-  errors: {
-    // How the app shows an error without replacing the page.
-    notify: (error) => alert(error.message),
-    // An error no code handled: a dropped connection keeps the page,
-    // anything else goes to the nearest <Boundary>.
-    unhandled: (error) => (error.kind === "transport" ? "notify" : "boundary"),
-  },
-};
-
 export function App() {
   return (
-    <CupleProvider store={store} config={config}>
+    <CupleProvider store={store}>
       <Boundary
         fallback={<TodoListSkeleton />}
         error={(error, retry) => (
@@ -120,9 +101,6 @@ function TodoItem({ todo }: { todo: Todo }) {
         disabled={toggle.isPending}
       />{" "}
       {todo.text}
-      {toggle.status === "failed" && (
-        <span className="error"> Couldn't save. Try again.</span>
-      )}
     </li>
   );
 }

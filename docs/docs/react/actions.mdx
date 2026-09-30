@@ -42,7 +42,6 @@ In this example:
  - Nothing to handle here but success, so the plain `fetchCuple` is enough: a failure throws, and goes where unhandled errors go.
  - Call `useAction` in the item's component, so each todo has its own `isPending`.
  - `aria-busy` and the `pending` class only say what is busy. The stylesheet dims the row and puts a spinner in the button, so the markup stays short and the button keeps its size.
- - `failed` shows up here only when unhandled errors are notified (the docs app notifies a dropped connection). Otherwise the nearest `<Boundary>` shows it.
 
 ## Refresh
 

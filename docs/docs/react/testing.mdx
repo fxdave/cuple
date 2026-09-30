@@ -1,0 +1,22 @@
+---
+sidebar_position: 10
+description: 'renderWithCuple, mockCuple'
+---
+
+# Testing
+
+```tsx
+import { mockCuple, renderWithCuple } from "@cuple/react/testing";
+
+const mock = mockCuple<typeof routes>({
+  getTodos: { get: () => ({ result: "success", statusCode: 200, todos: ["milk"] }) },
+});
+vi.stubGlobal("fetch", mock.fetch);
+
+await renderWithCuple(<Boundary fallback="loading"><Todos /></Boundary>);
+expect(await screen.findByText("milk")).toBeDefined();
+```
+
+ - `renderWithCuple` renders under a provider with a fresh store, inside the awaited `act` React 19 needs for Suspense. Plain `render` never leaves the fallback.
+ - `mockCuple` is a fake server typed from your routes: a handler returning the wrong shape, or for an endpoint that doesn't exist, is a type error. A request with no handler fails with the endpoint's name. `mock.calls` records every request.
+ - In a monorepo you can test against the real routes instead: run the server in the test, and point the client at it.

@@ -30,21 +30,26 @@ Start a fetch before anything renders it:
  - In a router loader, call it without returning it (`void store.preload(...)`), so loading and errors stay with `<Boundary>` instead of the router.
  - NOTE: A read of `{ id: 5 }` doesn't hit a preload of `{ id: "5" }`. When that happens, the store warns in the console.
 
-## refreshKeys
+## Switching accounts
 
-```ts
-signedInAs = "linus";
-store.refreshKeys();
+The cache doesn't know what your client's middleware sends, so tell it whose data a call is, with a key:
+
+```ts file=../../../examples/react/src/client.ts#client
 ```
 
-Checks every cached call's key again, for when whatever a `with({ key })` getter returns has changed:
+When the account changes, call `store.refreshKeys()`:
+
+```ts file=../../../examples/react/src/client.ts#store
+```
+
+It checks every cached call's key again:
 
  - Key unchanged: stays as it is. No request, no re-render.
  - Key changed: its readers read again under the new key, even memoized ones. Cached data for the new key shows at once; anything else loads.
- - The old key's data is dropped, or kept with `cache.onKeyChange: "keep"`. It's never refetched under the new key.
+ - The old key's data is deleted at once (`cache.onKeyChange: "drop"`, the default), so nothing of it can show again. `"keep"` keeps it for `cache.keep`, so switching back is instant: use it only when one person owns every account, like work and personal inboxes.
  - Combined reads built from a changed call run again; streams reconnect.
 
-Wrap it in `startTransition` to keep the current screen until the new data is ready.
+Wrap it in `startTransition` to keep the current screen until the new data is ready. Signing out calls `store.clear()`: nothing of the account stays in memory.
 
 ## clear
 
@@ -65,7 +70,23 @@ Drops everything; readers suspend and fetch again. For sign-out and tests.
  - `retry` drops the data that failed from the cache and renders again, so it's fetched fresh. Other data is untouched.
  - Place boundaries where the layout wants loading and error UI: a failing widget shouldn't take the page with it.
 
-## Full-page loading
+## Loading
+
+- **First loads** suspend: give `<Boundary fallback>` a skeleton shaped like the content, so nothing jumps when the data lands.
+- **Refreshes** keep the content on screen. Show background work with `useIsFetching()`, e.g. a thin bar at the top:
+
+  ```tsx
+  function Progress() {
+    return useIsFetching() ? <TopBar /> : null;
+  }
+  ```
+
+  It's true while any read, refresh or action runs.
+- **Actions** show where they act: mark the button or row with `aria-busy={action.isPending}`, and style it.
+
+Delay placeholders by about 150 ms with CSS (`animation-delay`), so fast responses never flash one. The example app in `examples/react` does all of this.
+
+### Full-page loading
 
 Most loading should stay local: skeletons, busy buttons. For the few steps the user must wait for, opt in with `loading: { blocking: true }`, and cover the page only then:
 
@@ -77,16 +98,6 @@ Most loading should stay local: skeletons, busy buttons. For the few steps the u
 
  - `config.loading.blocking` works on actions, on reads (`useGet(x, args, { config: { loading: { blocking: true } } })` blocks while that data refetches), and on a whole `<Boundary config>`. For plain code: `store.refresh(targets, { blocking: true })`.
  - A first load shows the `<Boundary>` fallback, as always, never the overlay.
-
-## useIsFetching
-
-```tsx
-function Progress() {
-  return useIsFetching() ? <TopBar /> : null;
-}
-```
-
-True while any read, refresh or action runs. For a global progress bar.
 
 :::note[Why it works this way]
 
