@@ -1,13 +1,29 @@
-name: Deploy to GitHub Pages
+name: Deploy docs
+
+# Each major version's docs are built from its own branch into its own folder
+# of the gh-pages branch (/cuple/v1/, /cuple/v2/, ...). Publishing one version
+# never touches the others. See docs/scripts/publish-version.mjs.
+#
+# GitHub Pages must serve the gh-pages branch:
+# Settings → Pages → Source → Deploy from a branch → gh-pages, / (root).
 
 on:
   push:
     branches:
       - main
+      - v1
+  workflow_dispatch:
+
+# One deploy at a time, whichever branch it's from: they all write gh-pages.
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Build Docusaurus
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +36,11 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             docs/package-lock.json
+
+      - name: Find the major version
+        id: version
+        run: echo "major=$(node -p 'require("./packages/client/package.json").version.split(".")[0]')" >> "$GITHUB_OUTPUT"
+
       # The docs build type-checks examples/docs, which resolves its
       # dependencies from the root workspace.
       - name: Install workspace dependencies
@@ -27,30 +48,32 @@ jobs:
       - name: Install docs dependencies
         run: npm ci
         working-directory: ./docs
-      - name: Build website
+      - name: Build
         run: npm run build
         working-directory: ./docs
+        env:
+          DOCS_VERSION: ${{ steps.version.outputs.major }}
 
-      - name: Upload Build Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/build
-
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: build
-
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-    permissions:
-      pages: write # to deploy to Pages
-      id-token: write # to verify the deployment originates from an appropriate source
-
-    # Deploy to the github-pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish into gh-pages
+        env:
+          MAJOR: ${{ steps.version.outputs.major }}
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            git fetch origin gh-pages
+            git worktree add site origin/gh-pages
+            git -C site switch -C gh-pages
+          else
+            git worktree add --detach site
+            git -C site switch --orphan gh-pages
+          fi
+          node docs/scripts/publish-version.mjs site docs/build "$MAJOR"
+          cd site
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Docs v$MAJOR from ${GITHUB_SHA::7}"
+          git push origin gh-pages
