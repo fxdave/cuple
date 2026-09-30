@@ -1,4 +1,4 @@
-import { createClient } from "@cuple/client";
+import { createClient, fetchCuple } from "@cuple/client";
 import type { routes } from "./example";
 
 // Fake localstorage for testing
@@ -12,11 +12,13 @@ const client = createClient<typeof routes>({
   path: "http://localhost:8080/rpc",
 });
 
-const authedClient = client.with(() => ({
-  headers: {
-    authorization: localStorage.getItem("token") || "nothing",
-  },
-}));
+const authedClient = client.with({
+  middleware: () => ({
+    headers: {
+      authorization: localStorage.getItem("token") || "nothing",
+    },
+  }),
+});
 
 async function test() {
   console.log("BEFORE login getProfile(): ", await getProfile());
@@ -27,16 +29,16 @@ async function test() {
 }
 
 async function getProfile() {
-  return await authedClient.getProfile.get({});
+  return await fetchCuple(authedClient.getProfile.get, {}).thenResolveAll();
 }
 async function changePassword() {
-  return await authedClient.setUserPassword.post({
+  return await fetchCuple(authedClient.setUserPassword.post, {
     body: {
       oldPassword: "something",
       password1: "newPass",
       password2: "newPass",
     },
-  });
+  }).thenResolveAll();
 }
 
 test();

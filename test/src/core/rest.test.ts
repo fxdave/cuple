@@ -1,7 +1,6 @@
-import assert from "assert";
-import { describe, it } from "mocha";
-import { z } from "zod";
 import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("REST", () => {
@@ -10,7 +9,7 @@ describe("REST", () => {
       getPost: builder
         .path("/api/posts/:id")
         .paramsSchema(
-          z.object({
+          z.strictObject({
             id: z.coerce.number(),
           }),
         )
@@ -20,8 +19,8 @@ describe("REST", () => {
           });
         }),
     }));
-    await cs.run(async () => {
-      const response = await fetch("http://localhost:8080/api/posts/12");
+    await cs.run(async (_client, url) => {
+      const response = await fetch(`${url}/api/posts/12`);
       const result = await response.json();
       assert.equal(result.post.id, 12);
     });

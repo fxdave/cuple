@@ -1,6 +1,6 @@
+import { fetchCuple } from "@cuple/client";
 import { success } from "@cuple/server";
-import assert from "assert";
-import { describe, it } from "mocha";
+import { assert, describe, it } from "vitest";
 import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -9,7 +9,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -20,13 +20,15 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
-      const response = await newClient.exampleRoute.get({});
+      const response = await fetchCuple(newClient.exampleRoute.get).thenResolveAll();
       assert.equal(response.message, "Hi David!");
     });
   });
@@ -35,7 +37,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -46,17 +48,19 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(() => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
-      const response = await newClient.exampleRoute.get({
+      const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {
           name: "Foo",
         },
-      });
+      }).thenResolveAll();
       assert.equal(response.message, "Hi Foo!");
     });
   });
@@ -65,7 +69,7 @@ describe("client.with(..) (aka Client chaining)", () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
@@ -76,17 +80,19 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const newClient = client.with(async () => ({
-        query: {
-          name: "David",
-        },
-      }));
+      const newClient = client.with({
+        middleware: async () => ({
+          query: {
+            name: "David",
+          },
+        }),
+      });
 
-      const response = await newClient.exampleRoute.get({
+      const response = await fetchCuple(newClient.exampleRoute.get, {
         query: {
           name: "Foo",
         },
-      });
+      }).thenResolveAll();
       assert.equal(response.message, "Hi Foo!");
     });
   });

@@ -1,0 +1,97 @@
+---
+sidebar_position: 8
+description: 'refresh, preload, clear, useIsFetching, Boundary'
+---
+
+# The store
+
+The store is the cache. Components reach it through `<CupleProvider>`; plain code uses it directly.
+
+## refresh
+
+```ts
+await store.refresh([client.getNotes, client.getNote]);
+```
+
+ - Calls something is reading are refetched, and keep their old data on screen until the new data lands.
+ - Calls nobody reads are dropped, and fetched fresh when next read.
+ - It resolves when the refetches have landed, and never rejects: a failure goes to whoever reads the data.
+ - A network failure during a refresh keeps the old data on screen, and is retried when the browser comes back online.
+
+## preload
+
+Start a fetch before anything renders it:
+
+```tsx
+<li onMouseEnter={() => store.preload(loadOrderWithCustomer, order.id)}>
+```
+
+ - It never rejects, and a failed preload isn't kept: nobody was waiting for it, so the next read fetches again.
+ - In a router loader, call it without returning it (`void store.preload(...)`), so loading and errors stay with `<Boundary>` instead of the router.
+ - NOTE: A read of `{ id: 5 }` doesn't hit a preload of `{ id: "5" }`. When that happens, the store warns in the console.
+
+## refreshKeys
+
+```ts
+signedInAs = "linus";
+store.refreshKeys();
+```
+
+Checks every cached call's key again, for when whatever a `with({ key })` getter returns has changed:
+
+ - Key unchanged: stays as it is. No request, no re-render.
+ - Key changed: its readers read again under the new key, even memoized ones. Cached data for the new key shows at once; anything else loads.
+ - The old key's data is dropped, or kept with `cache.onKeyChange: "keep"`. It's never refetched under the new key.
+ - Combined reads built from a changed call run again; streams reconnect.
+
+Wrap it in `startTransition` to keep the current screen until the new data is ready.
+
+## clear
+
+```ts
+store.clear();
+```
+
+Drops everything; readers suspend and fetch again. For sign-out and tests.
+
+## Boundary
+
+```tsx
+<Boundary fallback={<Spinner />} error={(error, retry) => <Failed onRetry={retry} />}>
+```
+
+ - Without `fallback`, loading goes to the boundary above.
+ - Without `error`, errors go to the boundary above.
+ - `retry` drops the data that failed from the cache and renders again, so it's fetched fresh. Other data is untouched.
+ - Place boundaries where the layout wants loading and error UI: a failing widget shouldn't take the page with it.
+
+## Full-page loading
+
+Most loading should stay local: skeletons, busy buttons. For the few steps the user must wait for, opt in with `loading: { blocking: true }`, and cover the page only then:
+
+```tsx file=../../../examples/react/src/contacts.tsx#import-samples
+```
+
+```tsx file=../../../examples/react/src/loading.tsx#page-overlay
+```
+
+ - `config.loading.blocking` works on actions, on reads (`useGet(x, args, { config: { loading: { blocking: true } } })` blocks while that data refetches), and on a whole `<Boundary config>`. For plain code: `store.refresh(targets, { blocking: true })`.
+ - A first load shows the `<Boundary>` fallback, as always, never the overlay.
+
+## useIsFetching
+
+```tsx
+function Progress() {
+  return useIsFetching() ? <TopBar /> : null;
+}
+```
+
+True while any read, refresh or action runs. For a global progress bar.
+
+:::note[Why it works this way]
+
+- **Refreshes keep the old data on screen.** Swapping content for a spinner on every refetch makes the page jump under the user's cursor. The old data stays until the new data lands, and `useIsFetching()` says something is updating.
+- **Only what's read is refetched.** Refetching every cached call of an endpoint spends requests on screens nobody is looking at, and refetching a deleted item 404s. Unread entries are dropped instead, and load fresh when they're read again.
+- **`refreshKeys`, not a clear.** Clearing on an account switch refetches everything, including data that doesn't depend on the account, and flashes every skeleton at once. Re-reading only what the key changed keeps the rest.
+
+:::

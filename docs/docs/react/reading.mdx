@@ -1,0 +1,105 @@
+---
+sidebar_position: 2
+description: 'useGet, resolveAlso, changing arguments, combine, polling'
+---
+
+# Reading
+
+## useGet
+
+```tsx file=../../../examples/docs/todos/app.tsx#todo-list
+```
+
+In this example:
+
+ - `todos` is there, typed, with no loading or error checks. Until it arrives, the component suspends and the nearest `<Boundary>` shows its `fallback`.
+ - Anything but `success` throws to the nearest `<Boundary>`. For a list that should always render, a failure means something is broken.
+ - Every component that reads the same call shares one request and one cached result, so `NewTodo` and `TodoItem` don't need anything passed down.
+
+## Routes and endpoints
+
+Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine(async (_, q: string) => fetchCuple(client.search.post, { body: { q } }))`.
+
+A route stands for its GET endpoint: `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, and both are the same cached call. The short form works wherever something is read or refreshed: `useGet`, `usePages`, `get` inside `combine`, `refresh` lists, `store.refresh` and `store.preload`.
+
+ - NOTE: A route that is itself named like an HTTP method (`client.get`) needs `.get` written out: at runtime, that's the only way to tell a route from an endpoint.
+
+## Expected failures
+
+When a failure is a normal outcome, list it with `resolveAlso`. It becomes a typed value, and everything else still throws:
+
+```tsx file=../../../examples/react/src/App.tsx#note-detail
+```
+
+ - `"transport-error"` can be listed too, for a read that should render something when the server can't be reached. See [Errors](./errors).
+ - NOTE: `resolveOn: [...]` is the complete list instead: `"success"` is not implied.
+ - These are the same idea as `fetchCuple(...).thenResolveAlso([...])` / `.thenResolveOn([...])`: an option on a hook, a method on a request.
+
+## When the arguments change
+
+A component reads `useGet(client.getNote, { params: { id } })`, and `id` changes: the user opened another note. What should it show while the new note loads?
+
+By default, the nearest `<Boundary>` shows its fallback again. The old note's text under the new note's title would be wrong, and a click on "Delete" in that moment would delete the note the user is no longer looking at.
+
+That's the wrong trade for a search box: every keystroke would blank the results and flash a skeleton, while the previous results are still useful for a moment. There, keep them on screen with React's `useDeferredValue`, and dim them so it's clear they're about to change:
+
+```tsx
+function SearchResults({ query }: { query: string }) {
+  // Lags behind `query` until the results for the new query are ready.
+  const deferred = useDeferredValue(query);
+  const { results } = useGet(client.search, { query: { q: deferred } });
+  return (
+    <ul className={deferred !== query ? "stale" : undefined}>
+      {results.map((result) => (
+        <li key={result.id}>{result.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Several fetches, one value
+
+An order page shows the order and the customer who placed it. The customer's id is in the order, so the second request can only start when the first one is done:
+
+```ts file=../../../examples/docs/orders/server.ts#routes
+```
+
+A `combine` is that chain, written as a plain async function:
+
+```ts file=../../../examples/docs/orders/app.tsx#combine
+```
+
+```tsx file=../../../examples/docs/orders/app.tsx#order-details
+```
+
+The order list shows each order's customer with a plain `useGet`:
+
+```tsx file=../../../examples/docs/orders/app.tsx#order-list
+```
+
+In this example:
+
+ - `get` reads through the same cache as `useGet`. The list already loaded each customer, so opening an order sends one request, `getOrder`, and Ada is fetched once even though she has two orders.
+ - `OrderDetails` suspends once, until both are there. Use `await` for a fetch that needs another's result, and `Promise.all` for independent ones.
+ - One failed `get` fails the whole read, and the `<Boundary>` shows it. To go on without it, list the result: `get(client.getCustomer, args, { resolveAlso: ["not-found-error"] })`.
+ - Refreshing `client.getOrder` or `client.getCustomer` re-runs `loadOrderWithCustomer`.
+ - NOTE: Create combined reads at module level: a combined read's identity is its cache key. Its arguments must be JSON (numbers, strings, plain objects and arrays), because they are part of the key too.
+
+To run it: `cd examples/docs && npm run dev:orders`.
+
+## Polling
+
+```tsx
+const { count } = useGet(client.getStats, undefined, { config: { loading: { every: 30_000 } } });
+```
+
+It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
+
+:::note[Why it works this way]
+
+- **Loading and errors belong to the layout.** With `isLoading` and `error` in every component, each one draws its own spinner, and a page with five reads pops in five times. Components read data as if it's there, and a `<Boundary>` decides what the user sees meanwhile, for everything inside it.
+- **The call is the cache key.** Hand-written keys (`["order", id]`) drift from the request: forget a parameter, and two different requests share one entry. Here the endpoint, the client's key and the arguments are the key, so they can't disagree.
+- **A read can run again at any time.** Refreshes, polls and retries re-run it without asking. Only a request that's safe to repeat can be a read; a write repeated by a refresh would create a second record.
+
+:::

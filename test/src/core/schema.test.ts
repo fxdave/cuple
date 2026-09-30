@@ -1,7 +1,7 @@
-import assert from "assert";
-import { describe, it } from "mocha";
-import { z } from "zod";
-import { success, zodValidationError } from "@cuple/server";
+import { fetchCuple } from "@cuple/client";
+import { json, success, zodValidationError } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import z from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("schema validation", () => {
@@ -9,8 +9,101 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
+          }),
+        )
+        .post(async () => {
+          return success({
+            message: "hey",
+          });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.foo.post, {} as any).thenResolveAll();
+      assert.equal(response.statusCode, 422);
+      if (response.result !== "validation-error") return assert.ok(false);
+      assert.notEqual(response.message.length, 0);
+      assert.ok(Array.isArray(response.issues[0].path));
+    });
+  });
+  it("should handle string date inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.iso.date(),
+          }),
+        )
+        .post(async ({ data }) => {
+          const date = data.body.birthdate;
+          assert.ok(typeof date === "string");
+          return success({ date });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.foo.post, {
+        body: {
+          birthdate: new Date().toISOString().split("T")[0],
+        },
+      }).thenResolveAll();
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle string datetime inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.iso.datetime(),
+          }),
+        )
+        .post(async ({ data }) => {
+          const date = data.body.birthdate;
+          assert.ok(typeof date === "string");
+          return success({ date });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.foo.post, {
+        body: {
+          birthdate: new Date().toISOString(),
+        },
+      }).thenResolveAll();
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle date type date inputs", async () => {
+    const now = new Date();
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.coerce.date<Date>(),
+          }),
+        )
+        .post(async ({ data }) => {
+          const date = data.body.birthdate;
+          assert.ok(date instanceof Date);
+          assert.ok(Math.abs(date.getTime() - now.getTime()) < 1);
+          return success({ date: date.toString() });
+        }),
+    }));
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.foo.post, {
+        body: {
+          birthdate: now,
+        },
+      }).thenResolveAll();
+      assert.equal(response.statusCode, 200);
+    });
+  });
+  it("should handle timestamp(ms) type date inputs", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            birthdate: z.coerce.date(),
           }),
         )
         .post(async () => {
@@ -18,11 +111,12 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({} as any);
-      assert.equal(response.statusCode, 422);
-      if (response.result !== "validation-error") assert.ok(false);
-      assert.notEqual(response.message.length, 0);
-      assert.ok(Array.isArray(response.issues[0].path));
+      const response = await fetchCuple(client.foo.post, {
+        body: {
+          birthdate: Date.now(),
+        },
+      }).thenResolveAll();
+      assert.equal(response.statusCode, 200);
     });
   });
 
@@ -30,9 +124,9 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
-            user: z.object({
-              address: z.object({
+          z.strictObject({
+            user: z.strictObject({
+              address: z.strictObject({
                 street: z.string(),
               }),
             }),
@@ -45,7 +139,9 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({ user: { address: { street: 1 } } } as any);
+      const response = await fetchCuple(client.foo.post, {
+        user: { address: { street: 1 } },
+      } as any).thenResolveAll();
       assert.equal(response.statusCode, 422);
       if (response.result !== "validation-error") assert.ok(false);
       assert.notEqual(response.message.length, 0);
@@ -53,18 +149,21 @@ describe("schema validation", () => {
     });
   });
 
-  it("should allow non-objects", async () => {
+  it("should allow non-objects with rawBody json parser", async () => {
     const cs = await createClientAndServer((builder) => ({
-      foo: builder.bodySchema(z.number()).post(async ({ data }) => {
-        return success({
-          got: data.body,
-        });
-      }),
+      foo: builder
+        .rawBody(json({ strict: false }))
+        .bodySchema(z.number())
+        .post(async ({ data }) => {
+          return success({
+            got: data.body,
+          });
+        }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: 42,
-      });
+      }).thenResolveAll();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.got, 42);
     });
@@ -75,7 +174,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .querySchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
           }),
         )
@@ -86,9 +185,9 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         query: { id: 42 },
-      });
+      }).thenResolveAll();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.got, 42);
     });
@@ -99,7 +198,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .paramsSchema(
-          z.object({
+          z.strictObject({
             id: z.number(),
           }),
         )
@@ -110,9 +209,9 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         params: { id: 42 },
-      });
+      }).thenResolveAll();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.got, 42);
     });
@@ -122,7 +221,7 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .headersSchema(
-          z.object({
+          z.looseObject({
             authorization: z.string(),
           }),
         )
@@ -133,13 +232,13 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         headers: {
           authorization: "42",
         },
-      });
-      if (response.result !== "success") assert.ok(false);
-      assert.equal(response.got, 42);
+      }).thenResolveAll();
+      if (response.result !== "success") assert.ok(false, JSON.stringify(response));
+      assert.equal(response.got, "42");
     });
   });
 
@@ -153,7 +252,7 @@ describe("schema validation", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({});
+      const response = await fetchCuple(client.foo.post, {}).thenResolveAll();
 
       if (response.result === "validation-error") {
         assert.ok(true);
@@ -168,13 +267,13 @@ describe("schema validation", () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
         .bodySchema(
-          z.object({
+          z.strictObject({
             name: z.string(),
           }),
         )
         .post(async ({ data }) => {
           if (data.body.name === "David") {
-            return zodValidationError<typeof data.body>([
+            return zodValidationError([
               {
                 code: "custom",
                 message: "No David here", // I'm David
@@ -188,9 +287,9 @@ describe("schema validation", () => {
         }),
     }));
     await cs.run(async (client) => {
-      const response = await client.foo.post({
+      const response = await fetchCuple(client.foo.post, {
         body: { name: "David" },
-      });
+      }).thenResolveAll();
 
       if (response.result === "validation-error") {
         assert.equal(response.issues[0].path[0], "name");

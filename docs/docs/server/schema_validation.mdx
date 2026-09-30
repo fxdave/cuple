@@ -17,7 +17,7 @@ Successfully parsed result will be added to `data.headers`.
 
 ```ts
 builder
-  .headersSchema(z.object({ authorization: z.string() }))
+  .headersSchema(z.looseObject({ authorization: z.string() }))
   .get(async ({ data }) => {
 
     data.headers.authorization // this has a string value
@@ -31,8 +31,8 @@ Currently only json requests are supported.
 Successfully parsed result will be added to `data.body`.
 
 ```ts
-.bodySchema(z.object({
-    user: z.object({
+.bodySchema(z.strictObject({
+    user: z.strictObject({
         name: z.string().min(3),
         age: z.number()
     })
@@ -47,7 +47,7 @@ Successfully parsed result will be added to `data.query`.
 
 ```ts
 // For URL query parsing (e.g.: ?somevar=12)
-.querySchema(z.object({ somevar: z.coerce.number() }))
+.querySchema(z.strictObject({ somevar: z.coerce.number() }))
 ```
 
 ## Path validation
@@ -59,7 +59,7 @@ Successfully parsed result will be added to `data.body`.
 ```ts
 // For URL params parsing
 .path("/post/:id")
-.paramsSchema(z.object({ id: z.coerce.number() }))
+.paramsSchema(z.strictObject({ id: z.coerce.number() }))
 ```
 
 ## On error
@@ -78,3 +78,9 @@ An example response:
     }]
 }
 ```
+
+:::note[Why it works this way]
+
+- **Invalid input is a normal result.** A form sending bad input is expected, not exceptional. As a `validation-error` with paths, the client can put each message on its field, and the type says what the issues look like.
+
+:::

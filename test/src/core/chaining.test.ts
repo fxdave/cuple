@@ -1,7 +1,7 @@
-import assert from "assert";
-import { describe, it } from "mocha";
-import { z } from "zod";
+import { fetchCuple } from "@cuple/client";
 import { success } from "@cuple/server";
+import { assert, describe, it } from "vitest";
+import { z } from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
 describe("chaining", () => {
@@ -9,7 +9,7 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link = builder
         .headersSchema(
-          z.object({
+          z.looseObject({
             authorization: z.string(),
           }),
         )
@@ -33,26 +33,26 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const badResponse1 = await client.get.get({
+      const badResponse1 = await fetchCuple(client.get.get, {
         headers: {
           authorization: "bar",
         },
-      });
+      }).thenResolveAll();
       assert.equal(badResponse1.statusCode, 401);
 
-      const badResponse2 = await client.get.get({
+      const badResponse2 = await fetchCuple(client.get.get, {
         headers: {} as any,
-      });
+      }).thenResolveAll();
       assert.equal(badResponse2.statusCode, 422);
 
-      const badResponse3 = await client.get.get({} as any);
+      const badResponse3 = await fetchCuple(client.get.get, {} as any).thenResolveAll();
       assert.equal(badResponse3.statusCode, 422);
 
-      const response = await client.get.get({
+      const response = await fetchCuple(client.get.get, {
         headers: {
           authorization: "foo",
         },
-      });
+      }).thenResolveAll();
       if (response.statusCode !== 200) assert.ok(false);
       assert.equal(response.message, "hi");
     });
@@ -62,14 +62,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -87,12 +87,12 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const response = await client.someRoute.get({
+      const response = await fetchCuple(client.someRoute.get, {
         body: {
           id: 32,
           name: "David",
         },
-      });
+      }).thenResolveAll();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.gotId, 32);
       assert.equal(response.gotName, "David");
@@ -103,14 +103,14 @@ describe("chaining", () => {
     const cs = await createClientAndServer((builder) => {
       const link1 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             id: z.number(),
           }),
         )
         .buildLink();
       const link2 = builder
         .bodySchema(
-          z.object({
+          z.looseObject({
             age: z.number(),
           }),
         )
@@ -119,7 +119,7 @@ describe("chaining", () => {
         .expectChain<typeof link1>()
         .expectChain<typeof link2>()
         .bodySchema(
-          z.object({
+          z.looseObject({
             name: z.string(),
           }),
         )
@@ -147,13 +147,13 @@ describe("chaining", () => {
       };
     });
     await cs.run(async (client) => {
-      const response = await client.someRoute.get({
+      const response = await fetchCuple(client.someRoute.get, {
         body: {
           id: 32,
           name: "David",
           age: 100,
         },
-      });
+      }).thenResolveAll();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.gotId, 32);
       assert.equal(response.gotName, "David");
@@ -163,19 +163,22 @@ describe("chaining", () => {
   });
 
   it("should type-check whether a middleware is missing a dependent middleware", async () => {
-    await assert.rejects(async () => {
+    try {
       const cs = await createClientAndServer((builder) => {
         const link1 = builder
           .bodySchema(
-            z.object({
+            z.looseObject({
               id: z.number(),
             }),
           )
           .buildLink();
+
+        const test = builder.expectChain<typeof link1>();
+
         const link2 = builder
           .expectChain<typeof link1>()
           .bodySchema(
-            z.object({
+            z.looseObject({
               name: z.string(),
             }),
           )
@@ -198,17 +201,20 @@ describe("chaining", () => {
         };
       });
       await cs.run(async (client) => {
-        const response = await client.someRoute.get({
+        const response = await fetchCuple(client.someRoute.get, {
           body: {
             id: 32,
             name: "David",
           },
-        });
-        if (response.result !== "success") assert.ok(false);
+        }).thenResolveAll();
+        if (response.result !== "success") assert.ok(false, JSON.stringify(response));
         assert.equal(response.gotId, 32);
         assert.equal(response.gotName, "David");
         assert.equal(response.gotIdFromPreviousMiddleware, 32);
       });
-    });
+      assert.ok(false, "It should throw");
+    } catch {
+      assert.ok(true);
+    }
   });
 });

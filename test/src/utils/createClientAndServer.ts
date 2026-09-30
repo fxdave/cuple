@@ -1,10 +1,10 @@
+import { Server } from "node:http";
+import { type Client, createClient, type RecursiveApi } from "@cuple/client";
+import { type Builder, createBuilder, initRpc } from "@cuple/server";
 import express from "express";
-import { Client, createClient, RecursiveApi } from "@cuple/client";
-import { createBuilder, initRpc } from "@cuple/server";
-import { Builder } from "@cuple/server";
 
 export default async function createClientAndServer<T extends RecursiveApi>(
-  createRoutes: (builder: Builder<object, never, "post">) => T,
+  createRoutes: (builder: Builder) => T,
   builderOptions?: Parameters<typeof createBuilder>[1],
 ) {
   const app = express();
@@ -16,14 +16,27 @@ export default async function createClientAndServer<T extends RecursiveApi>(
     routes,
   });
 
-  const client = createClient<typeof routes>({
-    path: "http://localhost:8080/rpc",
-  });
-
-  function run(cb: (client: Client<T, NonNullable<unknown>>) => Promise<void>) {
+  function run(
+    cb: (client: Client<T, NonNullable<unknown>>, url: string) => Promise<void>,
+  ) {
     return new Promise((resolve, reject) => {
-      const server = app.listen(8080, () => {
-        cb(client)
+      // Listen on port 0 to get an available port
+      const server = app.listen(0, () => {
+        const address = server.address();
+        if (!address || typeof address === "string") {
+          server.close();
+          reject(new Error("Failed to get server address"));
+          return;
+        }
+
+        const port = address.port;
+
+        // Create client with the dynamically assigned port
+        const client = createClient<typeof routes>({
+          path: `http://localhost:${port}/rpc`,
+        });
+
+        cb(client, `http://localhost:${port}`)
           .then((val) => {
             server.close();
             resolve(val);

@@ -1,0 +1,231 @@
+:root {
+  --ink: #1e2330;
+  --muted: #697083;
+  --line: #e2e5eb;
+  --wash: #f1f3f6;
+  --wash-strong: #e6e9ef;
+  --accent: #2c64e0;
+  --danger: #b8322a;
+  /* How long a load may take before any placeholder shows: fast responses never flash one. */
+  --reveal-delay: 150ms;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font:
+    15px / 1.5 system-ui,
+    sans-serif;
+}
+
+main {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 2.5rem 1rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+section {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+}
+
+.row > .grow {
+  flex: 1;
+  text-align: left;
+}
+
+/* Forms */
+
+.field {
+  display: grid;
+  flex: 1;
+  gap: 0.2rem;
+  margin: 0 0 0.75rem;
+}
+
+.field input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+fieldset {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+/* Loading indication */
+
+/* Background work: a thin line at the top, never a spinner over content. */
+.progress {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 200ms;
+  pointer-events: none;
+}
+
+.progress[data-active="true"] {
+  opacity: 1;
+  transition-delay: var(--reveal-delay);
+}
+
+.progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: var(--accent);
+  animation: progress 1.1s ease-in-out infinite;
+}
+
+/* A blocking step: the page is covered, and can't be used until it's done. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  grid-auto-flow: column;
+  align-items: center;
+  z-index: 10;
+  background: rgb(255 255 255 / 0.7);
+  animation: reveal 200ms var(--reveal-delay) both;
+}
+
+/* First loads: placeholders shaped like the content, so nothing jumps when it lands. */
+.skeleton {
+  display: block;
+  height: 0.85em;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, var(--wash) 25%, var(--wash-strong) 50%, var(--wash) 75%) 0 0 /
+    200% 100%;
+  animation:
+    reveal 200ms var(--reveal-delay) both,
+    shimmer 1.4s linear infinite;
+}
+
+/* Work on something already shown: dim it, keep it in place. */
+.pending {
+  opacity: 0.5;
+  transition: opacity 150ms;
+}
+
+/* A button that is working keeps its width: both labels sit in one cell. */
+.labels {
+  display: inline-grid;
+}
+
+.labels > * {
+  grid-area: 1 / 1;
+}
+
+.labels > [data-visible="false"] {
+  visibility: hidden;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.35em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: reveal 200ms var(--reveal-delay) both;
+  }
+
+  .progress::before {
+    width: 100%;
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 2s;
+  }
+}

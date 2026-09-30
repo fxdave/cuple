@@ -1,7 +1,6 @@
+import { apiResponse, createBuilder, initRpc, success } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
-import { createBuilder, initRpc } from "@cuple/server";
-import { apiResponse, success } from "@cuple/server";
 
 const app = express();
 app.use(express.json());
@@ -18,7 +17,7 @@ export const routes = {
   }),
   getPost: builder
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )
@@ -35,7 +34,7 @@ export const routes = {
     }),
   addPost: builder
     .bodySchema(
-      z.object({
+      z.strictObject({
         title: z.string(),
         content: z.string(),
       }),
@@ -51,7 +50,7 @@ export const routes = {
     }),
   deletePost: builder
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )

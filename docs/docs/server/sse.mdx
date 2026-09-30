@@ -1,0 +1,49 @@
+---
+sidebar_position: 6
+description: 'Streaming events'
+---
+
+# Server-Sent Events
+
+Instead of returning one response, you can stream events with an async generator.
+Every yielded object is sent to the client as an event.
+
+The supported methods are: `getSSE`, `postSSE`, `putSSE`, `patchSSE`, `deleteSSE`
+
+## Example
+
+```ts
+builder
+  .chain(authLink)
+  .getSSE(async function* ({ data, disconnectSignal }) {
+    for await (const event of activityFeed.subscribe(disconnectSignal)) {
+      yield { action: event.action, by: data.account.name };
+    }
+  });
+```
+
+In this example:
+
+ - Middlewares run first. If one of them fails, the client gets a normal JSON error response.
+ - When the client disconnects, the generator is stopped, and `disconnectSignal` is aborted.
+
+## Client
+
+```ts
+const stream = await fetchCupleSSE(client.activity.get, {});
+
+for await (const event of stream) {
+  console.log(event.by, event.action);
+}
+```
+
+In React, use [useStream](../react/streams).
+
+ - NOTE: If your generator ends on its own, and it should finish even without the client, use `getSSE(generator, { returnOnDisconnect: false })`. Never do this with an endless loop.
+
+:::note[Why it works this way]
+
+- **Middlewares run before the stream opens.** Once an event stream has started, an error can't change the HTTP status. Running auth and validation first means a rejection is a normal JSON result, handled like any failed request.
+- **Generators stop on disconnect.** A client that navigates away would otherwise leave a subscription or a loop running on the server.
+
+:::

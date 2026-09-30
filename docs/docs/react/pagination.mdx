@@ -1,0 +1,23 @@
+---
+sidebar_position: 6
+description: 'usePages'
+---
+
+# Pagination
+
+```tsx file=../../../examples/react/src/App.tsx#notes
+```
+
+In this example:
+
+ - The third argument returns the next page's arguments from the last page, or `null` when there are no more.
+ - `pages` holds the loaded pages, success only. A failed page throws to the nearest `<Boundary>`.
+ - `loadMore` keeps the loaded pages on screen, and `isPending` is true until the next page lands.
+ - While `isPending` is true, placeholder rows show where the next page will land.
+ - Every page is an ordinary cached call. Refreshing `client.getNotes` refetches every loaded page, and when a deleted note shifts the pages, the next arguments follow.
+
+:::note[Why it works this way]
+
+- **Pages are ordinary cached calls.** Infinite-query caches have their own rules for refetching and invalidation. Here a page is a normal read, so `refresh: [client.getNotes]` refreshes the loaded pages like any other read, and follows cursors that moved when an item was deleted.
+
+:::

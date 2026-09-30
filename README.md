@@ -36,7 +36,7 @@ export const routes = {
   getPost: builder
     .path("/post/:id") // optional for REST compatibility
     .paramsSchema(
-      z.object({
+      z.strictObject({
         id: z.coerce.number(),
       }),
     )
@@ -68,15 +68,41 @@ const client = createClient<typeof routes>({
 });
 
 async function getPost(id: number) {
-  const response = await client.getPosts.get({ params: { id } });
+  // Resolves with success; any other result throws.
+  const { post } = await fetchCuple(client.getPost.get, { params: { id } });
+  return post;
+}
 
-  console.log(postsResponse.post); // type error
-
-  if (response.result === "success") {
-    console.log(postsResponse.post); // no type error
-  }
+async function findPost(id: number) {
+  // A failure you handle is listed, and typed.
+  const res = await fetchCuple(client.getPost.get, { params: { id } }).thenResolveAlso([
+    "not-found-error",
+  ]);
+  return res.result === "not-found-error" ? null : res.post;
 }
 ```
+
+## Example React
+
+```tsx
+function Post({ id }: { id: number }) {
+  const { post } = useGet(client.getPost, { params: { id } }); // suspends until loaded
+  return <h1>{post.title}</h1>;
+}
+```
+
+See [`@cuple/react`](./packages/react).
+
+## Packages
+
+| Package | |
+| ------- | - |
+| `@cuple/server` | Express integration: routes, validation, middlewares, SSE |
+| `@cuple/client` | Type-safe client: `fetchCuple`, `fetchCupleSSE` |
+| `@cuple/react` | React 19 bindings: Suspense reads, actions, a cache |
+| `@cuple/openapi` | Generate OpenAPI 3.0 specs from your routes |
+| `@cuple/mcp` | Expose your routes as MCP tools |
+| `@cuple/inspect` | Route metadata at build time (used by openapi and mcp) |
 
 ## Companies using Cuple
 

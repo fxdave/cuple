@@ -3,7 +3,7 @@ import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import Heading from "@theme/Heading";
-import ReactPlayer from "react-player";
+import TypeSafetyDemo from "../components/TypeSafetyDemo";
 import styles from "./index.module.css";
 
 function HomepageHeader() {
@@ -24,14 +24,7 @@ export default function Home(): JSX.Element {
       title={`${siteConfig.title}`}
       description="Typesharing between frontend and backends made easy. The missing type-safety for full-stack."
     >
-      <ReactPlayer
-        playing
-        controls
-        url="example.mp4"
-        loop
-        width="100vw"
-        height="min(calc(100vh - 60px), 56.25vw)"
-      />
+      <TypeSafetyDemo />
       <HomepageHeader />
     </Layout>
   );

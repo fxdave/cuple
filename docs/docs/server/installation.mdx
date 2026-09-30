@@ -42,3 +42,10 @@ app.listen(8080, () => {
 });
 
 ```
+
+:::note[Why it works this way]
+
+- **Express underneath.** Logging, CORS, sessions and deployment stay as they are in an Express app; Cuple routes are added next to the ones you have.
+- **Routes are one exported object.** Its type is the contract: the client, the OpenAPI generator and the MCP server all read it, so they can't disagree.
+
+:::

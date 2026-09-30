@@ -1,0 +1,83 @@
+---
+sidebar_position: 3
+description: 'useAction, refresh, errors'
+---
+
+# Actions
+
+The server has these routes:
+
+```ts file=../../../examples/docs/todos/server.ts#routes
+```
+
+## useAction
+
+An action is your own async function. `useAction` runs it and gives you its state:
+
+```tsx file=../../../examples/docs/todos/app.tsx#new-todo
+```
+
+In this example:
+
+ - `fetchCuple` resolves with `success` and throws anything else. `thenResolveAlso(["validation-error"])` lists the one failure this form handles, so it comes back as a typed value instead. Both the schema's error and the custom one are `validation-error`, with `path: ["text"]`.
+ - `create.value` is what the function returned, typed, so the form can show the issue next to the input.
+ - `refresh: { success: [...] }` names what the action changes, and when: the todos are refetched only when one was created. Nothing else is.
+
+### Status
+
+| `status`  | Meaning |
+| --------- | ------- |
+| `idle`    | Nothing has happened yet. |
+| `pending` | Running, including the refresh it asked for. The screen keeps the old data until the new data lands. |
+| `done`    | Your function finished. `value` is what it returned, including failures you listed, so check `value.result`. |
+| `failed`  | Your function threw something nobody handled, and `errors.unhandled` is `"notify"`. `error` is the `CupleError`. |
+
+`run` never rejects. It resolves with the resulting state, so it can go straight into a form library's submit handler.
+
+## One action per item
+
+```tsx file=../../../examples/docs/todos/app.tsx#todo-item
+```
+
+ - Nothing to handle here but success, so the plain `fetchCuple` is enough: a failure throws, and goes where unhandled errors go.
+ - Call `useAction` in the item's component, so each todo has its own `isPending`.
+ - `aria-busy` and the `pending` class only say what is busy. The stylesheet dims the row and puts a spinner in the button, so the markup stays short and the button keeps its size.
+ - `failed` shows up here only when unhandled errors are notified (the docs app notifies a dropped connection). Otherwise the nearest `<Boundary>` shows it.
+
+## Refresh
+
+Nothing is refreshed unless the action names it. List what a write changes. When the server computes one thing from another (property cards counting permits), list both:
+
+```ts file=../../../examples/react/src/client.ts#store
+```
+
+```tsx file=../../../examples/react/src/App.tsx#note-row
+```
+
+ - Every cached call of a listed endpoint is refetched, and so is every `combine` that read one of them through `get`.
+ - Only calls something is reading are refetched. The rest are dropped, and fetched fresh when next read. So when you delete the note an open pane shows, and close the pane inside the action, the deleted note is never refetched and never 404s.
+ - `refresh: [...]` refreshes every time the function finishes. `refresh: { success: [...] }` refreshes only for the listed results, as `NewTodo` above does; the keys are typed from what the function returns.
+
+## Errors
+
+Errors you handle are results you list with `thenResolveAlso`, `"transport-error"` included: typed values in `value`. Anything else your function throws (a result it didn't list, a network failure it didn't list, a bug) is unhandled, and `config.errors.unhandled` decides where it goes: per action, per `<Boundary>`, or app-wide on the provider:
+
+- `"boundary"`: the nearest `<Boundary>`, as a `CupleError`. The default.
+- `"notify"`: `config.errors.notify` shows it; the page stays, and the status becomes `failed`.
+
+Errors never end up only in the console. See [Errors](./errors) for all the cases in one app.
+
+## Rules of thumb
+
+ - When a component moves to another item, give it a `key` (`key={note.id}`), or it shows the previous item's result.
+ - The state is the latest run's. An earlier run that finishes later still writes and refreshes, but doesn't change what is shown.
+ - Steps that must all happen or none belong in one server route. The client can sequence steps, but it can't make them a transaction.
+
+:::note[Why it works this way]
+
+- **Your own function, not a mutation config.** Real writes are sequences: save, then upload, then navigate. Split into `mutationFn`, `onSuccess` and `onError` options, the order things run in becomes something to look up. An async function reads top to bottom.
+- **A refresh list, not automatic invalidation.** Invalidation by guessed keys either misses something (a stale screen) or refetches everything (a slow one), and neither shows in the code. A list next to the write can be reviewed, and a missing entry shows up as stale data the first time you try it.
+- **`run` never rejects.** A rejected promise in an `onClick` is an unhandled rejection that only reaches the console, and a form library awaiting a rejected submit can leave `isSubmitting` stuck. Errors go to a boundary or `notify` instead.
+- **The latest run wins.** Two quick clicks on a slow network can finish in either order; showing whichever finished last could show the older result.
+
+:::

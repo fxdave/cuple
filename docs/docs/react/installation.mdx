@@ -1,0 +1,89 @@
+---
+sidebar_position: 1
+description: 'npm install, the store, the provider'
+---
+
+# Installation
+
+```bash
+npm i @cuple/react @cuple/client
+```
+
+Requires React 19.
+
+`@cuple/react` is `fetchCuple` with memory:
+
+- **Reading:** cache what `fetchCuple` returns and suspend while loading.
+- **Writing:** run your own async function. You get its state, its errors, and a refresh of exactly what it changed.
+
+Cached data changes only when:
+
+- an action that names it finishes,
+- `refresh()` is called,
+- a poll fires,
+- or an entry nobody reads expires.
+
+Nothing refetches on focus, on mount, or on a timer you didn't ask for.
+
+## Setup
+
+Create the store next to your client. Plain code, like sign-in or an SSE handler, uses it directly:
+
+```ts file=../../../examples/react/src/client.ts#store
+```
+
+Then provide it once, at the root:
+
+```tsx file=../../../examples/docs/todos/app.tsx#setup
+```
+
+In this example:
+
+ - `config.errors.notify` is how the app shows an error without replacing the page. `config.errors.unhandled` decides, per error nobody handled, whether it's shown with it (`"notify"`) or goes to the nearest `<Boundary>` (`"boundary"`, the default). See [Errors](./errors) and [Configuration](./configuration).
+ - `<Boundary>` is a `<Suspense>` and an error boundary in one. `error.message` is always readable; `retry` drops what failed and renders again.
+ - `refreshes` lists what each write changes, in one place. See [Actions](./actions#refresh).
+
+## Loading indication
+
+- **First loads** suspend: give `<Boundary fallback>` a skeleton shaped like the content, so nothing jumps when the data lands.
+- **Refreshes** keep the content on screen; show background work with `useIsFetching()`, e.g. a thin bar at the top.
+- **Actions** show where they act: mark the button or row with `aria-busy={action.isPending}` and style it.
+
+Delay placeholders by about 150 ms with CSS (`animation-delay`), so fast responses never flash one. The example app in `examples/react` does all three.
+
+## Switching and signing out
+
+The cache doesn't know what your client's middleware sends, so tell it whose data a call is, with a key:
+
+```ts file=../../../examples/react/src/client.ts#store
+```
+
+ - `key` is read when a call is cached. `store.refreshKeys()` checks every cached call's key again: unchanged ones stay, changed ones are read again under the new key. Components re-read even when memoized.
+ - By default (`cache.onKeyChange: "drop"`), the previous account's data is deleted at once, so nothing of it can show again.
+ - `"keep"` keeps it for `cache.keep`, so switching back is instant (and refreshes in the background). Use it only for an account switcher where one person owns every account, like work and personal inboxes. When a different person can sign in on the same screen, keep the default.
+ - Signing out calls `store.clear()`: nothing of the account stays in memory.
+
+## Testing
+
+```tsx
+import { mockCuple, renderWithCuple } from "@cuple/react/testing";
+
+const mock = mockCuple<typeof routes>({
+  getTodos: { get: () => ({ result: "success", statusCode: 200, todos: ["milk"] }) },
+});
+vi.stubGlobal("fetch", mock.fetch);
+
+await renderWithCuple(<Boundary fallback="loading"><Todos /></Boundary>);
+expect(await screen.findByText("milk")).toBeDefined();
+```
+
+ - `renderWithCuple` renders under a provider with a fresh store, inside the awaited `act` React 19 needs for Suspense. Plain `render` never leaves the fallback.
+ - `mockCuple` is a fake server typed from your routes: a handler returning the wrong shape, or for an endpoint that doesn't exist, is a type error. A request with no handler fails with the endpoint's name. `mock.calls` records every request.
+ - In a monorepo you can test against the real routes instead: run the server in the test, and point the client at it.
+
+:::note[Why it works this way]
+
+- **Most data bugs are timing bugs.** A screen that refetches on window focus, on mount or on a timer changes while the user is reading it, and the bug report says "sometimes the list jumps back". Here, cached data changes only for a reason written in the code: an action's `refresh`, a poll you configured, a call to the store.
+- **A store you create, not a hidden global.** Sign-in, an SSE handler and a router loader aren't components, but they need to refresh or clear data. They use the same store the hooks use, and each test can start from a fresh one.
+
+:::

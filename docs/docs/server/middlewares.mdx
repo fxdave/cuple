@@ -47,7 +47,7 @@ To solve this, Cuple introduces a wrapper called **link**, and you can connect l
 ```ts
 const authLink = builder
   .headersSchema(
-    z.object({
+    z.looseObject({
       authorization: z.string(),
     })
   )
@@ -155,3 +155,9 @@ function createAdminModule(builder: CupleBuilder, userRepository: UserRepository
 }
 ```
 - note: `CupleBuilder` is an exported type from the `index.ts` file
+
+:::note[Why it works this way]
+
+- **Middlewares return data instead of attaching it to `req`.** `req.user` set by a middleware is invisible to TypeScript, and a route that forgot the middleware still compiles. Returned data is typed in `data`, and exists only on routes that chain the middleware.
+
+:::

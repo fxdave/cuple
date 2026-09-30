@@ -98,7 +98,7 @@ The first argument is an object containing 3 elements:
 builder
     .chain(auth)
     .bodySchema(
-      z.object({
+      z.strictObject({
         oldPassword: z.string(),
         password1: z.string().min(6),
         password2: z.string().min(6),
@@ -114,3 +114,10 @@ builder
 
     })
 ```
+
+:::note[Why it works this way]
+
+- **A `result` next to the status code.** Status codes are too coarse to branch on: a `404` can mean "no such route" or "no such order". A `result` names the outcome, and TypeScript narrows by it.
+- **Handlers return instead of calling `res.send`.** Only a returned value is in the handler's type, and so in the client's. A response sent by hand is invisible to both.
+
+:::

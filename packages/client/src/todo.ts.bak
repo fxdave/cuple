@@ -1,0 +1,54 @@
+cuple
+  // replace the fetch method with something else
+  .withCustomMethod(<T extends (...args: unknown[]) => Promise<unknown>>(fetch: T) => {
+    return {
+      useQuerySuccessThrow(params: Parameters<T>) {
+        const [result, setResult] = useState<Awaited<ReturnType<typeof fetch>>>();
+        useAsyncEffect(async () => {
+          const result = await fetch(params);
+          setResult(result);
+        }, [params]);
+
+        return result;
+      },
+    };
+  })
+  // replace the parameters with something else
+  .withMiddleware<{ notify: true }>(async (parameters, waitForCall) => {
+    const { notify, ...restParameters } = parameters;
+
+    const result = await waitForCall(restParameters);
+    if (parameters.notify) {
+      // DO Notification
+    }
+
+    return result;
+  })
+  // replace the response with something else
+  .withMiddleware(async (parameters, waitForCall) => {
+    const result = await waitForCall(parameters);
+
+    return {
+      unwrap() {
+        if (result.statusCode === 500) {
+          throw new Error(result.message);
+        }
+        return result;
+      },
+    };
+  });
+
+const result = client.sayHi.get.useQuerySuccessThrow({
+  name: "David",
+});
+
+# B:
+
+const result = client.sayHi.get({
+  name: "David",
+  $mode: { successOrThrow: true }
+});
+const result = client.sayHi.get({
+  name: "David",
+  $mode: { notify: true }
+});

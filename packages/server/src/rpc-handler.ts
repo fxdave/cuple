@@ -1,6 +1,5 @@
-import express, { Request, Response } from "express";
-import { Express } from "express";
-import { ApiCaller, BuiltEndpoint } from "./builder";
+import type { Express, Request, Response } from "express";
+import type { BuiltEndpoint } from "./builder";
 
 export type InitRpcConfig = {
   path: string;
@@ -8,40 +7,64 @@ export type InitRpcConfig = {
 };
 
 type RecursiveApi = {
-  [Key in string]: ApiCaller<any, any, any, any, any, any> | RecursiveApi;
+  [Key in string]:
+    | {
+        tInput: any;
+        tOutput: any;
+        tMethod: any;
+        _handler: (req: any, res: any) => void;
+        _method: any;
+      }
+    | RecursiveApi;
 };
 
 export function initRpc(app: Express, config: InitRpcConfig) {
   const createRpcHandler = (method: string) => (req: Request, res: Response) => {
-    let requestInto;
+    let rpcData: any;
     if (method === "get" || method === "delete") {
-      requestInto = JSON.parse((req.query.data as string) || "");
+      rpcData = JSON.parse((req.query.data as string) || "{}");
+      Object.defineProperty(req, "body", {
+        value: rpcData.body,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
     } else {
-      requestInto = req.body;
+      rpcData = JSON.parse((req.headers["x-cuple-rpc"] as string) || "{}");
     }
-    req.params = requestInto.argument.params;
-    req.query = requestInto.argument.query;
-    if (requestInto.argument.headers)
-      Object.assign(req.headers, requestInto.argument.headers);
 
-    let endpoint: BuiltEndpoint<any, any, any> = config.routes as any;
-    for (const segment of requestInto.segments) {
+    // Direct assignment (e.g. req.query = ...) does not work for getter-only properties.
+    // Using Object.defineProperty creates an own property on the instance that shadows the prototype getter.
+    Object.defineProperty(req, "params", {
+      value: rpcData.params || {},
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+    Object.defineProperty(req, "query", {
+      value: rpcData.query || {},
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    let endpoint: BuiltEndpoint<any, any, any, any> = config.routes as any;
+    for (const segment of rpcData.segments) {
       endpoint = (endpoint as any)[segment] as any;
     }
 
-    if (method !== endpoint.method) {
+    if (method !== endpoint._method) {
       return res.status(400).send({
         message: "Method not allowed",
       });
     }
 
-    req.body = requestInto.argument.body;
-    endpoint.handler(req, res);
+    endpoint._handler(req, res);
   };
 
-  app.get(config.path, express.json(), createRpcHandler("get"));
-  app.post(config.path, express.json(), createRpcHandler("post"));
-  app.put(config.path, express.json(), createRpcHandler("put"));
-  app.patch(config.path, express.json(), createRpcHandler("patch"));
-  app.delete(config.path, express.json(), createRpcHandler("delete"));
+  app.get(config.path, createRpcHandler("get"));
+  app.post(config.path, createRpcHandler("post"));
+  app.put(config.path, createRpcHandler("put"));
+  app.patch(config.path, createRpcHandler("patch"));
+  app.delete(config.path, createRpcHandler("delete"));
 }

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "composite": true,
+    "module": "node16",
+    "moduleResolution": "node16",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../client/tsconfig.node.json" },
+    { "path": "../inspect" },
+    { "path": "../openapi" }
+  ]
+}

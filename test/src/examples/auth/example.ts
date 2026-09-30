@@ -1,7 +1,12 @@
+import {
+  apiResponse,
+  createBuilder,
+  initRpc,
+  success,
+  zodValidationError,
+} from "@cuple/server";
 import express from "express";
 import { z } from "zod";
-import { createBuilder, initRpc } from "@cuple/server";
-import { apiResponse, success, zodValidationError } from "@cuple/server";
 
 const app = express();
 app.use(express.json());
@@ -13,12 +18,12 @@ const users = [
 
 const auth = builder
   .headersSchema(
-    z.object({
+    z.looseObject({
       authorization: z.string(),
     }),
   )
   .middleware(async ({ data }) => {
-    if (data.headers["authorization"] == "sometoken")
+    if (data.headers.authorization === "sometoken")
       return {
         next: true,
         auth: {
@@ -52,7 +57,7 @@ export const routes = {
   setUserPassword: builder
     .chain(auth)
     .bodySchema(
-      z.object({
+      z.strictObject({
         oldPassword: z.string(),
         password1: z.string().min(6),
         password2: z.string().min(6),

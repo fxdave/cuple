@@ -1,0 +1,109 @@
+---
+sidebar_position: 4
+description: 'handled errors are typed values, unhandled ones go to <Boundary>'
+---
+
+# Errors
+
+Every failure is either handled or unhandled.
+
+ - **Handled** means your code listed it: `thenResolveAlso(["validation-error"])` on a request, `resolveAlso: ["not-found-error"]` on a read. It comes back as a typed value, and the component renders it like any data.
+ - **Unhandled** is everything else: a result nobody listed, a network failure nobody listed, a bug. It goes to the nearest `<Boundary>`, as a `CupleError` with a message that is always readable.
+
+```tsx
+const save = useAction(async (values: ContactValues) => {
+  const response = await fetchCuple(client.updateContact.put, { params: { id }, body: values })
+    .thenResolveAlso(["validation-error", "transport-error"]);
+  //   ^? success | validation-error | transport-error — all typed
+  if (response.result === "validation-error") showIssues(response.issues);
+  if (response.result === "transport-error") showOffline();
+  return response;
+});
+// A 403, a 500, a bug: unhandled. The nearest <Boundary> shows error.message.
+```
+
+## Handled: list it, get a value
+
+Any result the endpoint can return can be listed, and so can `"transport-error"`: no answer from the server at all (offline, DNS, a proxy's error page). Listing makes it part of the return type, so TypeScript checks you handle every case you listed, and nothing else reaches your code.
+
+| On | Write |
+| -- | ----- |
+| A request | `fetchCuple(...).thenResolveAlso(["validation-error", "transport-error"])` |
+| A read | `useGet(client.getNote, args, { resolveAlso: ["not-found-error"] })` |
+| A read inside `combine` | `get(client.getOrder, args, { resolveAlso: ["not-found-error"] })` |
+
+```ts
+type TransportErrorResult = { result: "transport-error"; statusCode: number | null; message: string };
+```
+
+## Unhandled: the nearest `<Boundary>`
+
+```tsx
+<Boundary
+  fallback={<Skeleton />}
+  error={(error, retry) => (
+    <p className="error">
+      {error.message} <button type="button" onClick={retry}>Retry</button>
+    </p>
+  )}
+>
+```
+
+`error` is a `CupleError`, whatever was thrown:
+
+| Field | Value |
+| ----- | ----- |
+| `kind` | `"response"`: the server answered with a result nobody listed. `"transport"`: no Cuple answer at all. `"bug"`: your code threw. |
+| `message` | Always readable. The server's message for `"response"` when it sent one; your own error's message for `"bug"` in development. Otherwise `errors.message` (default `"Something went wrong."`). |
+| `statusCode` | The HTTP status, when there was a response. |
+| `result` | For `"response"`: the result the server sent, e.g. `"forbidden-error"`. |
+| `cause` | What was actually thrown, for logging. |
+
+`errors.message` is set like any config, on the provider, a `<Boundary config>`, or one request:
+
+```tsx
+<Boundary config={{ errors: { message: "Couldn't load the report." } }} error={(e) => <p>{e.message}</p>}>
+```
+
+## Keeping the page: `"notify"`
+
+Some unhandled errors shouldn't replace a region: a failed row delete, a dropped connection. `errors.unhandled: "notify"` shows them with `errors.notify` (a toast, a banner) instead, and the page stays:
+
+```tsx file=../../../examples/react/src/App.tsx#config
+```
+
+ - `unhandled` is `"boundary"` (the default), `"notify"`, or a function choosing per `CupleError`: here a dropped connection is a toast, and anything else goes to the boundary.
+ - Set it on the provider, on a `<Boundary config>` for a region, or on one action's `config`.
+ - With `"notify"`, the action's `status` becomes `"failed"` and `error` is the `CupleError`, so the component can show something locally too.
+
+A row action shouldn't take the page with it:
+
+```tsx file=../../../examples/react/src/App.tsx#note-row
+```
+
+A form handles what it can explain next to the fields, and notifies the rest:
+
+```tsx file=../../../examples/react/src/contacts.tsx#contact-form
+```
+
+## Reads
+
+A read that fails with something unlisted goes to the nearest `<Boundary>`. When a region can go without its data, let the boundary notify instead, and show nothing:
+
+```tsx
+<Boundary fallback={<Skeleton width="10rem" />} error="notify">
+  <Header />
+</Boundary>
+```
+
+For a failure that is a normal outcome (a deleted item), list it with `resolveAlso` and render it. See [Reading](./reading#expected-failures).
+
+ - NOTE: `"notify"` needs `config.errors.notify`. Without it, the error goes to the boundary above, saying what's missing.
+
+:::note[Why it works this way]
+
+- **List what you handle, instead of catching it.** `catch (error)` gives you `unknown`: a validation error's `issues` have to be narrowed out by hand, and a typo in a result name still compiles. A listed result is in the return type, with its real shape.
+- **Unhandled errors go to a boundary by default.** An error kept in `action.error` that no component renders is an error nobody sees. Sending it where a failed read goes makes the default visible; `"notify"` is a choice you make where it fits.
+- **One `CupleError` with a message.** The boundary is written once, for every kind of failure. Given raw errors, it would need to know about results, network errors and bugs. And a bug's own message can leak internals, so in production it's replaced by `errors.message`.
+
+:::

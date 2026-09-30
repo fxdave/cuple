@@ -86,3 +86,9 @@ builder
 Cuple uses Express under the hood, giving you full access to `req` and `res` objects.
 With raw handlers, all automatic behavior is disabled, allowing you to use Express as designed while benefiting from Cuple's type-safe composition features.
 Please check express tutorials for more.
+
+:::note[Why it works this way]
+
+- **Raw handlers are separate.** A file download or a CSV isn't a typed result. Keeping them in their own handlers keeps every other route fully typed, instead of widening all responses to "anything".
+
+:::
