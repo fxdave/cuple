@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"vite\"",
     "dev:server": "cd ../.. && tsx watch examples/docs/todos/server.ts",
+    "dev:orders": "concurrently \"cd ../.. && tsx watch examples/docs/orders/server.ts\" \"vite --config vite.config.ts orders\"",
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },

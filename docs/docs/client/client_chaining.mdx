@@ -42,8 +42,8 @@ await fetchCuple(client.getProfile.get); // TYPE ERROR
 
 :::note[Why it works this way]
 
-- **Required headers are part of the type.** A route whose schema needs `authorization` can't be called without it, so a forgotten header is a compile error, not a `401` in production.
-- **`middleware` runs per request.** Tokens expire and refresh; reading them at request time means a long-lived client never sends a stale one.
-- **`key` is separate from `middleware`.** A cache can't see what middleware injects, and shouldn't: the token changes, the user doesn't. Naming the identity explicitly keeps cached data from leaking between accounts without discarding it on every token refresh.
+- **Required headers are part of the type.** A forgotten auth header is otherwise a `401` found in production. When the route's schema requires it, a call without it doesn't compile.
+- **`middleware` runs per request.** Tokens expire. Reading the token when the request is sent means a long-lived client never sends a stale one.
+- **`key` is separate from `middleware`.** A cache can't see what middleware injects, and the token changes while the user doesn't. Naming the identity keeps cached data apart per account, without discarding it on every token refresh.
 
 :::

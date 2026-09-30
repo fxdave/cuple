@@ -50,9 +50,7 @@ Each setting cascades on its own: the request's wins over the Boundary's, over t
 
 :::note[Why it works this way]
 
-- **One object, one shape everywhere.** You learn the settings once; the provider, a `<Boundary>` and a single request all take the same `config`, so moving a setting from one request to a whole region is a copy-paste.
-- **Grouped by concern.** `cache`, `errors` and `loading` are what you tune, and they're easy to find by name in the editor instead of a flat list of flags.
-- **Each setting cascades on its own.** A region that only changes `keep` shouldn't silently reset the app's `refreshOnRead`. Merging per setting keeps overrides small and local.
-- **Layout-shaped defaults.** `<Boundary>` already marks a region of the UI; attaching config there follows how people think about screens ("this report panel") rather than individual endpoints.
+- **The same config in three places.** A setting often needs to change for one region (a report that should drop its data when it's closed) or one request. With one shape at every level, moving a setting from a request to a region is a copy-paste, not a different API.
+- **Each setting cascades on its own.** A region that only changes `keep` shouldn't reset the app's `refreshOnRead`. Merging per setting keeps overrides small.
 
 :::

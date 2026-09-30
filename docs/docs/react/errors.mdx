@@ -102,9 +102,8 @@ For a failure that is a normal outcome (a deleted item), list it with `resolveAl
 
 :::note[Why it works this way]
 
-- **Types follow what you handle.** An error you care about deserves the same type-safety as data, so you list it and it becomes part of the return type. An `error: unknown` you have to narrow with `instanceof` is where bugs hide.
-- **Unhandled errors are never silent.** An action's error doesn't end up only in the console, or in a `status` nobody renders: by default it goes to the same `<Boundary>` a failed read goes to. `run()` never rejects, so there is no second path to forget a `catch` on.
-- **One readable shape at the edge.** The boundary is written once, for every kind of failure, so it gets one shape with a message it can always show. Internals of a bug stay out of production UIs.
-- **Transport failures are just another result.** Offline is a normal state for a form; it's listed the same way as `validation-error`, instead of needing a second mechanism.
+- **List what you handle, instead of catching it.** `catch (error)` gives you `unknown`: a validation error's `issues` have to be narrowed out by hand, and a typo in a result name still compiles. A listed result is in the return type, with its real shape.
+- **Unhandled errors go to a boundary by default.** An error kept in `action.error` that no component renders is an error nobody sees. Sending it where a failed read goes makes the default visible; `"notify"` is a choice you make where it fits.
+- **One `CupleError` with a message.** The boundary is written once, for every kind of failure. Given raw errors, it would need to know about results, network errors and bugs. And a bug's own message can leak internals, so in production it's replaced by `errors.message`.
 
 :::

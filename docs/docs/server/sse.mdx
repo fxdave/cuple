@@ -30,7 +30,7 @@ In this example:
 ## Client
 
 ```ts
-const stream = await fetchCupleSSE(client.activity.get, {}).thenUnwrap();
+const stream = await fetchCupleSSE(client.activity.get, {});
 
 for await (const event of stream) {
   console.log(event.by, event.action);
@@ -43,7 +43,7 @@ In React, use [useStream](../react/streams).
 
 :::note[Why it works this way]
 
-- **Middlewares first, then the stream.** Auth and validation fail as normal typed JSON results, before any event is sent, so the client handles a rejected stream like any failed request.
-- **Generators stop on disconnect.** An abandoned connection shouldn't keep a subscription or a loop alive on the server.
+- **Middlewares run before the stream opens.** Once an event stream has started, an error can't change the HTTP status. Running auth and validation first means a rejection is a normal JSON result, handled like any failed request.
+- **Generators stop on disconnect.** A client that navigates away would otherwise leave a subscription or a loop running on the server.
 
 :::

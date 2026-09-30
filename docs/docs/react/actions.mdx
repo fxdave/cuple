@@ -19,7 +19,7 @@ An action is your own async function. `useAction` runs it and gives you its stat
 
 In this example:
 
- - `thenResolveAlso(["validation-error"])` keeps the failure the form handles as a value. Both the schema's error and the custom one come back as `validation-error`, with `path: ["text"]`.
+ - `fetchCuple` resolves with `success` and throws anything else. `thenResolveAlso(["validation-error"])` lists the one failure this form handles, so it comes back as a typed value instead. Both the schema's error and the custom one are `validation-error`, with `path: ["text"]`.
  - `create.value` is what the function returned, typed, so the form can show the issue next to the input.
  - `refresh: { success: [...] }` names what the action changes, and when: the todos are refetched only when one was created. Nothing else is.
 
@@ -39,6 +39,7 @@ In this example:
 ```tsx file=../../../examples/docs/todos/app.tsx#todo-item
 ```
 
+ - Nothing to handle here but success, so the plain `fetchCuple` is enough: a failure throws, and goes where unhandled errors go.
  - Call `useAction` in the item's component, so each todo has its own `isPending`.
  - `aria-busy` and the `pending` class only say what is busy. The stylesheet dims the row and puts a spinner in the button, so the markup stays short and the button keeps its size.
  - `failed` shows up here only when unhandled errors are notified (the docs app notifies a dropped connection). Otherwise the nearest `<Boundary>` shows it.
@@ -74,10 +75,9 @@ Errors never end up only in the console. See [Errors](./errors) for all the case
 
 :::note[Why it works this way]
 
-- **An action is your own function.** Sequencing, conditions, a navigation after saving: it's all plain `async` code you can read top to bottom, instead of a mutation config with callbacks to wire together.
-- **State is an object, not a tuple.** `create.status`, `create.value`, `create.run` read the same in every component, and every state (idle, pending, done, failed) is there to render.
-- **Refresh is explicit.** Automatic invalidation guesses and over-fetches; a list you wrote says exactly what a write changes. A stale entry in that list shows up as stale data in the first manual test, not as a mystery refetch.
-- **`run` never rejects.** It fits straight into `onClick` and form submit handlers with no `catch`, and errors can't become unhandled promise rejections.
-- **The latest run wins.** Double clicks and slow networks can't make the screen show an older result after a newer one.
+- **Your own function, not a mutation config.** Real writes are sequences: save, then upload, then navigate. Split into `mutationFn`, `onSuccess` and `onError` options, the order things run in becomes something to look up. An async function reads top to bottom.
+- **A refresh list, not automatic invalidation.** Invalidation by guessed keys either misses something (a stale screen) or refetches everything (a slow one), and neither shows in the code. A list next to the write can be reviewed, and a missing entry shows up as stale data the first time you try it.
+- **`run` never rejects.** A rejected promise in an `onClick` is an unhandled rejection that only reaches the console, and a form library awaiting a rejected submit can leave `isSubmitting` stuck. Errors go to a boundary or `notify` instead.
+- **The latest run wins.** Two quick clicks on a slow network can finish in either order; showing whichever finished last could show the older result.
 
 :::

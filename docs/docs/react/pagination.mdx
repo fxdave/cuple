@@ -18,8 +18,6 @@ In this example:
 
 :::note[Why it works this way]
 
-- **Pages are ordinary cached calls.** Refreshing, sharing and errors work the same as for any read; there's no separate infinite-query cache with its own rules.
-- **The next arguments come from the last page.** Cursor, offset or page number: your function derives them, so the hook doesn't need to know your API's paging style.
-- **Success only in `pages`.** A failed page goes to the boundary, so the list never mixes data and errors you'd need to filter.
+- **Pages are ordinary cached calls.** Infinite-query caches have their own rules for refetching and invalidation. Here a page is a normal read, so `refresh: [client.getNotes]` refreshes the loaded pages like any other read, and follows cursors that moved when an item was deleted.
 
 :::

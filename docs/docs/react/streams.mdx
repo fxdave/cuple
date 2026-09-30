@@ -21,8 +21,7 @@ In this example:
 
 :::note[Why it works this way]
 
-- **Events aren't cached.** A stream is a feed of changes, not a value; storing it would grow without bound and hide what the component actually needs. You keep what matters and refresh the reads it affects.
-- **A rejected connection is an error, a dropped one is a state.** A `401` means something is wrong and belongs to the boundary; a flaky network is normal for a long-lived connection and shouldn't replace the page.
-- **The lifetime follows the component.** Open while mounted, closed on unmount, reopened on new arguments or a new key: no manual subscription bookkeeping.
+- **Events aren't kept.** A stream is a series of changes, not a value; kept in memory, it grows forever. Usually an event means "something changed", and refreshing the reads it affects keeps one source of truth for what's on screen.
+- **A rejected connection throws, a dropped one doesn't.** A `401` won't fix itself, so it's an error for the boundary. A long-lived connection dropping is normal (a laptop going to sleep), so it's state the component shows while you reconnect.
 
 :::

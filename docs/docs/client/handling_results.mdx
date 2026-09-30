@@ -1,70 +1,62 @@
 ---
 sidebar_position: 3
-description: 'fetchCuple, thenUnwrap, thenResolveAlso, transport errors'
+description: 'fetchCuple, thenResolveAlso, transport errors'
 ---
 
 # Handling results
 
-`fetchCuple` sends one request and returns a `CuplePromise`: a `Promise` with a few methods that choose which results your code handles.
+`fetchCuple` resolves with `success`. Anything else rejects:
 
 ```ts
 import { fetchCuple } from "@cuple/client";
 
-const response = await fetchCuple(client.createUser.post, { body: { email } });
-if (response.result === "success") console.log(response.user);
+const { user } = await fetchCuple(client.getUser.get, { params: { id } });
 ```
 
-By default every answer from the server resolves, whatever its status: a `404` is `{ result: "not-found-error", statusCode: 404, ... }`, typed. Only a missing answer rejects.
+| Outcome | Rejects with |
+| ------- | ------------ |
+| Any other result: a `404`, a `validation-error` | `CupleUnexpectedResponseError`, with the `response` |
+| No answer: offline, DNS, CORS, a proxy's HTML error page | `CupleTransportError` |
+| `signal` aborted | `DOMException` (`AbortError`) |
 
-| Outcome | | With |
-| ------- | - | ---- |
-| The server answered in Cuple's format, any status | resolves | the typed result, with `statusCode` |
-| No answer: offline, DNS, CORS, a proxy's HTML error page | rejects | `CupleTransportError` |
-| `signal` aborted | rejects | `DOMException` (`AbortError`) |
+## Handling a failure: list it
 
-## Only what you handle
-
-Most code handles success and maybe one or two failures. Say which, and the type narrows to them; anything else rejects with `CupleUnexpectedResponseError`:
+When your code has something to do with a failure, list it. It resolves as a typed value instead of rejecting:
 
 ```ts
-// success only
-const { user } = await fetchCuple(client.getUser.get, { params: { id } }).thenUnwrap();
-
-// success, or the validation errors a form shows
-const res = await fetchCuple(client.createUser.post, { body }).thenResolveAlso(["validation-error"]);
+const res = await fetchCuple(client.createUser.post, { body }).thenResolveAlso([
+  "validation-error",
+]);
 //    ^? success | validation-error
 
-// exactly these results; "success" is not implied
-const res = await fetchCuple(client.getUser.get, { params: { id } }).thenResolveOn(["not-found-error"]);
+if (res.result === "validation-error") showIssues(res.issues);
 ```
 
-## Transport errors as values
+ - Anything you didn't list still rejects, so there's no case you forgot to check.
+ - `"transport-error"` can be listed like any result, for code that has something to do when the server can't be reached (a form that keeps the user's input). It resolves as `{ result: "transport-error", statusCode, message }`. `statusCode` is set when something answered, but not in Cuple's format (a gateway page).
 
-`"transport-error"` can be listed like any result. A network failure then resolves instead of rejecting:
+## Other lists
+
+| Method | Resolves with |
+| ------ | ------------- |
+| `.thenResolveAlso([...])` | `success`, plus the listed results |
+| `.thenResolveOn([...])` | exactly the listed results; `"success"` is not implied |
+| `.thenResolveAll()` | every result the server sent, for code that forwards responses as they are (a proxy, an MCP tool) |
+| `.thenWrapAbort()` | adds an abort, as `{ result: "abort" }` |
 
 ```ts
-const res = await fetchCuple(client.saveDraft.put, { body }).thenResolveAlso(["transport-error"]);
-if (res.result === "transport-error") showOffline(); // { statusCode: number | null, message }
-```
-
-`statusCode` is set when something answered but not in Cuple's format (a gateway page); `null` when nothing answered.
-
-## Aborts
-
-```ts
-const res = await fetchCuple(client.search.get, { query, signal }).thenWrapAbort();
-if (res.result === "abort") return;
+const res = await fetchCuple(client.search.get, { query, options: { signal } }).thenWrapAbort();
+if (res.result === "abort") return; // a newer search replaced this one
 ```
 
 ## In React
 
-`@cuple/react` builds on the same lists: `useGet(..., { resolveAlso })` for reads, `thenResolveAlso` inside `useAction`. Whatever nobody listed goes to the nearest `<Boundary>` with a readable message. See [Errors](../react/errors).
+`@cuple/react` follows the same rule: `useGet` gives you `success`, and `{ resolveAlso: [...] }` lists what the component renders instead. Inside `useAction`, use `thenResolveAlso`. Whatever nobody listed goes to the nearest `<Boundary>`. See [Errors](../react/errors).
 
 :::note[Why it works this way]
 
-- **API failures are data.** A `404` or a `validation-error` is a normal answer the server chose to send, so it's typed like success and your code can switch on `result`. Only when there's no answer to type does the promise reject.
-- **You say what you handle, and the type follows.** Checking every possible result at every call site is noise; listing the few you handle narrows the type to exactly those, and anything else becomes an exception that can't be silently ignored.
-- **The HTTP status is never interpreted.** Which `result` goes with which status is the server's decision, so the client never guesses that "4xx means error".
-- **One mechanism for every failure you handle.** An offline form is listed the same way as a validation error, instead of needing a `try/catch` next to a result switch.
+- **The common case is success.** Most calls have nothing to do with a failure except show it somewhere generic, so checking `result === "success"` at every call site is noise, and forgetting it hands an error to code that expects data.
+- **A failure you handle is typed.** Listing it puts it in the return type, so TypeScript checks you handle it, with its real shape (`issues` on a validation error). A `try/catch` gives you `unknown`.
+- **One rule everywhere.** `fetchCuple`, `useGet` and `useAction` all start from success and widen by listing, so there's one habit to learn.
 
 :::

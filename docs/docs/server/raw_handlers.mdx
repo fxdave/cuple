@@ -89,6 +89,6 @@ Please check express tutorials for more.
 
 :::note[Why it works this way]
 
-- **An escape hatch, clearly marked.** Non-JSON responses can't be typed as results, so they live in separate handlers you call with `fetch`, instead of weakening the types of every other route.
+- **Raw handlers are separate.** A file download or a CSV isn't a typed result. Keeping them in their own handlers keeps every other route fully typed, instead of widening all responses to "anything".
 
 :::

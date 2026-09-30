@@ -45,7 +45,7 @@ app.listen(8080, () => {
 
 :::note[Why it works this way]
 
-- **Plain Express underneath.** Cuple adds types and routing to an app you already know how to deploy, log and extend, instead of replacing your server.
-- **Routes are a value.** `routes` is an ordinary object; its type is the API contract the client, OpenAPI and MCP all read from, so there's one source of truth.
+- **Express underneath.** Logging, CORS, sessions and deployment stay as they are in an Express app; Cuple routes are added next to the ones you have.
+- **Routes are one exported object.** Its type is the contract: the client, the OpenAPI generator and the MCP server all read it, so they can't disagree.
 
 :::

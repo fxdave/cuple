@@ -85,6 +85,6 @@ for (const route of inspectRoutes("./src/routes.ts", "routes")) {
 
 :::note[Why it works this way]
 
-- **Generated from the source, not annotated.** The spec comes from the same types the client uses, so it can't drift from what the server actually returns.
+- **Generated from the source.** Hand-written specs and annotations drift from what the handlers return. Reading the same types the client uses keeps the spec true without extra code.
 
 :::

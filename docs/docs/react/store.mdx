@@ -90,10 +90,8 @@ True while any read, refresh or action runs. For a global progress bar.
 
 :::note[Why it works this way]
 
-- **A store object, not a hidden singleton.** You create it, so tests get a fresh one and plain code (sign-in, SSE handlers, router loaders) can use it without React.
-- **Refresh keeps data on screen.** Replacing content with a spinner on every refetch makes pages jump; the old data stays until the new data lands, and background work is shown with `useIsFetching()`.
-- **Only what's read is refetched.** Unread data is dropped and loads fresh later, so a refresh never fetches data for screens nobody is looking at, and deleted items don't 404.
-- **Keys instead of clearing.** Switching accounts with `refreshKeys` refetches only what depends on the account, and keeps the rest; `clear` is for when nothing may stay, like sign-out.
-- **Blocking loading is opt-in.** A full-page overlay stops the user from working, so it's reserved for the few steps that must finish first.
+- **Refreshes keep the old data on screen.** Swapping content for a spinner on every refetch makes the page jump under the user's cursor. The old data stays until the new data lands, and `useIsFetching()` says something is updating.
+- **Only what's read is refetched.** Refetching every cached call of an endpoint spends requests on screens nobody is looking at, and refetching a deleted item 404s. Unread entries are dropped instead, and load fresh when they're read again.
+- **`refreshKeys`, not a clear.** Clearing on an account switch refetches everything, including data that doesn't depend on the account, and flashes every skeleton at once. Re-reading only what the key changed keeps the rest.
 
 :::

@@ -158,7 +158,6 @@ function createAdminModule(builder: CupleBuilder, userRepository: UserRepository
 
 :::note[Why it works this way]
 
-- **Middlewares return, they don't mutate `req`.** What a middleware adds is typed in `data`, and a failure it returns is a typed result the client sees. Nothing is attached to the request by convention.
-- **Links are values.** `buildLink()` gives you something to import, compose and inject dependencies into, so auth and roles are shared without copy-pasting schemas.
+- **Middlewares return data instead of attaching it to `req`.** `req.user` set by a middleware is invisible to TypeScript, and a route that forgot the middleware still compiles. Returned data is typed in `data`, and exists only on routes that chain the middleware.
 
 :::

@@ -45,8 +45,7 @@ Deleting the contact whose form is open closes the form inside the action, so th
 
 :::note[Why it works this way]
 
-- **The server is the source of truth for validation.** Rules like "email already in use" can only be checked there, so every rule comes back the same way and the form has one path for showing them.
-- **No form integration layer.** `run` is a plain async function that resolves when everything is done, which is exactly what `handleSubmit` expects. There's no Cuple-specific form adapter to learn.
-- **Handled errors stay next to the input.** A validation error or a dropped connection is something the user can fix right there, so it's listed and rendered in the form instead of going to a boundary that would replace it.
+- **The server validates.** Rules like "email already in use" can only be checked there, and a client-side copy of the others drifts. Every rule comes back as a `validation-error` with a path, so the form has one way to show all of them.
+- **No form adapter.** `run` resolves when the save and its refresh are done, which is exactly what `handleSubmit` waits for. react-hook-form's `isSubmitting` covers the whole save without glue code.
 
 :::

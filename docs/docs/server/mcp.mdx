@@ -45,7 +45,7 @@ In this example:
 
 :::note[Why it works this way]
 
-- **Through the client, not around it.** Tools call the same endpoints your app does, with the same middlewares and validation, so an agent can't do anything a client couldn't.
-- **No headers in tool input.** Credentials come from your code, never from what an agent decides to send.
+- **Tools call through the client.** An agent gets the same validation, middlewares and auth as your app, so it can reach nothing a normal client can't.
+- **Headers aren't tool input.** Credentials come from your code; an agent can't choose whose token it sends.
 
 :::

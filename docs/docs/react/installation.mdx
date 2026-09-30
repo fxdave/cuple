@@ -83,9 +83,7 @@ expect(await screen.findByText("milk")).toBeDefined();
 
 :::note[Why it works this way]
 
-- **One mental model: `fetchCuple` with memory.** You already know how a request behaves; the hooks add a cache and a loading state, not a new query language. Anything you can `await`, you can put in an action.
-- **Nothing refreshes behind your back.** Refetch-on-focus and timers make a screen change while the user is reading it, and make bugs hard to reproduce. Here, data changes only for a reason you can point at in the code.
-- **Suspense and boundaries carry loading and errors.** Components read data as if it's already there, so there are no `isLoading`/`error` branches to forget, and where loading and error UI appears is decided by the layout.
-- **The store is plain code too.** Sign-in, SSE handlers and router loaders aren't components; they use the same store the hooks use, not a second API.
+- **Most data bugs are timing bugs.** A screen that refetches on window focus, on mount or on a timer changes while the user is reading it, and the bug report says "sometimes the list jumps back". Here, cached data changes only for a reason written in the code: an action's `refresh`, a poll you configured, a call to the store.
+- **A store you create, not a hidden global.** Sign-in, an SSE handler and a router loader aren't components, but they need to refresh or clear data. They use the same store the hooks use, and each test can start from a fresh one.
 
 :::

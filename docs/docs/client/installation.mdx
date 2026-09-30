@@ -33,21 +33,25 @@ export const client = createClient<typeof routes>({
 import { fetchCuple } from "@cuple/client";
 
 async function getPost(id: number) {
-  const response = await fetchCuple(client.getPost.get, { params: { id } });
+  // Resolves with success; any other result throws.
+  const { post } = await fetchCuple(client.getPost.get, { params: { id } });
+  return post;
+}
 
-  console.log(response.post); // type error: it may be an error result
-
-  if (response.result === "success") {
-    console.log(response.post); // no type error
-  }
+async function findPost(id: number) {
+  // A failure you handle is listed, and typed.
+  const res = await fetchCuple(client.getPost.get, { params: { id } }).thenResolveAlso([
+    "not-found-error",
+  ]);
+  return res.result === "not-found-error" ? null : res.post;
 }
 ```
 
-See [Handling results](./handling_results) for keeping only the results you handle.
+See [Handling results](./handling_results).
 
 :::note[Why it works this way]
 
-- **No code generator.** The client's types come straight from `typeof routes`, so a server change shows up as a type error on the client the moment you save, with no build step to forget.
-- **One RPC path.** Without generated code the client can't know each route's URL, so requests go to one path (`/rpc`) and name the route. Routes with `.path()` are still plain REST for everyone else.
+- **No code generator.** A generated client is only as fresh as its last generation; forget that step, and the client compiles against an old API. Here the types come from `typeof routes`, so a server change is a client type error as soon as you save.
+- **One RPC path.** Without generated code, the client can't know each route's URL, so requests name the route on one path (`/rpc`). Routes with `.path()` are still plain REST for other clients.
 
 :::
