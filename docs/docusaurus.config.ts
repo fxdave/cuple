@@ -25,7 +25,7 @@ const config: Config = {
   projectName: "cuple", // Usually your repo name.
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
+  markdown: { hooks: { onBrokenMarkdownLinks: "warn" } },
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -81,44 +81,42 @@ const config: Config = {
         srcDark: "img/cuple_dark_export.svg",
       },
       items: [
-        {
-          type: "docSidebar",
-          sidebarId: "clientSidebar",
-          position: "left",
-          label: "Client Docs",
-        },
-        {
-          type: "docSidebar",
-          sidebarId: "serverSidebar",
-          position: "left",
-          label: "Server Docs",
-        },
-        {
-          type: "docSidebar",
-          sidebarId: "reactSidebar",
-          position: "left",
-          label: "React",
-        },
+        { type: "docSidebar", sidebarId: "docsSidebar", position: "left", label: "Docs" },
         { type: "custom-versions", position: "right" },
         {
-          href: "https://github.com/fxdave/react-express-cuple-boilerplate",
-          label: "Try the Boilerplate",
-          position: "right",
-        },
-        {
-          href: "https://stackblitz.com/~/github.com/fxdave/react-express-cuple-boilerplate/tree/stackblitz?file=backend/src/index.ts",
-          label: "Try in StackBlitz",
-          position: "right",
-        },
-        {
           href: "https://github.com/fxdave/cuple",
-          label: "GitHub",
           position: "right",
+          className: "header-github-link",
+          "aria-label": "GitHub repository",
         },
       ],
     },
     footer: {
       style: "light",
+      links: [
+        {
+          title: "Docs",
+          items: [
+            { label: "Server", to: "/docs/category/server" },
+            { label: "Client", to: "/docs/category/client" },
+            { label: "React", to: "/docs/category/react" },
+          ],
+        },
+        {
+          title: "Try it",
+          items: [
+            { label: "Boilerplate", href: "https://github.com/fxdave/react-express-cuple-boilerplate" },
+            {
+              label: "StackBlitz",
+              href: "https://stackblitz.com/~/github.com/fxdave/react-express-cuple-boilerplate/tree/stackblitz?file=backend/src/index.ts",
+            },
+          ],
+        },
+        {
+          title: "More",
+          items: [{ label: "GitHub", href: "https://github.com/fxdave/cuple" }],
+        },
+      ],
       logo: {
         srcDark: "/img/cuple_dark_export.svg",
         src: "/img/cuple_light_export.svg",

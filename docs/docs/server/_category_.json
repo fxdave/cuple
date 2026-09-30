@@ -1,8 +1,8 @@
 {
-    "label": "Server",
-    "position": 2,
-    "link": {
-        "type": "generated-index",
-        "description": "Learn how to use the client"
-    }
+  "label": "Server",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Define routes, validate what comes in, and return typed results"
+  }
 }
