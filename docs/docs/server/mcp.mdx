@@ -5,47 +5,70 @@ description: 'Expose routes as MCP tools'
 
 # MCP
 
-With `@cuple/mcp`, AI agents can call your routes as [MCP](https://modelcontextprotocol.io) tools.
+With `@cuple/mcp`, AI agents can call your routes as [MCP](https://modelcontextprotocol.io) tools. Like [OpenAPI](./openapi), it reads your routes from the TypeScript source.
 
 ```bash
-npm i @cuple/mcp @cuple/inspect typescript
+npm i -D @cuple/mcp typescript
 ```
 
 ## Example
 
 ```ts
-import { createClient } from "@cuple/client";
-import { inspectRoutes } from "@cuple/inspect";
-import { createCupleMcpServer } from "@cuple/mcp";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { routes } from "./routes";
+// mcp.ts
+import { serveMcp } from "@cuple/mcp";
 
-const client = createClient<typeof routes>({ path: "http://localhost:8080/rpc" }).with({
-  middleware: () => ({ headers: { authorization: process.env.API_TOKEN } }),
-});
+serveMcp("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
+```
 
-const server = createCupleMcpServer({
-  routes: inspectRoutes("./src/routes.ts", "routes"),
-  client,
-});
+Then register it with your agent as a command. For example, in Claude Code:
 
-await server.connect(new StdioServerTransport());
+```bash
+claude mcp add my-api -- npx tsx mcp.ts
 ```
 
 In this example:
 
- - Every route becomes a tool, named after the route, e.g. `posts.getPost`.
- - `.meta({ description })` becomes the tool's description.
- - The tool's input is `params`, `query` and `body`, the same as `fetchCuple`'s.
- - The tools call your server through the client, so routes without `.path()` work as well.
+ - `"routes"` is the name of the exported variable that holds your routes, as for `generateOpenAPI`.
+ - Every route becomes a tool, named after the route, e.g. `posts.getPost`. `.meta({ description })` becomes the tool's description.
+ - A tool's input is what the route declares: `params`, `query`, `body` and `headers`, the same as `fetchCuple`'s.
+ - Tools call your running server at `url`, through the RPC endpoint, so routes without `.path()` work as well.
  - The response is given back as JSON. If it's not `success`, the tool call is marked as an error.
 
- - NOTE: Headers are not part of the tools' input, so the agent can't send or change them. Add them with the client's `middleware`.
- - NOTE: `inspectRoutes` reads your TypeScript source, so run the MCP server where the source is available.
+ - NOTE: `serveMcp` talks to the agent over stdin and stdout, so don't write logs to stdout in `mcp.ts`.
+ - NOTE: It reads your TypeScript source, so run it where the source is available.
+
+## Signing in
+
+The tools say what each route needs, headers included. With a login route and a route that requires `authorization`:
+
+```ts
+login: builder
+  .bodySchema(z.strictObject({ email: z.string(), password: z.string() }))
+  .post(async ({ data }) => success({ token: await signIn(data.body) })),
+
+listPosts: builder
+  .chain(authLink) // .headersSchema(z.looseObject({ authorization: z.string() }))
+  .get(async () => success({ posts })),
+```
+
+`listPosts`'s tool requires `headers.authorization`, so the agent calls `login` with the credentials you give it, and sends the token it gets back with the gated calls. There's nothing to configure.
+
+ - NOTE: The token goes through the conversation, like anything the agent reads. Give an agent an account with only the access it needs.
+
+## Other transports
+
+`createMcpServer` takes the same arguments and returns the server without connecting it, for a transport of your own:
+
+```ts
+import { createMcpServer } from "@cuple/mcp";
+
+const server = createMcpServer("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
+await server.connect(transport); // any transport from @modelcontextprotocol/sdk
+```
 
 :::note[Why it works this way]
 
-- **Tools call through the client.** An agent gets the same validation, middlewares and auth as your app, so it can reach nothing a normal client can't.
-- **Headers aren't tool input.** Credentials come from your code; an agent can't choose whose token it sends.
+- **Tools call your running server.** An agent gets the same validation, middlewares and auth as your app, so it can reach nothing a normal client can't.
+- **The route's types are the instructions.** An agent learns that `listPosts` needs `authorization` the same way it learns it needs `params`, so logging in first follows from the types, with no extra setup to keep in sync.
 
 :::

@@ -1,16 +1,13 @@
 import type { Server as HttpServer } from "node:http";
 import path from "node:path";
-import { createClient } from "@cuple/client";
-import { inspectRoutes } from "@cuple/inspect";
-import { createCupleMcpServer } from "@cuple/mcp";
+import { createMcpServer, type McpOptions } from "@cuple/mcp";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { app, type routes } from "./routes.fixture";
+import { app } from "./routes.fixture";
 
-const routeInfos = inspectRoutes(path.resolve(__dirname, "routes.fixture.ts"), "routes", {
-  tsconfigPath: path.resolve(__dirname, "../../tsconfig.json"),
-});
+const routesFile = path.resolve(__dirname, "routes.fixture.ts");
+const tsconfigPath = path.resolve(__dirname, "../../tsconfig.json");
 
 let http: HttpServer;
 let url: string;
@@ -22,8 +19,8 @@ beforeAll(async () => {
 });
 afterAll(() => http.close());
 
-async function connect(client: object) {
-  const server = createCupleMcpServer({ routes: routeInfos, client });
+async function connect(options: Partial<McpOptions> = {}) {
+  const server = createMcpServer(routesFile, "routes", { url, tsconfigPath, ...options });
   const mcp = new Client({ name: "test", version: "1.0.0" });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverSide), mcp.connect(clientSide)]);
@@ -35,10 +32,11 @@ const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
 
 describe("MCP", () => {
   it("lists a tool per route, with only the inputs the route takes", async () => {
-    const mcp = await connect(createClient<typeof routes>({ path: url }));
+    const mcp = await connect();
     const { tools } = await mcp.listTools();
 
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "auth.login",
       "createPost",
       "posts.getPost",
       "posts.search",
@@ -49,13 +47,22 @@ describe("MCP", () => {
     // Every query field is optional, so the query is too.
     const search = tools.find((tool) => tool.name === "posts.search")!;
     expect(search.inputSchema.required).toEqual([]);
-    // Headers are the client's job, never the model's.
+    // A route's headers are input like any other part, so the agent sees what it needs.
     const createPost = tools.find((tool) => tool.name === "createPost")!;
-    expect(Object.keys(createPost.inputSchema.properties!)).toEqual(["body"]);
+    expect(Object.keys(createPost.inputSchema.properties!).sort()).toEqual([
+      "body",
+      "headers",
+    ]);
+    expect(createPost.inputSchema.required).toContain("headers");
+    expect(createPost.inputSchema.properties!.headers).toMatchObject({
+      properties: { authorization: { type: "string" } },
+      required: ["authorization"],
+    });
+    expect(Object.keys(getPost.inputSchema.properties!)).toEqual(["params"]);
   });
 
   it("calls routes through the RPC endpoint, including ones without a path", async () => {
-    const mcp = await connect(createClient<typeof routes>({ path: url }));
+    const mcp = await connect();
 
     const found = await mcp.callTool({
       name: "posts.getPost",
@@ -72,7 +79,7 @@ describe("MCP", () => {
   });
 
   it("marks non-success results as errors", async () => {
-    const mcp = await connect(createClient<typeof routes>({ path: url }));
+    const mcp = await connect();
     const missing = await mcp.callTool({
       name: "posts.getPost",
       arguments: { params: { id: 2 } },
@@ -82,24 +89,25 @@ describe("MCP", () => {
     expect(text(missing)).toMatchObject({ result: "not-found", statusCode: 404 });
   });
 
-  it("sends headers from the client's middleware", async () => {
-    const client = createClient<typeof routes>({ path: url });
-    const call = { name: "createPost", arguments: { body: { title: "Hi" } } };
+  it("an agent can log in, and send the token to a gated route", async () => {
+    const mcp = await connect();
+    const createPost = (headers?: object) =>
+      mcp.callTool({ name: "createPost", arguments: { body: { title: "Hi" }, headers } });
 
-    const anonymous = await (await connect(client)).callTool(call);
-    expect(anonymous.isError).toBe(true);
+    expect((await createPost()).isError).toBe(true);
 
-    const authed = client.with({
-      middleware: () => ({ headers: { authorization: "secret" } }),
+    const login = await mcp.callTool({
+      name: "auth.login",
+      arguments: { body: { password: "hunter2" } },
     });
-    const created = await (await connect(authed)).callTool(call);
+    const { token } = text(login);
+
+    const created = await createPost({ authorization: `Bearer ${token}` });
     expect(text(created)).toMatchObject({ result: "success", title: "Hi" });
   });
 
   it("reports network failures as tool errors", async () => {
-    const mcp = await connect(
-      createClient<typeof routes>({ path: "http://localhost:1/rpc" }),
-    );
+    const mcp = await connect({ url: "http://localhost:1/rpc" });
     const result = await mcp.callTool({ name: "posts.search", arguments: {} });
 
     expect(result.isError).toBe(true);
@@ -107,7 +115,7 @@ describe("MCP", () => {
   });
 
   it("rejects unknown tools", async () => {
-    const mcp = await connect(createClient<typeof routes>({ path: url }));
+    const mcp = await connect();
     await expect(mcp.callTool({ name: "nope", arguments: {} })).rejects.toThrow(
       /Unknown tool/,
     );

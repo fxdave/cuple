@@ -1,7 +1,8 @@
-import { fetchCuple } from "@cuple/client";
-import type { RouteInfo, Schema } from "@cuple/inspect";
+import { createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
+import { inspectRoutes, type RouteInfo, type Schema } from "@cuple/inspect";
 import { convertSchemaToOpenAPI } from "@cuple/openapi";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -10,21 +11,22 @@ import {
   type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
-export type CreateCupleMcpServerOptions = {
-  /** From `inspectRoutes`. */
-  routes: RouteInfo[];
-  /**
-   * The client the tools call through. Headers are its job — set them with
-   * `client.with({ middleware })` — so the model can never send or override
-   * them.
-   */
-  client: object;
+export type McpOptions = {
+  /** Your server's RPC endpoint, e.g. `http://localhost:8080/rpc`. */
+  url: string;
+  /** Defaults to the nearest `tsconfig.json`. */
+  tsconfigPath?: string;
+  /** How the server introduces itself to the agent. Default: `"cuple"`. */
   name?: string;
   version?: string;
 };
 
-/** The request parts a tool takes. Headers are left to the client. */
-const INPUTS = ["params", "query", "body"] as const;
+/**
+ * The request parts a tool takes: whatever the route declares. A route that
+ * needs `authorization` says so in its tool, so the agent knows to log in and
+ * send the token.
+ */
+const INPUTS = ["params", "query", "body", "headers"] as const;
 
 /** One tool per route: its name, `.meta({ description })` and inputs. */
 export function routeToTool(route: RouteInfo): Tool {
@@ -52,22 +54,55 @@ function isRequired(schema: Schema) {
 }
 
 /**
+ * Serves your routes as MCP tools over stdio, the way agents start a local
+ * MCP server:
+ *
+ * ```ts
+ * serveMcp("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
+ * ```
+ *
+ * `variableName` is the exported variable that holds your routes, as for
+ * `generateOpenAPI`.
+ */
+export async function serveMcp(
+  filePath: string,
+  variableName: string,
+  options: McpOptions,
+) {
+  const server = createMcpServer(filePath, variableName, options);
+  await server.connect(new StdioServerTransport());
+  return server;
+}
+
+/**
+ * The MCP server {@link serveMcp} runs, not yet connected: for another
+ * transport, or a test.
+ *
  * Calls go through the RPC endpoint rather than the REST path, so routes
  * without `.path()` are tools too.
  */
-export function createCupleMcpServer(options: CreateCupleMcpServerOptions) {
+export function createMcpServer(
+  filePath: string,
+  variableName: string,
+  options: McpOptions,
+) {
+  const routes = inspectRoutes(filePath, variableName, {
+    tsconfigPath: options.tsconfigPath,
+  });
+  const byName = new Map(routes.map((route) => [route.name, route]));
+  const client = createClient<RecursiveApi>({ path: options.url });
+
   const server = new Server(
     { name: options.name ?? "cuple", version: options.version ?? "1.0.0" },
     { capabilities: { tools: {} } },
   );
-  const routes = new Map(options.routes.map((route) => [route.name, route]));
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: options.routes.map(routeToTool),
+    tools: routes.map(routeToTool),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const route = routes.get(request.params.name);
+    const route = byName.get(request.params.name);
     if (!route)
       throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
 
@@ -75,7 +110,7 @@ export function createCupleMcpServer(options: CreateCupleMcpServerOptions) {
     const input = Object.fromEntries(INPUTS.map((key) => [key, args[key]]));
     try {
       const response = await fetchCuple(
-        endpointOf(options.client, route),
+        endpointOf(client, route),
         input,
       ).thenResolveAll();
       return {
