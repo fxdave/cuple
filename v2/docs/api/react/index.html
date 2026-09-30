@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-api/react/index" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">@cuple/react | Cuple RPC</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://fxdave.github.io/cuple/v2/img/cuple_compact_light_export.svg"><meta data-rh="true" name="twitter:image" content="https://fxdave.github.io/cuple/v2/img/cuple_compact_light_export.svg"><meta data-rh="true" property="og:url" content="https://fxdave.github.io/cuple/v2/docs/api/react/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="@cuple/react | Cuple RPC"><meta data-rh="true" name="description" content="Reads, actions and a cache for React 19, built on fetchCuple."><meta data-rh="true" property="og:description" content="Reads, actions and a cache for React 19, built on fetchCuple."><link data-rh="true" rel="icon" href="/cuple/v2/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://fxdave.github.io/cuple/v2/docs/api/react/"><link data-rh="true" rel="alternate" href="https://fxdave.github.io/cuple/v2/docs/api/react/" hreflang="en"><link data-rh="true" rel="alternate" href="https://fxdave.github.io/cuple/v2/docs/api/react/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"API","item":"https://fxdave.github.io/cuple/v2/docs/category/api"},{"@type":"ListItem","position":2,"name":"@cuple/react","item":"https://fxdave.github.io/cuple/v2/docs/api/react/"}]}</script><link rel="stylesheet" href="/cuple/v2/assets/css/styles.8fc204b7.css">
+<script src="/cuple/v2/assets/js/runtime~main.3ae8069e.js" defer="defer"></script>
+<script src="/cuple/v2/assets/js/main.63f94a84.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"dark"),document.documentElement.setAttribute("data-theme-choice",t||"dark")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/cuple/v2/"><div class="navbar__logo"><img src="/cuple/v2/img/cuple_light_export.svg" alt="Cuple" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/cuple/v2/img/cuple_dark_export.svg" alt="Cuple" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/cuple/v2/docs/category/server">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/fxdave/cuple" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link header-github-link" aria-label="GitHub repository"></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search searchBarContainer_NW3z" dir="ltr"><input placeholder="Search" aria-label="Search" class="navbar__search-input" value=""><div class="loadingRing_RJI3 searchBarLoadingRing_YnHq"><div></div><div></div><div></div><div></div></div></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/cuple/v2/docs/category/server"><span class="categoryLinkLabel_W154">Server</span></a><button aria-label="Expand sidebar category &#x27;Server&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/cuple/v2/docs/category/client"><span class="categoryLinkLabel_W154">Client</span></a><button aria-label="Expand sidebar category &#x27;Client&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/cuple/v2/docs/category/react"><span class="categoryLinkLabel_W154">React</span></a><button aria-label="Expand sidebar category &#x27;React&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/cuple/v2/docs/category/api"><span class="categoryLinkLabel_W154">API</span></a><button aria-label="Collapse sidebar category &#x27;API&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/cuple/v2/docs/api/client/"><span class="linkLabel_WmDU">@cuple/client</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/cuple/v2/docs/api/mcp/"><span class="linkLabel_WmDU">@cuple/mcp</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/cuple/v2/docs/api/openapi/"><span class="linkLabel_WmDU">@cuple/openapi</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/cuple/v2/docs/api/react/"><span class="linkLabel_WmDU">@cuple/react</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/cuple/v2/docs/api/react-testing/"><span class="linkLabel_WmDU">@cuple/react/testing</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/cuple/v2/docs/api/server/"><span class="linkLabel_WmDU">@cuple/server</span></a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/cuple/v2/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/cuple/v2/docs/category/api"><span>API</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">@cuple/react</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>@cuple/react</h1></header>
+<p>Reads, actions and a cache for React 19, built on <code>fetchCuple</code>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="functions">Functions<a href="#functions" class="hash-link" aria-label="Direct link to Functions" title="Direct link to Functions" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="boundary">Boundary()<a href="#boundary" class="hash-link" aria-label="Direct link to Boundary()" title="Direct link to Boundary()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Boundary</strong>(<code>props</code>): <code>ReactNode</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/boundary.tsx#L30" target="_blank" rel="noopener noreferrer" class="">boundary.tsx:30</a></p>
+<p>Loading and error UI for everything inside it: a <code>&lt;Suspense&gt;</code> and an error
+boundary in one.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag class-name" style="color:rgb(78, 201, 176)">Boundary</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">fallback</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag script language-javascript tag class-name" style="color:rgb(78, 201, 176)">Spinner</span><span class="token tag script language-javascript tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript tag punctuation" style="color:rgb(212, 212, 212)">/&gt;</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">error</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">error</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> retry</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag script language-javascript tag class-name" style="color:rgb(78, 201, 176)">Failed</span><span class="token tag script language-javascript tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript tag attr-name" style="color:rgb(156, 220, 254)">onRetry</span><span class="token tag script language-javascript tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript tag script language-javascript" style="color:rgb(78, 201, 176)">retry</span><span class="token tag script language-javascript tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag script language-javascript tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript tag punctuation" style="color:rgb(212, 212, 212)">/&gt;</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><span class="token plain-text"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain-text">  </span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag class-name" style="color:rgb(78, 201, 176)">Orders</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">/&gt;</span><span class="token plain-text"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain-text"></span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;/</span><span class="token tag class-name" style="color:rgb(78, 201, 176)">Boundary</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><br></div></code></pre></div></div>
+<ul>
+<li class="">Without <code>fallback</code>, loading goes to the boundary above.</li>
+<li class="">Without <code>error</code>, errors go to the boundary above.</li>
+<li class=""><code>retry</code> drops what failed and renders again, which fetches it fresh.</li>
+</ul>
+<p>Place boundaries where the layout wants loading and error UI: a failing
+widget should not take the page with it.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters">Parameters<a href="#parameters" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="props">props<a href="#props" class="hash-link" aria-label="Direct link to props" title="Direct link to props" translate="no">​</a></h5>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="children">children?<a href="#children" class="hash-link" aria-label="Direct link to children?" title="Direct link to children?" translate="no">​</a></h6>
+<p><code>ReactNode</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="config">config?<a href="#config" class="hash-link" aria-label="Direct link to config?" title="Direct link to config?" translate="no">​</a></h6>
+<p><a href="#cupleconfig" class=""><code>CupleConfig</code></a></p>
+<p>Settings for everything inside, over the provider&#x27;s (or an outer
+Boundary&#x27;s), one setting at a time. Requests inside can still override them.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="error">error?<a href="#error" class="hash-link" aria-label="Direct link to error?" title="Direct link to error?" translate="no">​</a></h6>
+<p><code>&quot;notify&quot;</code> | ((<code>error</code>, <code>retry</code>) =&gt; <code>ReactNode</code>)</p>
+<p>What to show instead of the children when something inside fails. It
+gets a <a href="#cupleerror" class="">CupleError</a>: <code>error.message</code> is always readable (the
+server&#x27;s message, or <code>config.errors.message</code>). Or <code>&quot;notify&quot;</code>: pass it to
+<code>config.errors.notify</code>, and show nothing in
+this region while the rest of the page stays.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="fallback">fallback?<a href="#fallback" class="hash-link" aria-label="Direct link to fallback?" title="Direct link to fallback?" translate="no">​</a></h6>
+<p><code>ReactNode</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns">Returns<a href="#returns" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><code>ReactNode</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="combine">combine()<a href="#combine" class="hash-link" aria-label="Direct link to combine()" title="Direct link to combine()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>combine</strong>&lt;<code>TArgs</code>, <code>TValue</code>&gt;(<code>load</code>): <a href="#combined" class=""><code>Combined</code></a>&lt;<code>TArgs</code>, <code>TValue</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/combine.ts#L24" target="_blank" rel="noopener noreferrer" class="">combine.ts:24</a></p>
+<p>Combines several fetches into one cached value, written as a plain async
+function. Only needed for composition — a single endpoint is read directly.</p>
+<div class="language-ts codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-ts codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token keyword" style="color:rgb(86, 156, 214)">export</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> loadOrderWithCustomer </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">combine</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token keyword" style="color:rgb(86, 156, 214)">async</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> get </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> id</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token builtin" style="color:rgb(86, 156, 214)">number</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  </span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> order </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">await</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token plain">getOrder</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token plain">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> params</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> id </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  </span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> customer </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">await</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token plain">getCustomer</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token plain">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> params</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> id</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> order</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token plain">customerId </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  </span><span class="token keyword" style="color:rgb(86, 156, 214)">return</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> order</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> customer </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> order</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> customer </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">useGet</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">loadOrderWithCustomer</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token number" style="color:rgb(181, 206, 168)">5</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><br></div></code></pre></div></div>
+<p>Create combined reads at module level: a combined read&#x27;s identity is its cache identity,
+so one created during render would never hit the cache.</p>
+<p>Args must be JSON: they are the cache key.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters">Type Parameters<a href="#type-parameters" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="targs">TArgs<a href="#targs" class="hash-link" aria-label="Direct link to TArgs" title="Direct link to TArgs" translate="no">​</a></h5>
+<p><code>TArgs</code> = <code>undefined</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="tvalue">TValue<a href="#tvalue" class="hash-link" aria-label="Direct link to TValue" title="Direct link to TValue" translate="no">​</a></h5>
+<p><code>TValue</code> = <code>unknown</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-1">Parameters<a href="#parameters-1" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="load">load<a href="#load" class="hash-link" aria-label="Direct link to load" title="Direct link to load" translate="no">​</a></h5>
+<p>(<code>context</code>, <code>args</code>) =&gt; <code>Promise</code>&lt;<code>TValue</code>&gt;</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-1">Returns<a href="#returns-1" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><a href="#combined" class=""><code>Combined</code></a>&lt;<code>TArgs</code>, <code>TValue</code>&gt;</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="createcuplestore">createCupleStore()<a href="#createcuplestore" class="hash-link" aria-label="Direct link to createCupleStore()" title="Direct link to createCupleStore()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>createCupleStore</strong>(): <a href="#cuplestore" class=""><code>CupleStore</code></a></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L76" target="_blank" rel="noopener noreferrer" class="">store.ts:76</a></p>
+<p>Makes the cache. One per app; one per test. Configure it with <code>&lt;CupleProvider config&gt;</code>.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-2">Returns<a href="#returns-2" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><a href="#cuplestore" class=""><code>CupleStore</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cupleprovider">CupleProvider()<a href="#cupleprovider" class="hash-link" aria-label="Direct link to CupleProvider()" title="Direct link to CupleProvider()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>CupleProvider</strong>(<code>props</code>): <code>ReactNode</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/provider.tsx#L26" target="_blank" rel="noopener noreferrer" class="">provider.tsx:26</a></p>
+<p>Makes the store available to the hooks, with the app&#x27;s config. Once, at the root.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token keyword" style="color:rgb(86, 156, 214)">export</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> store </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">createCupleStore</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag class-name" style="color:rgb(78, 201, 176)">CupleProvider</span><span class="token tag" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag" style="color:rgb(78, 201, 176)">  </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">store</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">store</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag" style="color:rgb(78, 201, 176)">  </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">config</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">    errors</span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">:</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">      </span><span class="token tag script language-javascript function-variable function" style="color:rgb(220, 220, 170)">notify</span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">:</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">error</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript function" style="color:rgb(220, 220, 170)">toast</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">error</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">message</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">      </span><span class="token tag script language-javascript function-variable function" style="color:rgb(220, 220, 170)">unhandled</span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">:</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">error</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">error</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">kind</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">===</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript string" style="color:rgb(206, 145, 120)">&quot;transport&quot;</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">?</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript string" style="color:rgb(206, 145, 120)">&quot;notify&quot;</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">:</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript string" style="color:rgb(206, 145, 120)">&quot;boundary&quot;</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">    </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">  </span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag" style="color:rgb(78, 201, 176)"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token tag" style="color:rgb(78, 201, 176)"></span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><br></div></code></pre></div></div>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-2">Parameters<a href="#parameters-2" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="props-1">props<a href="#props-1" class="hash-link" aria-label="Direct link to props" title="Direct link to props" translate="no">​</a></h5>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="children-1">children<a href="#children-1" class="hash-link" aria-label="Direct link to children" title="Direct link to children" translate="no">​</a></h6>
+<p><code>ReactNode</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="config-1">config?<a href="#config-1" class="hash-link" aria-label="Direct link to config?" title="Direct link to config?" translate="no">​</a></h6>
+<p><a href="#cupleconfig" class=""><code>CupleConfig</code></a></p>
+<p>The app-wide defaults. <code>&lt;Boundary config&gt;</code> and each request&#x27;s <code>{ config }</code>
+override them, one setting at a time. Plain code using the store directly
+(<code>store.preload</code>, <code>store.refreshKeys</code>) follows this config too.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="store">store<a href="#store" class="hash-link" aria-label="Direct link to store" title="Direct link to store" translate="no">​</a></h6>
+<p><a href="#cuplestore" class=""><code>CupleStore</code></a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-3">Returns<a href="#returns-3" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><code>ReactNode</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="tocupleerror">toCupleError()<a href="#tocupleerror" class="hash-link" aria-label="Direct link to toCupleError()" title="Direct link to toCupleError()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>toCupleError</strong>(<code>error</code>, <code>fallback</code>): <a href="#cupleerror" class=""><code>CupleError</code></a></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L29" target="_blank" rel="noopener noreferrer" class="">errors.ts:29</a></p>
+<p>Makes any thrown value a <a href="#cupleerror" class="">CupleError</a>.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-3">Parameters<a href="#parameters-3" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="error-1">error<a href="#error-1" class="hash-link" aria-label="Direct link to error" title="Direct link to error" translate="no">​</a></h5>
+<p><code>unknown</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="fallback-1">fallback<a href="#fallback-1" class="hash-link" aria-label="Direct link to fallback" title="Direct link to fallback" translate="no">​</a></h5>
+<p><code>string</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-4">Returns<a href="#returns-4" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><a href="#cupleerror" class=""><code>CupleError</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="useaction">useAction()<a href="#useaction" class="hash-link" aria-label="Direct link to useAction()" title="Direct link to useAction()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>useAction</strong>&lt;<code>TArgs</code>, <code>T</code>&gt;(<code>fn</code>, <code>options?</code>): <a href="#action" class=""><code>Action</code></a>&lt;<code>TArgs</code>, <code>T</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L96" target="_blank" rel="noopener noreferrer" class="">use-action.ts:96</a></p>
+<p>Runs async work — usually a write — with its state, error routing and refresh.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> save </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">useAction</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  </span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">values</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token maybe-class-name">FormValues</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"> </span><span class="token arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">    </span><span class="token function" style="color:rgb(220, 220, 170)">fetchCuple</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">updateOrder</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">put</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> params</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> id </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> body</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> values </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">      </span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token method function property-access" style="color:rgb(220, 220, 170)">thenResolveAlso</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token punctuation" style="color:rgb(212, 212, 212)">[</span><span class="token string" style="color:rgb(206, 145, 120)">&quot;validation-error&quot;</span><span class="token punctuation" style="color:rgb(212, 212, 212)">]</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> refresh</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">[</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getOrder</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getOrders</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">]</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag" style="color:rgb(78, 201, 176)">form</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">onSubmit</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">form</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript method function property-access" style="color:rgb(220, 220, 170)">handleSubmit</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">save</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">run</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><span class="token plain-text"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain-text"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain">save</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">value</span><span class="token operator" style="color:rgb(212, 212, 212)">?.</span><span class="token plain">result </span><span class="token operator" style="color:rgb(212, 212, 212)">===</span><span class="token plain"> </span><span class="token string" style="color:rgb(206, 145, 120)">&quot;success&quot;</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">&amp;&amp;</span><span class="token plain"> </span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag" style="color:rgb(78, 201, 176)">p</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><span class="token plain-text">Saved</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;/</span><span class="token tag" style="color:rgb(78, 201, 176)">p</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain-text"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain-text"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain">save</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">value</span><span class="token operator" style="color:rgb(212, 212, 212)">?.</span><span class="token plain">result </span><span class="token operator" style="color:rgb(212, 212, 212)">===</span><span class="token plain"> </span><span class="token string" style="color:rgb(206, 145, 120)">&quot;validation-error&quot;</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">&amp;&amp;</span><span class="token plain"> </span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag class-name" style="color:rgb(78, 201, 176)">Issues</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">issues</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">save</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">value</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">issues</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">/&gt;</span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><br></div></code></pre></div></div>
+<p>The state is the latest run&#x27;s. An earlier run that finishes later still
+writes and refreshes, but doesn&#x27;t change what is shown. For one action per
+row with its own state, call <code>useAction</code> in the row component. When the
+component moves to another item, give it a <code>key</code> so the old result isn&#x27;t
+shown for the new item.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-1">Type Parameters<a href="#type-parameters-1" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="targs-1">TArgs<a href="#targs-1" class="hash-link" aria-label="Direct link to TArgs" title="Direct link to TArgs" translate="no">​</a></h5>
+<p><code>TArgs</code> <em>extends</em> <code>unknown</code>[]</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="t">T<a href="#t" class="hash-link" aria-label="Direct link to T" title="Direct link to T" translate="no">​</a></h5>
+<p><code>T</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-4">Parameters<a href="#parameters-4" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="fn">fn<a href="#fn" class="hash-link" aria-label="Direct link to fn" title="Direct link to fn" translate="no">​</a></h5>
+<p>(...<code>args</code>) =&gt; <code>Promise</code>&lt;<code>T</code>&gt;</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="options">options?<a href="#options" class="hash-link" aria-label="Direct link to options?" title="Direct link to options?" translate="no">​</a></h5>
+<p><a href="#actionoptions" class=""><code>ActionOptions</code></a>&lt;<code>T</code>&gt;</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-5">Returns<a href="#returns-5" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><a href="#action" class=""><code>Action</code></a>&lt;<code>TArgs</code>, <code>T</code>&gt;</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="useget">useGet()<a href="#useget" class="hash-link" aria-label="Direct link to useGet()" title="Direct link to useGet()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>useGet</strong>&lt;<code>R</code>, <code>O</code>&gt;(<code>readable</code>, ...<code>rest</code>): <a href="#readvalue" class=""><code>ReadValue</code></a>&lt;<code>R</code>, <code>O</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-get.ts#L33" target="_blank" rel="noopener noreferrer" class="">use-get.ts:33</a></p>
+<p>Reads an endpoint or a <a href="#combine" class="">combine</a> through the cache.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> products </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">useGet</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getProducts</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> order </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">useGet</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getOrder</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> params</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> id </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> resolveAlso</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">[</span><span class="token string" style="color:rgb(206, 145, 120)">&quot;not-found-error&quot;</span><span class="token punctuation" style="color:rgb(212, 212, 212)">]</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><br></div></code></pre></div></div>
+<ul>
+<li class="">GET only: a read runs on every render, refresh and poll, so a write
+endpoint is refused. For a POST that only reads, use <code>combine</code>.</li>
+<li class="">Suspends until the first load lands, and again when the args change: the
+old data belongs to other args, and showing it under the new ones could
+lead to a write against the wrong item. To keep old content while new
+args load (search boxes), pass <code>useDeferredValue(args)</code>.</li>
+<li class="">Success only by default: anything else throws to the nearest <code>&lt;Boundary&gt;</code>.
+<code>resolveAlso</code> keeps the listed results as values; <code>resolveOn</code> keeps only
+the listed ones.</li>
+<li class="">Every reader of the same call shares one request and one cached result.</li>
+<li class="">A refresh keeps the current data on screen until the new data lands.</li>
+<li class="">Coming back to cached data (another tab, a reopened panel) shows it at once
+and refreshes it in the background, as <code>config.cache.refreshOnRead</code> says.</li>
+</ul>
+<p>To fetch only sometimes, render the component only sometimes:
+<code>{id &amp;&amp; &lt;Order id={id} /&gt;}</code>. There is no <code>enabled</code> flag.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-2">Type Parameters<a href="#type-parameters-2" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r">R<a href="#r" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="o">O<a href="#o" class="hash-link" aria-label="Direct link to O" title="Direct link to O" translate="no">​</a></h5>
+<p><code>O</code> <em>extends</em> { <code>resolveAlso?</code>: <code>undefined</code>; <code>resolveOn?</code>: <code>undefined</code>; } | { <code>resolveAlso?</code>: readonly <code>Listable</code>&lt;<code>ClientEndpointRef</code> &amp; <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; <code>resolveOn?</code>: <code>undefined</code>; } | { <code>resolveAlso?</code>: <code>undefined</code>; <code>resolveOn?</code>: readonly <code>Listable</code>&lt;<code>ClientEndpointRef</code> &amp; <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; } &amp; <code>object</code> = <a href="#readoptions" class=""><code>ReadOptions</code></a>&lt;<code>R</code>&gt;</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-5">Parameters<a href="#parameters-5" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="readable">readable<a href="#readable" class="hash-link" aria-label="Direct link to readable" title="Direct link to readable" translate="no">​</a></h5>
+<p><code>R</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="rest">rest<a href="#rest" class="hash-link" aria-label="Direct link to rest" title="Direct link to rest" translate="no">​</a></h5>
+<p>...[<code>...ArgsTuple&lt;R&gt;[]</code>, <code>O</code>]</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-6">Returns<a href="#returns-6" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><a href="#readvalue" class=""><code>ReadValue</code></a>&lt;<code>R</code>, <code>O</code>&gt;</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="useisfetching">useIsFetching()<a href="#useisfetching" class="hash-link" aria-label="Direct link to useIsFetching()" title="Direct link to useIsFetching()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>useIsFetching</strong>(<code>options?</code>): <code>boolean</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/boundary.tsx#L131" target="_blank" rel="noopener noreferrer" class="">boundary.tsx:131</a></p>
+<p>True while anything someone waits for is loading or running: a read, a
+refresh, an action. For a thin global progress bar. Polls and preloads don&#x27;t
+count.</p>
+<p><code>{ blocking: true }</code>: only what asked to block — actions and refreshes with
+<code>blocking: true</code>, and refetches of reads with <code>blocking: true</code>. For a
+full-page overlay, shown for the few steps the user must wait for.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-6">Parameters<a href="#parameters-6" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="options-1">options?<a href="#options-1" class="hash-link" aria-label="Direct link to options?" title="Direct link to options?" translate="no">​</a></h5>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="blocking">blocking?<a href="#blocking" class="hash-link" aria-label="Direct link to blocking?" title="Direct link to blocking?" translate="no">​</a></h6>
+<p><code>boolean</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-7">Returns<a href="#returns-7" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><code>boolean</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="usepages">usePages()<a href="#usepages" class="hash-link" aria-label="Direct link to usePages()" title="Direct link to usePages()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>usePages</strong>&lt;<code>R</code>&gt;(<code>endpoint</code>, <code>first</code>, <code>next</code>, <code>options?</code>): <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-pages.ts#L26" target="_blank" rel="noopener noreferrer" class="">use-pages.ts:26</a></p>
+<p>A list loaded page by page, for &quot;load more&quot; and infinite scroll.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token keyword" style="color:rgb(86, 156, 214)">const</span><span class="token plain"> notes </span><span class="token operator" style="color:rgb(212, 212, 212)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(220, 220, 170)">usePages</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getNotes</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> query</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">last</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"> </span><span class="token arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  last</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">nextCursor</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">===</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">null</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">?</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(86, 156, 214)">null</span><span class="token plain"> </span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> query</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"> cursor</span><span class="token operator" style="color:rgb(212, 212, 212)">:</span><span class="token plain"> last</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">nextCursor</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">notes</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">pages</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token method function property-access" style="color:rgb(220, 220, 170)">flatMap</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">page</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"> </span><span class="token arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token plain"> page</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">notes</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;</span><span class="token tag" style="color:rgb(78, 201, 176)">button</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">onClick</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">notes</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">loadMore</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag" style="color:rgb(78, 201, 176)"> </span><span class="token tag attr-name" style="color:rgb(156, 220, 254)">disabled</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:rgb(212, 212, 212)">=</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">!</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)">notes</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">hasMore</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> </span><span class="token tag script language-javascript operator" style="color:rgb(212, 212, 212)">||</span><span class="token tag script language-javascript" style="color:rgb(78, 201, 176)"> notes</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token tag script language-javascript property-access" style="color:rgb(78, 201, 176)">isPending</span><span class="token tag script language-javascript punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><span class="token plain-text">More</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&lt;/</span><span class="token tag" style="color:rgb(78, 201, 176)">button</span><span class="token tag punctuation" style="color:rgb(212, 212, 212)">&gt;</span><br></div></code></pre></div></div>
+<p>Every page is an ordinary cached call, so a refresh of the endpoint refetches
+the loaded pages — each with its current args, and following a cursor that
+changed (an item was deleted, so page two now starts elsewhere).</p>
+<p>Suspends for the first page only. <code>loadMore</code> keeps the loaded pages on screen
+and sets <code>isPending</code> until the next one lands. Pages are success only; a
+failed page throws to the nearest <code>&lt;Boundary&gt;</code>.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-3">Type Parameters<a href="#type-parameters-3" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-1">R<a href="#r-1" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#getendpoint" class=""><code>GetEndpoint</code></a> | <a href="#route" class=""><code>Route</code></a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-7">Parameters<a href="#parameters-7" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="endpoint">endpoint<a href="#endpoint" class="hash-link" aria-label="Direct link to endpoint" title="Direct link to endpoint" translate="no">​</a></h5>
+<p><code>R</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="first">first<a href="#first" class="hash-link" aria-label="Direct link to first" title="Direct link to first" translate="no">​</a></h5>
+<p><a href="#readableargs" class=""><code>ReadableArgs</code></a>&lt;<code>R</code>&gt;</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="next">next<a href="#next" class="hash-link" aria-label="Direct link to next" title="Direct link to next" translate="no">​</a></h5>
+<p>(<code>last</code>) =&gt; <a href="#readableargs" class=""><code>ReadableArgs</code></a>&lt;<code>R</code>&gt; | <code>null</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="options-2">options?<a href="#options-2" class="hash-link" aria-label="Direct link to options?" title="Direct link to options?" translate="no">​</a></h5>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="config-2">config?<a href="#config-2" class="hash-link" aria-label="Direct link to config?" title="Direct link to config?" translate="no">​</a></h6>
+<p><a href="#cupleconfig" class=""><code>CupleConfig</code></a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-8">Returns<a href="#returns-8" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="hasmore">hasMore<a href="#hasmore" class="hash-link" aria-label="Direct link to hasMore" title="Direct link to hasMore" translate="no">​</a></h5>
+<blockquote>
+<p><strong>hasMore</strong>: <code>boolean</code></p>
+</blockquote>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="ispending">isPending<a href="#ispending" class="hash-link" aria-label="Direct link to isPending" title="Direct link to isPending" translate="no">​</a></h5>
+<blockquote>
+<p><strong>isPending</strong>: <code>boolean</code></p>
+</blockquote>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="loadmore">loadMore<a href="#loadmore" class="hash-link" aria-label="Direct link to loadMore" title="Direct link to loadMore" translate="no">​</a></h5>
+<blockquote>
+<p><strong>loadMore</strong>: () =&gt; <code>Promise</code>&lt;<code>void</code>&gt;</p>
+</blockquote>
+<p>Loads the next page, keeping the loaded ones on screen. Resolves when it&#x27;s
+shown. A call while one is running joins it: a double click loads one page.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-9">Returns<a href="#returns-9" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<code>void</code>&gt;</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="pages">pages<a href="#pages" class="hash-link" aria-label="Direct link to pages" title="Direct link to pages" translate="no">​</a></h5>
+<blockquote>
+<p><strong>pages</strong>: <a href="#readvalue" class=""><code>ReadValue</code></a>&lt;<code>R</code>&gt;[]</p>
+</blockquote>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="usestream">useStream()<a href="#usestream" class="hash-link" aria-label="Direct link to useStream()" title="Direct link to useStream()" translate="no">​</a></h3>
+<blockquote>
+<p><strong>useStream</strong>&lt;<code>TEndpoint</code>&gt;(<code>endpoint</code>, <code>args</code>, <code>onEvent</code>): <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-stream.ts#L41" target="_blank" rel="noopener noreferrer" class="">use-stream.ts:41</a></p>
+<p>Subscribes to an SSE endpoint and hands you each event as it arrives.</p>
+<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#9CDCFE;--prism-background-color:#1E1E1E"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#9CDCFE;background-color:#1E1E1E"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#9CDCFE"><span class="token function" style="color:rgb(220, 220, 170)">useStream</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">orderEvents</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">get</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token plain">event</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token plain"> </span><span class="token arrow operator" style="color:rgb(212, 212, 212)">=&gt;</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(212, 212, 212)">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain">  store</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token method function property-access" style="color:rgb(220, 220, 170)">refresh</span><span class="token punctuation" style="color:rgb(212, 212, 212)">(</span><span class="token punctuation" style="color:rgb(212, 212, 212)">[</span><span class="token plain">client</span><span class="token punctuation" style="color:rgb(212, 212, 212)">.</span><span class="token property-access">getOrders</span><span class="token punctuation" style="color:rgb(212, 212, 212)">]</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><span class="token plain"> </span><span class="token comment" style="color:rgb(106, 153, 85)">// someone else changed orders</span><span class="token plain"></span><br></div><div class="token-line" style="color:#9CDCFE"><span class="token plain"></span><span class="token punctuation" style="color:rgb(212, 212, 212)">}</span><span class="token punctuation" style="color:rgb(212, 212, 212)">)</span><span class="token punctuation" style="color:rgb(212, 212, 212)">;</span><br></div></code></pre></div></div>
+<p>The hook owns the connection: it opens it, closes it on unmount, and opens
+it again when the args change. Events are not stored — what to keep, or what
+to refresh, is yours to decide.</p>
+<ul>
+<li class="">A rejected connection (the middleware answered <code>unauthorized</code>, say) throws
+to the nearest <code>&lt;Boundary&gt;</code>, like a failed read.</li>
+<li class="">A network failure is kept as <code>error</code>, with <code>isStreaming: false</code>: streams
+drop, and the page should stay. Call <code>reconnect()</code> to try again.</li>
+</ul>
+<p>To stream only sometimes, render the component only sometimes.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-4">Type Parameters<a href="#type-parameters-4" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="tendpoint">TEndpoint<a href="#tendpoint" class="hash-link" aria-label="Direct link to TEndpoint" title="Direct link to TEndpoint" translate="no">​</a></h5>
+<p><code>TEndpoint</code> <em>extends</em> <code>ClientSSEEndpointRef</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-8">Parameters<a href="#parameters-8" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="endpoint-1">endpoint<a href="#endpoint-1" class="hash-link" aria-label="Direct link to endpoint" title="Direct link to endpoint" translate="no">​</a></h5>
+<p><code>TEndpoint</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="args">args<a href="#args" class="hash-link" aria-label="Direct link to args" title="Direct link to args" translate="no">​</a></h5>
+<p><code>FetchCupleSSEArgs</code>&lt;<code>TEndpoint</code>&gt;[<code>0</code>]</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="onevent">onEvent<a href="#onevent" class="hash-link" aria-label="Direct link to onEvent" title="Direct link to onEvent" translate="no">​</a></h5>
+<p>(<code>event</code>) =&gt; <code>void</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-10">Returns<a href="#returns-10" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h4>
+<p><code>object</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="error-2">error?<a href="#error-2" class="hash-link" aria-label="Direct link to error?" title="Direct link to error?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>error?</strong>: <code>CupleTransportError</code></p>
+</blockquote>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="isstreaming">isStreaming<a href="#isstreaming" class="hash-link" aria-label="Direct link to isStreaming" title="Direct link to isStreaming" translate="no">​</a></h5>
+<blockquote>
+<p><strong>isStreaming</strong>: <code>boolean</code></p>
+</blockquote>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="reconnect">reconnect<a href="#reconnect" class="hash-link" aria-label="Direct link to reconnect" title="Direct link to reconnect" translate="no">​</a></h5>
+<blockquote>
+<p><strong>reconnect</strong>: <code>ActionDispatch</code>&lt;[]&gt;</p>
+</blockquote>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-aliases">Type Aliases<a href="#type-aliases" class="hash-link" aria-label="Direct link to Type Aliases" title="Direct link to Type Aliases" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="action">Action<a href="#action" class="hash-link" aria-label="Direct link to Action" title="Direct link to Action" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Action</strong>&lt;<code>TArgs</code>, <code>T</code>&gt; = <a href="#actionstate" class=""><code>ActionState</code></a>&lt;<code>T</code>&gt; &amp; <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L61" target="_blank" rel="noopener noreferrer" class="">use-action.ts:61</a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-declaration">Type Declaration<a href="#type-declaration" class="hash-link" aria-label="Direct link to Type Declaration" title="Direct link to Type Declaration" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="ispending-1">isPending<a href="#ispending-1" class="hash-link" aria-label="Direct link to isPending" title="Direct link to isPending" translate="no">​</a></h5>
+<blockquote>
+<p><strong>isPending</strong>: <code>boolean</code></p>
+</blockquote>
+<p><code>status === &quot;pending&quot;</code>.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="reset">reset<a href="#reset" class="hash-link" aria-label="Direct link to reset" title="Direct link to reset" translate="no">​</a></h5>
+<blockquote>
+<p><strong>reset</strong>: () =&gt; <code>void</code></p>
+</blockquote>
+<p>Back to <code>idle</code>, e.g. to hide a &quot;Saved&quot; message.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-11">Returns<a href="#returns-11" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>void</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="run">run<a href="#run" class="hash-link" aria-label="Direct link to run" title="Direct link to run" translate="no">​</a></h5>
+<blockquote>
+<p><strong>run</strong>: (...<code>args</code>) =&gt; <code>Promise</code>&lt;<a href="#actionstate" class=""><code>ActionState</code></a>&lt;<code>T</code>&gt;&gt;</p>
+</blockquote>
+<p>Runs the function. Resolves with the resulting state — always: it never
+rejects, so an event handler never produces an unhandled rejection, and a
+form library awaiting it never hangs.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-9">Parameters<a href="#parameters-9" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="args-1">args<a href="#args-1" class="hash-link" aria-label="Direct link to args" title="Direct link to args" translate="no">​</a></h6>
+<p>...<code>TArgs</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-12">Returns<a href="#returns-12" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<a href="#actionstate" class=""><code>ActionState</code></a>&lt;<code>T</code>&gt;&gt;</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-5">Type Parameters<a href="#type-parameters-5" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="targs-2">TArgs<a href="#targs-2" class="hash-link" aria-label="Direct link to TArgs" title="Direct link to TArgs" translate="no">​</a></h5>
+<p><code>TArgs</code> <em>extends</em> <code>unknown</code>[]</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="t-1">T<a href="#t-1" class="hash-link" aria-label="Direct link to T" title="Direct link to T" translate="no">​</a></h5>
+<p><code>T</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="actionoptions">ActionOptions<a href="#actionoptions" class="hash-link" aria-label="Direct link to ActionOptions" title="Direct link to ActionOptions" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ActionOptions</strong>&lt;<code>T</code>&gt; = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L31" target="_blank" rel="noopener noreferrer" class="">use-action.ts:31</a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-6">Type Parameters<a href="#type-parameters-6" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="t-2">T<a href="#t-2" class="hash-link" aria-label="Direct link to T" title="Direct link to T" translate="no">​</a></h5>
+<p><code>T</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties">Properties<a href="#properties" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="config-3">config?<a href="#config-3" class="hash-link" aria-label="Direct link to config?" title="Direct link to config?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>config?</strong>: <a href="#cupleconfig" class=""><code>CupleConfig</code></a></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L41" target="_blank" rel="noopener noreferrer" class="">use-action.ts:41</a></p>
+<p>This action&#x27;s settings, over the <code>&lt;Boundary&gt;</code>&#x27;s and the provider&#x27;s. The
+ones actions use:</p>
+<ul>
+<li class=""><code>errors.unhandled</code>: where an error nobody handled goes — <code>&quot;boundary&quot;</code>
+(default) or <code>&quot;notify&quot;</code>, or a function choosing per error</li>
+<li class=""><code>errors.notify</code>, <code>errors.message</code>: how it&#x27;s shown, and the fallback text</li>
+<li class=""><code>loading.blocking</code>: while it runs, including its refresh,
+<code>useIsFetching({ blocking: true })</code> is true — for a full-page overlay</li>
+</ul>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="refresh">refresh?<a href="#refresh" class="hash-link" aria-label="Direct link to refresh?" title="Direct link to refresh?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>refresh?</strong>: readonly <a href="#readable" class=""><code>Readable</code></a>[] | [<code>ResultOf</code>&lt;<code>T</code>&gt;] <em>extends</em> [<code>never</code>] ? <code>never</code> : <code>{ readonly [K in ResultOf&lt;T&gt;]?: readonly Readable[] }</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L52" target="_blank" rel="noopener noreferrer" class="">use-action.ts:52</a></p>
+<p>What this action changes, refreshed once the function finishes. Nothing is
+refreshed unless it is named here.</p>
+<ul>
+<li class=""><code>[client.getTodos.get]</code>: every time the function finishes.</li>
+<li class=""><code>{ success: [client.getTodos.get] }</code>: only for the listed results. The
+keys are the <code>result</code>s the function can return.</li>
+</ul>
+<p>Combined reads that fetched a listed endpoint through <code>get</code> are refreshed too.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="actionstate">ActionState<a href="#actionstate" class="hash-link" aria-label="Direct link to ActionState" title="Direct link to ActionState" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ActionState</strong>&lt;<code>T</code>&gt; = { <code>error?</code>: <code>undefined</code>; <code>status</code>: <code>&quot;idle&quot;</code>; <code>value?</code>: <code>undefined</code>; } | { <code>error?</code>: <code>undefined</code>; <code>status</code>: <code>&quot;pending&quot;</code>; <code>value?</code>: <code>undefined</code>; } | { <code>error?</code>: <code>undefined</code>; <code>status</code>: <code>&quot;done&quot;</code>; <code>value</code>: <code>T</code>; } | { <code>error</code>: <a href="#cupleerror" class=""><code>CupleError</code></a>; <code>status</code>: <code>&quot;failed&quot;</code>; <code>value?</code>: <code>undefined</code>; }</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-action.ts#L22" target="_blank" rel="noopener noreferrer" class="">use-action.ts:22</a></p>
+<p>Where an action is. Discriminated on <code>status</code>, so <code>value</code> and <code>error</code> only
+exist when they mean something:</p>
+<ul>
+<li class=""><code>idle</code>: nothing has happened yet</li>
+<li class=""><code>pending</code>: running, including the refresh it asked for</li>
+<li class=""><code>done</code>: your function finished. <code>value</code> is what it returned — including
+the failures you listed with <code>thenResolveAlso</code>, so <code>done</code> does not mean
+&quot;succeeded&quot;; check <code>value.result</code>. Listed failures are handled: they&#x27;re
+yours to show, typed.</li>
+<li class=""><code>failed</code>: an error nobody handled. It already went where
+<code>config.errors.unhandled</code> says: the nearest <code>&lt;Boundary&gt;</code> (this component
+is then off screen) or <code>errors.notify</code>. Don&#x27;t report it again; use it only
+to adjust what&#x27;s on screen, e.g. re-enable a button.</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-7">Type Parameters<a href="#type-parameters-7" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="t-3">T<a href="#t-3" class="hash-link" aria-label="Direct link to T" title="Direct link to T" translate="no">​</a></h5>
+<p><code>T</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="combinecontext">CombineContext<a href="#combinecontext" class="hash-link" aria-label="Direct link to CombineContext" title="Direct link to CombineContext" translate="no">​</a></h3>
+<blockquote>
+<p><strong>CombineContext</strong> = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L112" target="_blank" rel="noopener noreferrer" class="">types.ts:112</a></p>
+<p>Handed to a combined read&#x27;s function.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="methods">Methods<a href="#methods" class="hash-link" aria-label="Direct link to Methods" title="Direct link to Methods" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="get">get()<a href="#get" class="hash-link" aria-label="Direct link to get()" title="Direct link to get()" translate="no">​</a></h5>
+<blockquote>
+<p><strong>get</strong>&lt;<code>R</code>, <code>O</code>&gt;(<code>readable</code>, ...<code>rest</code>): <code>Promise</code>&lt;<a href="#readvalue" class=""><code>ReadValue</code></a>&lt;<code>R</code>, <code>O</code>&gt;&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L122" target="_blank" rel="noopener noreferrer" class="">types.ts:122</a></p>
+<p>Reads through the cache, like <code>useGet</code> — shared with every other reader
+of the same call. Success only unless <code>resolveOn</code>/<code>resolveAlso</code> says
+otherwise; anything else rejects, and the combined read with it.</p>
+<p>Reading through <code>get</code> is also what lets a refresh of an endpoint re-run
+this combined read. A plain <code>fetchCuple</code> inside a combined read works, but is invisible
+to refresh.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-8">Type Parameters<a href="#type-parameters-8" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-2">R<a href="#r-2" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h6>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="o-1">O<a href="#o-1" class="hash-link" aria-label="Direct link to O" title="Direct link to O" translate="no">​</a></h6>
+<p><code>O</code> <em>extends</em> { <code>resolveAlso?</code>: <code>never</code>; <code>resolveOn?</code>: <code>never</code>; } | { <code>resolveAlso?</code>: readonly <code>Listable</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; <code>resolveOn?</code>: <code>never</code>; } | { <code>resolveAlso?</code>: <code>never</code>; <code>resolveOn?</code>: readonly <code>Listable</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; } = <a href="#resolveoptions" class=""><code>ResolveOptions</code></a>&lt;<code>R</code>&gt;</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-10">Parameters<a href="#parameters-10" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="readable-1">readable<a href="#readable-1" class="hash-link" aria-label="Direct link to readable" title="Direct link to readable" translate="no">​</a></h6>
+<p><code>R</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="rest-1">rest<a href="#rest-1" class="hash-link" aria-label="Direct link to rest" title="Direct link to rest" translate="no">​</a></h6>
+<p>...[<code>...ArgsTuple&lt;R&gt;[]</code>, <code>O</code>]</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-13">Returns<a href="#returns-13" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<a href="#readvalue" class=""><code>ReadValue</code></a>&lt;<code>R</code>, <code>O</code>&gt;&gt;</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="combined">Combined<a href="#combined" class="hash-link" aria-label="Direct link to Combined" title="Direct link to Combined" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Combined</strong>&lt;<code>TArgs</code>, <code>TValue</code>&gt; = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L14" target="_blank" rel="noopener noreferrer" class="">types.ts:14</a></p>
+<p>Composes several fetches into one cached value. Made by <a href="#combine" class="">combine</a>.</p>
+<p>Its identity is its cache identity, so create it once, at module level —
+never inside a component.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-9">Type Parameters<a href="#type-parameters-9" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="targs-3">TArgs<a href="#targs-3" class="hash-link" aria-label="Direct link to TArgs" title="Direct link to TArgs" translate="no">​</a></h5>
+<p><code>TArgs</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="tvalue-1">TValue<a href="#tvalue-1" class="hash-link" aria-label="Direct link to TValue" title="Direct link to TValue" translate="no">​</a></h5>
+<p><code>TValue</code></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties-1">Properties<a href="#properties-1" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="id">id<a href="#id" class="hash-link" aria-label="Direct link to id" title="Direct link to id" translate="no">​</a></h5>
+<blockquote>
+<p><code>readonly</code> <strong>id</strong>: <code>number</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L17" target="_blank" rel="noopener noreferrer" class="">types.ts:17</a></p>
+<p>For debugging only: the order combined reads were created in.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="kind">kind<a href="#kind" class="hash-link" aria-label="Direct link to kind" title="Direct link to kind" translate="no">​</a></h5>
+<blockquote>
+<p><code>readonly</code> <strong>kind</strong>: <code>&quot;cuple-combined&quot;</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L15" target="_blank" rel="noopener noreferrer" class="">types.ts:15</a></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="load-1">load<a href="#load-1" class="hash-link" aria-label="Direct link to load" title="Direct link to load" translate="no">​</a></h5>
+<blockquote>
+<p><code>readonly</code> <strong>load</strong>: (<code>context</code>, <code>args</code>) =&gt; <code>Promise</code>&lt;<code>TValue</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L18" target="_blank" rel="noopener noreferrer" class="">types.ts:18</a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-11">Parameters<a href="#parameters-11" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">context<a href="#context" class="hash-link" aria-label="Direct link to context" title="Direct link to context" translate="no">​</a></h6>
+<p><a href="#combinecontext" class=""><code>CombineContext</code></a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="args-2">args<a href="#args-2" class="hash-link" aria-label="Direct link to args" title="Direct link to args" translate="no">​</a></h6>
+<p><code>TArgs</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-14">Returns<a href="#returns-14" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<code>TValue</code>&gt;</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cupleconfig">CupleConfig<a href="#cupleconfig" class="hash-link" aria-label="Direct link to CupleConfig" title="Direct link to CupleConfig" translate="no">​</a></h3>
+<blockquote>
+<p><strong>CupleConfig</strong> = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L22" target="_blank" rel="noopener noreferrer" class="">config.ts:22</a></p>
+<p>How Cuple behaves, grouped by concern. The same shape is accepted by
+<code>&lt;CupleProvider config&gt;</code>, <code>&lt;Boundary config&gt;</code> and each request&#x27;s
+<code>{ config }</code>. Every setting cascades on its own — request over Boundary over
+Provider over the built-in default — so setting <code>cache.keep</code> somewhere never
+resets <code>cache.refreshOnRead</code> from above.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties-2">Properties<a href="#properties-2" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="cache">cache?<a href="#cache" class="hash-link" aria-label="Direct link to cache?" title="Direct link to cache?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>cache?</strong>: <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L23" target="_blank" rel="noopener noreferrer" class="">config.ts:23</a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="freshfor">freshFor?<a href="#freshfor" class="hash-link" aria-label="Direct link to freshFor?" title="Direct link to freshFor?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>freshFor?</strong>: <code>number</code></p>
+</blockquote>
+<p>How long data counts as fresh for <code>refreshOnRead: &quot;stale&quot;</code>, in ms. Default: 0.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="keep">keep?<a href="#keep" class="hash-link" aria-label="Direct link to keep?" title="Direct link to keep?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>keep?</strong>: <code>number</code></p>
+</blockquote>
+<p>How long data nobody reads stays in memory, in ms. <code>0</code> drops it as soon
+as the last reader unmounts. With several readers, the longest wins.
+Default: 5 minutes.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="onkeychange">onKeyChange?<a href="#onkeychange" class="hash-link" aria-label="Direct link to onKeyChange?" title="Direct link to onKeyChange?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>onKeyChange?</strong>: <code>&quot;drop&quot;</code> | <code>&quot;keep&quot;</code></p>
+</blockquote>
+<p>What <code>store.refreshKeys()</code> does with data whose key changed (the user a
+<code>with({ key })</code> getter returns, say): <code>&quot;drop&quot;</code> deletes it at once;
+<code>&quot;keep&quot;</code> keeps it for <code>keep</code> ms, so switching back is instant.
+Read from the provider. Default: <code>&quot;drop&quot;</code>.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="refreshonread">refreshOnRead?<a href="#refreshonread" class="hash-link" aria-label="Direct link to refreshOnRead?" title="Direct link to refreshOnRead?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>refreshOnRead?</strong>: <code>&quot;never&quot;</code> | <code>&quot;stale&quot;</code> | <code>&quot;always&quot;</code></p>
+</blockquote>
+<p>What happens when a component starts reading data that is already
+cached — switching back to a tab, reopening a panel:</p>
+<ul>
+<li class=""><code>&quot;stale&quot;</code>: show it at once; refetch in the background if it&#x27;s older
+than <code>freshFor</code>. The screen updates when the new data lands.</li>
+<li class=""><code>&quot;always&quot;</code>: show it at once and always refetch in the background.</li>
+<li class=""><code>&quot;never&quot;</code>: show it; nothing refetches.</li>
+</ul>
+<p>A first load is never fetched twice. Default: <code>&quot;stale&quot;</code>.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="errors">errors?<a href="#errors" class="hash-link" aria-label="Direct link to errors?" title="Direct link to errors?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>errors?</strong>: <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L51" target="_blank" rel="noopener noreferrer" class="">config.ts:51</a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="message">message?<a href="#message" class="hash-link" aria-label="Direct link to message?" title="Direct link to message?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>message?</strong>: <code>string</code></p>
+</blockquote>
+<p>The message when there&#x27;s nothing readable to show: a network failure,
+a server result without a message, a bug in production.
+Default: <code>&quot;Something went wrong.&quot;</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="notify">notify?<a href="#notify" class="hash-link" aria-label="Direct link to notify?" title="Direct link to notify?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>notify?</strong>: (<code>error</code>) =&gt; <code>void</code></p>
+</blockquote>
+<p>How the app shows an error without replacing the page: a toast, a
+banner. Used by <code>unhandled: &quot;notify&quot;</code> and <code>&lt;Boundary error=&quot;notify&quot;&gt;</code>.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-12">Parameters<a href="#parameters-12" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="error-3">error<a href="#error-3" class="hash-link" aria-label="Direct link to error" title="Direct link to error" translate="no">​</a></h6>
+<p><a href="#cupleerror" class=""><code>CupleError</code></a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-15">Returns<a href="#returns-15" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>void</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="unhandled">unhandled?<a href="#unhandled" class="hash-link" aria-label="Direct link to unhandled?" title="Direct link to unhandled?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>unhandled?</strong>: <a href="#unhandledpolicy" class=""><code>UnhandledPolicy</code></a></p>
+</blockquote>
+<p>Actions: what happens to an error nobody handled. Errors you handle are
+the results you list with <code>thenResolveAlso</code> — typed values that never
+get here. Default: <code>&quot;boundary&quot;</code>.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="loading">loading?<a href="#loading" class="hash-link" aria-label="Direct link to loading?" title="Direct link to loading?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>loading?</strong>: <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L70" target="_blank" rel="noopener noreferrer" class="">config.ts:70</a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="blocking-1">blocking?<a href="#blocking-1" class="hash-link" aria-label="Direct link to blocking?" title="Direct link to blocking?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>blocking?</strong>: <code>boolean</code></p>
+</blockquote>
+<p>Makes <code>useIsFetching({ blocking: true })</code> true: for actions while they
+run, for reads while their data refetches. For a full-page overlay.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="every">every?<a href="#every" class="hash-link" aria-label="Direct link to every?" title="Direct link to every?" translate="no">​</a></h6>
+<blockquote>
+<p><code>optional</code> <strong>every?</strong>: <code>number</code></p>
+</blockquote>
+<p>Reads only: refetch every this many ms while something reads it.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cupleerror">CupleError<a href="#cupleerror" class="hash-link" aria-label="Direct link to CupleError" title="Direct link to CupleError" translate="no">​</a></h3>
+<blockquote>
+<p><strong>CupleError</strong> = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L16" target="_blank" rel="noopener noreferrer" class="">errors.ts:16</a></p>
+<p>Any error nobody handled, made readable. <code>&lt;Boundary error&gt;</code> and
+<code>config.errors.notify</code> receive this, whatever was thrown.</p>
+<ul>
+<li class=""><code>&quot;response&quot;</code>: the server answered with a result nobody listed (a 403, a
+500). <code>message</code> is the server&#x27;s, when it sent one.</li>
+<li class=""><code>&quot;transport&quot;</code>: no Cuple answer at all — offline, DNS, a proxy&#x27;s error page.</li>
+<li class=""><code>&quot;bug&quot;</code>: your code threw. <code>message</code> is the error&#x27;s own in development, and
+the fallback in production, so internals never reach users.</li>
+</ul>
+<p>Errors you handle never get here: list them (<code>resolveAlso</code>,
+<code>thenResolveAlso</code>), and they are typed values instead.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties-3">Properties<a href="#properties-3" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="cause">cause<a href="#cause" class="hash-link" aria-label="Direct link to cause" title="Direct link to cause" translate="no">​</a></h5>
+<blockquote>
+<p><strong>cause</strong>: <code>unknown</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L25" target="_blank" rel="noopener noreferrer" class="">errors.ts:25</a></p>
+<p>What was actually thrown, for logging and reporting.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="kind-1">kind<a href="#kind-1" class="hash-link" aria-label="Direct link to kind" title="Direct link to kind" translate="no">​</a></h5>
+<blockquote>
+<p><strong>kind</strong>: <code>&quot;response&quot;</code> | <code>&quot;transport&quot;</code> | <code>&quot;bug&quot;</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L17" target="_blank" rel="noopener noreferrer" class="">errors.ts:17</a></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="message-1">message<a href="#message-1" class="hash-link" aria-label="Direct link to message" title="Direct link to message" translate="no">​</a></h5>
+<blockquote>
+<p><strong>message</strong>: <code>string</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L19" target="_blank" rel="noopener noreferrer" class="">errors.ts:19</a></p>
+<p>Always readable; <code>config.errors.message</code> when there&#x27;s nothing better.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="result">result<a href="#result" class="hash-link" aria-label="Direct link to result" title="Direct link to result" translate="no">​</a></h5>
+<blockquote>
+<p><strong>result</strong>: <code>string</code> | <code>null</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L23" target="_blank" rel="noopener noreferrer" class="">errors.ts:23</a></p>
+<p>For <code>&quot;response&quot;</code>: the result the server sent, e.g. <code>&quot;forbidden-error&quot;</code>.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="statuscode">statusCode<a href="#statuscode" class="hash-link" aria-label="Direct link to statusCode" title="Direct link to statusCode" translate="no">​</a></h5>
+<blockquote>
+<p><strong>statusCode</strong>: <code>number</code> | <code>null</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/errors.ts#L21" target="_blank" rel="noopener noreferrer" class="">errors.ts:21</a></p>
+<p>The HTTP status, when there was a response.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cuplestore">CupleStore<a href="#cuplestore" class="hash-link" aria-label="Direct link to CupleStore" title="Direct link to CupleStore" translate="no">​</a></h3>
+<blockquote>
+<p><strong>CupleStore</strong> = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L31" target="_blank" rel="noopener noreferrer" class="">store.ts:31</a></p>
+<p>The cache. Create one per app, pass it to <code>&lt;CupleProvider store={...}&gt;</code>, and
+use it directly from plain code — an SSE handler, a router loader, sign-out.</p>
+<p>Cached data changes only when an action that names it finishes,
+<code>refresh()</code> or <code>refreshKeys()</code> is called, a poll fires, a component starts
+reading data its config calls stale (<code>cache.refreshOnRead</code>), or an entry
+nobody reads expires. Nothing refetches on focus or on a timer you didn&#x27;t
+ask for.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="methods-1">Methods<a href="#methods-1" class="hash-link" aria-label="Direct link to Methods" title="Direct link to Methods" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="clear">clear()<a href="#clear" class="hash-link" aria-label="Direct link to clear()" title="Direct link to clear()" translate="no">​</a></h5>
+<blockquote>
+<p><strong>clear</strong>(): <code>void</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L57" target="_blank" rel="noopener noreferrer" class="">store.ts:57</a></p>
+<p>Drops everything. Readers suspend and fetch again. For sign-out and tests.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-16">Returns<a href="#returns-16" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>void</code></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="preload">preload()<a href="#preload" class="hash-link" aria-label="Direct link to preload()" title="Direct link to preload()" translate="no">​</a></h5>
+<blockquote>
+<p><strong>preload</strong>&lt;<code>R</code>&gt;(<code>readable</code>, ...<code>rest</code>): <code>Promise</code>&lt;<code>void</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L55" target="_blank" rel="noopener noreferrer" class="">store.ts:55</a></p>
+<p>Starts a fetch before anything renders it — on hover, on click, in a
+router loader. Don&#x27;t return it from a router loader: the router would wait
+for it and handle its errors, instead of <code>&lt;Boundary&gt;</code>.</p>
+<p>Resolves when it has landed. Never rejects, and a failure is not kept:
+nobody was waiting for it, so the next read fetches again.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-10">Type Parameters<a href="#type-parameters-10" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-3">R<a href="#r-3" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h6>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-13">Parameters<a href="#parameters-13" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="readable-2">readable<a href="#readable-2" class="hash-link" aria-label="Direct link to readable" title="Direct link to readable" translate="no">​</a></h6>
+<p><code>R</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="rest-2">rest<a href="#rest-2" class="hash-link" aria-label="Direct link to rest" title="Direct link to rest" translate="no">​</a></h6>
+<p>...[<code>...ArgsTuple&lt;R&gt;[]</code>, <code>undefined</code>]</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-17">Returns<a href="#returns-17" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<code>void</code>&gt;</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="refresh-1">refresh()<a href="#refresh-1" class="hash-link" aria-label="Direct link to refresh()" title="Direct link to refresh()" translate="no">​</a></h5>
+<blockquote>
+<p><strong>refresh</strong>(<code>targets</code>, <code>options?</code>): <code>Promise</code>&lt;<code>void</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L46" target="_blank" rel="noopener noreferrer" class="">store.ts:46</a></p>
+<p>Refetches every cached call of the given endpoints and combined reads, plus every
+combined read that fetched one of them through <code>get</code>.</p>
+<p>Calls something is reading now are refetched, and keep their old data on
+screen until the new data arrives. Calls nobody reads are dropped, so they
+are fetched fresh when next read — a deleted item nobody shows never 404s.</p>
+<p>Resolves when the refetches have landed. Never rejects: a failure goes to
+whoever reads the data.</p>
+<p><code>{ blocking: true }</code> makes it count for <code>useIsFetching({ blocking: true })</code>,
+e.g. a full-page overlay, until it lands.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="parameters-14">Parameters<a href="#parameters-14" class="hash-link" aria-label="Direct link to Parameters" title="Direct link to Parameters" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="targets">targets<a href="#targets" class="hash-link" aria-label="Direct link to targets" title="Direct link to targets" translate="no">​</a></h6>
+<p>readonly <a href="#readable" class=""><code>Readable</code></a>[]</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="options-3">options?<a href="#options-3" class="hash-link" aria-label="Direct link to options?" title="Direct link to options?" translate="no">​</a></h6>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="blocking-2">blocking?<a href="#blocking-2" class="hash-link" aria-label="Direct link to blocking?" title="Direct link to blocking?" translate="no">​</a></h6>
+<p><code>boolean</code></p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-18">Returns<a href="#returns-18" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>Promise</code>&lt;<code>void</code>&gt;</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="refreshkeys">refreshKeys()<a href="#refreshkeys" class="hash-link" aria-label="Direct link to refreshKeys()" title="Direct link to refreshKeys()" translate="no">​</a></h5>
+<blockquote>
+<p><strong>refreshKeys</strong>(): <code>void</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/store.ts#L72" target="_blank" rel="noopener noreferrer" class="">store.ts:72</a></p>
+<p>Checks every cached call&#x27;s key again: whatever a <code>with({ key })</code> getter
+returns may have changed (the signed-in user, a tenant, a locale).</p>
+<ul>
+<li class="">Key unchanged: stays as it is. No request, no re-render.</li>
+<li class="">Key changed: its readers read again under the new key — cached data for
+it shows at once, anything else loads. The old key&#x27;s data is dropped, or
+kept for <code>cache.keep</code> with <code>cache.onKeyChange: &quot;keep&quot;</code>.</li>
+<li class="">Combined reads built from a changed call run again; streams reconnect.</li>
+</ul>
+<p>Nothing is ever refetched under a key that is no longer current, so data
+of one key can&#x27;t land under another. Wrap in <code>startTransition</code> to keep the
+current screen until the new data is ready.</p>
+<h6 class="anchor anchorTargetStickyNavbar_Vzrq" id="returns-19">Returns<a href="#returns-19" class="hash-link" aria-label="Direct link to Returns" title="Direct link to Returns" translate="no">​</a></h6>
+<p><code>void</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="getendpoint">GetEndpoint<a href="#getendpoint" class="hash-link" aria-label="Direct link to GetEndpoint" title="Direct link to GetEndpoint" translate="no">​</a></h3>
+<blockquote>
+<p><strong>GetEndpoint</strong> = <code>ClientEndpointRef</code> &amp; <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L27" target="_blank" rel="noopener noreferrer" class="">types.ts:27</a></p>
+<p>An endpoint read with GET. Reads never write: a POST, PUT, PATCH or DELETE
+endpoint can&#x27;t be read (it would run on every render, refresh and poll).
+For a POST that only reads — a search, a quote — use <a href="#combine" class="">combine</a> with
+<code>fetchCuple</code> inside.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-declaration-1">Type Declaration<a href="#type-declaration-1" class="hash-link" aria-label="Direct link to Type Declaration" title="Direct link to Type Declaration" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="tmethod">tMethod<a href="#tmethod" class="hash-link" aria-label="Direct link to tMethod" title="Direct link to tMethod" translate="no">​</a></h5>
+<blockquote>
+<p><strong>tMethod</strong>: <code>&quot;get&quot;</code></p>
+</blockquote>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="readable-3">Readable<a href="#readable-3" class="hash-link" aria-label="Direct link to Readable" title="Direct link to Readable" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Readable</strong> = <a href="#getendpoint" class=""><code>GetEndpoint</code></a> | <a href="#route" class=""><code>Route</code></a> | <a href="#combined" class=""><code>Combined</code></a>&lt;<code>any</code>, <code>any</code>&gt;</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L39" target="_blank" rel="noopener noreferrer" class="">types.ts:39</a></p>
+<p>Anything that can be read and cached: an endpoint, a <a href="#route" class="">Route</a>, or a
+<a href="#combined" class="">Combined</a> read.</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="readableargs">ReadableArgs<a href="#readableargs" class="hash-link" aria-label="Direct link to ReadableArgs" title="Direct link to ReadableArgs" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ReadableArgs</strong>&lt;<code>R</code>&gt; = <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt; <em>extends</em> <a href="#combined" class=""><code>Combined</code></a>&lt;infer TArgs, <code>any</code>&gt; ? <code>TArgs</code> : <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt; <em>extends</em> <code>ClientEndpointRef</code> ? <code>FetchCupleArgs</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[<code>0</code>] : <code>never</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L49" target="_blank" rel="noopener noreferrer" class="">types.ts:49</a></p>
+<p>The arguments a readable takes: the endpoint&#x27;s input, or the combined read&#x27;s <code>args</code>.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-11">Type Parameters<a href="#type-parameters-11" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-4">R<a href="#r-4" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="readoptions">ReadOptions<a href="#readoptions" class="hash-link" aria-label="Direct link to ReadOptions" title="Direct link to ReadOptions" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ReadOptions</strong>&lt;<code>R</code>&gt; = <a href="#resolveoptions" class=""><code>ResolveOptions</code></a>&lt;<code>R</code>&gt; &amp; <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L75" target="_blank" rel="noopener noreferrer" class="">types.ts:75</a></p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-declaration-2">Type Declaration<a href="#type-declaration-2" class="hash-link" aria-label="Direct link to Type Declaration" title="Direct link to Type Declaration" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="config-4">config?<a href="#config-4" class="hash-link" aria-label="Direct link to config?" title="Direct link to config?" translate="no">​</a></h5>
+<blockquote>
+<p><code>optional</code> <strong>config?</strong>: <a href="#cupleconfig" class=""><code>CupleConfig</code></a></p>
+</blockquote>
+<p>This read&#x27;s settings, over the <code>&lt;Boundary&gt;</code>&#x27;s and the provider&#x27;s.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-12">Type Parameters<a href="#type-parameters-12" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-5">R<a href="#r-5" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="readvalue">ReadValue<a href="#readvalue" class="hash-link" aria-label="Direct link to ReadValue" title="Direct link to ReadValue" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ReadValue</strong>&lt;<code>R</code>, <code>O</code>&gt; = <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt; <em>extends</em> <a href="#combined" class=""><code>Combined</code></a>&lt;<code>any</code>, infer TValue&gt; ? <code>TValue</code> : <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt; <em>extends</em> <code>ClientEndpointRef</code> ? <code>O</code> <em>extends</em> <code>object</code> ? <code>Extract</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;[<code>&quot;tOutput&quot;</code>] | <code>TransportErrorResult</code>, { <code>result</code>: <code>Listed</code>&lt;<code>O</code>, <code>&quot;resolveOn&quot;</code>&gt;; }&gt; : <code>Extract</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;[<code>&quot;tOutput&quot;</code>] | <code>TransportErrorResult</code>, { <code>result</code>: <code>&quot;success&quot;</code> | <code>Listed</code>&lt;<code>O</code>, <code>&quot;resolveAlso&quot;</code>&gt;; }&gt; : <code>never</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L85" target="_blank" rel="noopener noreferrer" class="">types.ts:85</a></p>
+<p>What a read returns, given its options.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-13">Type Parameters<a href="#type-parameters-13" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-6">R<a href="#r-6" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="o-2">O<a href="#o-2" class="hash-link" aria-label="Direct link to O" title="Direct link to O" translate="no">​</a></h5>
+<p><code>O</code> = { }</p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="resolveoptions">ResolveOptions<a href="#resolveoptions" class="hash-link" aria-label="Direct link to ResolveOptions" title="Direct link to ResolveOptions" translate="no">​</a></h3>
+<blockquote>
+<p><strong>ResolveOptions</strong>&lt;<code>R</code>&gt; = <a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt; <em>extends</em> <code>ClientEndpointRef</code> ? { <code>resolveAlso?</code>: readonly <code>Listable</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; <code>resolveOn?</code>: <code>never</code>; } | { <code>resolveAlso?</code>: <code>never</code>; <code>resolveOn?</code>: readonly <code>Listable</code>&lt;<a href="#target" class=""><code>Target</code></a>&lt;<code>R</code>&gt;&gt;[]; } : <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L68" target="_blank" rel="noopener noreferrer" class="">types.ts:68</a></p>
+<p>How a read treats non-success results. Only one of the two may be given.</p>
+<ul>
+<li class="">neither: success only; anything else throws to the nearest <code>&lt;Boundary&gt;</code></li>
+<li class=""><code>resolveAlso</code>: success, plus the listed results as values</li>
+<li class=""><code>resolveOn</code>: exactly the listed results — <code>&quot;success&quot;</code> is not implied</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-14">Type Parameters<a href="#type-parameters-14" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-7">R<a href="#r-7" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="route">Route<a href="#route" class="hash-link" aria-label="Direct link to Route" title="Direct link to Route" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Route</strong> = <code>object</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L33" target="_blank" rel="noopener noreferrer" class="">types.ts:33</a></p>
+<p>A client route, standing for its GET endpoint: <code>client.getNotes</code> reads as
+<code>client.getNotes.get</code>. Writing <code>.get</code> out works too; both are the same call.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties-4">Properties<a href="#properties-4" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="get-1">get<a href="#get-1" class="hash-link" aria-label="Direct link to get" title="Direct link to get" translate="no">​</a></h5>
+<blockquote>
+<p><strong>get</strong>: <a href="#getendpoint" class=""><code>GetEndpoint</code></a></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L33" target="_blank" rel="noopener noreferrer" class="">types.ts:33</a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="streamevent">StreamEvent<a href="#streamevent" class="hash-link" aria-label="Direct link to StreamEvent" title="Direct link to StreamEvent" translate="no">​</a></h3>
+<blockquote>
+<p><strong>StreamEvent</strong>&lt;<code>TEndpoint</code>&gt; = <code>Extract</code>&lt;<code>TEndpoint</code>[<code>&quot;tOutput&quot;</code>], <code>AsyncIterable</code>&lt;<code>unknown</code>&gt;&gt; <em>extends</em> <code>AsyncIterable</code>&lt;infer TEvent&gt; ? <code>TEvent</code> : <code>never</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/use-stream.ts#L14" target="_blank" rel="noopener noreferrer" class="">use-stream.ts:14</a></p>
+<p>The event type an SSE endpoint yields, taken from its server definition.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-15">Type Parameters<a href="#type-parameters-15" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="tendpoint-1">TEndpoint<a href="#tendpoint-1" class="hash-link" aria-label="Direct link to TEndpoint" title="Direct link to TEndpoint" translate="no">​</a></h5>
+<p><code>TEndpoint</code> <em>extends</em> <code>ClientSSEEndpointRef</code></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="target">Target<a href="#target" class="hash-link" aria-label="Direct link to Target" title="Direct link to Target" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Target</strong>&lt;<code>R</code>&gt; = <code>R</code> <em>extends</em> <code>object</code> ? <code>E</code> : <code>R</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/types.ts#L42" target="_blank" rel="noopener noreferrer" class="">types.ts:42</a></p>
+<p>What a readable reads: a route&#x27;s GET endpoint, anything else itself.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="type-parameters-16">Type Parameters<a href="#type-parameters-16" class="hash-link" aria-label="Direct link to Type Parameters" title="Direct link to Type Parameters" translate="no">​</a></h4>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="r-8">R<a href="#r-8" class="hash-link" aria-label="Direct link to R" title="Direct link to R" translate="no">​</a></h5>
+<p><code>R</code> <em>extends</em> <a href="#readable" class=""><code>Readable</code></a></p>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="unhandled-1">Unhandled<a href="#unhandled-1" class="hash-link" aria-label="Direct link to Unhandled" title="Direct link to Unhandled" translate="no">​</a></h3>
+<blockquote>
+<p><strong>Unhandled</strong> = <code>&quot;boundary&quot;</code> | <code>&quot;notify&quot;</code></p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L10" target="_blank" rel="noopener noreferrer" class="">config.ts:10</a></p>
+<p>What happens to an error nobody handled (a result nobody listed, a network
+failure nobody listed as <code>&quot;transport-error&quot;</code>, a bug):</p>
+<ul>
+<li class=""><code>&quot;boundary&quot;</code>: the nearest <code>&lt;Boundary&gt;</code> shows it.</li>
+<li class=""><code>&quot;notify&quot;</code>: <code>errors.notify</code> shows it; the page stays.</li>
+</ul>
+<hr>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="unhandledpolicy">UnhandledPolicy<a href="#unhandledpolicy" class="hash-link" aria-label="Direct link to UnhandledPolicy" title="Direct link to UnhandledPolicy" translate="no">​</a></h3>
+<blockquote>
+<p><strong>UnhandledPolicy</strong> = <a href="#unhandled" class=""><code>Unhandled</code></a> | ((<code>error</code>) =&gt; <a href="#unhandled" class=""><code>Unhandled</code></a>)</p>
+</blockquote>
+<p>Defined in: <a href="https://github.com/fxdave/cuple/blob/c283c222e8839c9a0c2894903ce12fdfb4cd7426/packages/react/src/config.ts#L13" target="_blank" rel="noopener noreferrer" class="">config.ts:13</a></p>
+<p>One choice for every unhandled error, or a choice per error.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/fxdave/cuple/tree/main/docs/docs/api/react/index.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/cuple/v2/docs/api/openapi/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">@cuple/openapi</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/cuple/v2/docs/api/react-testing/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">@cuple/react/testing</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#functions" class="table-of-contents__link toc-highlight">Functions</a><ul><li><a href="#boundary" class="table-of-contents__link toc-highlight">Boundary()</a></li><li><a href="#combine" class="table-of-contents__link toc-highlight">combine()</a></li><li><a href="#createcuplestore" class="table-of-contents__link toc-highlight">createCupleStore()</a></li><li><a href="#cupleprovider" class="table-of-contents__link toc-highlight">CupleProvider()</a></li><li><a href="#tocupleerror" class="table-of-contents__link toc-highlight">toCupleError()</a></li><li><a href="#useaction" class="table-of-contents__link toc-highlight">useAction()</a></li><li><a href="#useget" class="table-of-contents__link toc-highlight">useGet()</a></li><li><a href="#useisfetching" class="table-of-contents__link toc-highlight">useIsFetching()</a></li><li><a href="#usepages" class="table-of-contents__link toc-highlight">usePages()</a></li><li><a href="#usestream" class="table-of-contents__link toc-highlight">useStream()</a></li></ul></li><li><a href="#type-aliases" class="table-of-contents__link toc-highlight">Type Aliases</a><ul><li><a href="#action" class="table-of-contents__link toc-highlight">Action</a></li><li><a href="#actionoptions" class="table-of-contents__link toc-highlight">ActionOptions</a></li><li><a href="#actionstate" class="table-of-contents__link toc-highlight">ActionState</a></li><li><a href="#combinecontext" class="table-of-contents__link toc-highlight">CombineContext</a></li><li><a href="#combined" class="table-of-contents__link toc-highlight">Combined</a></li><li><a href="#cupleconfig" class="table-of-contents__link toc-highlight">CupleConfig</a></li><li><a href="#cupleerror" class="table-of-contents__link toc-highlight">CupleError</a></li><li><a href="#cuplestore" class="table-of-contents__link toc-highlight">CupleStore</a></li><li><a href="#getendpoint" class="table-of-contents__link toc-highlight">GetEndpoint</a></li><li><a href="#readable-3" class="table-of-contents__link toc-highlight">Readable</a></li><li><a href="#readableargs" class="table-of-contents__link toc-highlight">ReadableArgs</a></li><li><a href="#readoptions" class="table-of-contents__link toc-highlight">ReadOptions</a></li><li><a href="#readvalue" class="table-of-contents__link toc-highlight">ReadValue</a></li><li><a href="#resolveoptions" class="table-of-contents__link toc-highlight">ResolveOptions</a></li><li><a href="#route" class="table-of-contents__link toc-highlight">Route</a></li><li><a href="#streamevent" class="table-of-contents__link toc-highlight">StreamEvent</a></li><li><a href="#target" class="table-of-contents__link toc-highlight">Target</a></li><li><a href="#unhandled-1" class="table-of-contents__link toc-highlight">Unhandled</a></li><li><a href="#unhandledpolicy" class="table-of-contents__link toc-highlight">UnhandledPolicy</a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/cuple/v2/docs/category/server">Server</a></li><li class="footer__item"><a class="footer__link-item" href="/cuple/v2/docs/category/client">Client</a></li><li class="footer__item"><a class="footer__link-item" href="/cuple/v2/docs/category/react">React</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Try it</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/fxdave/react-express-cuple-boilerplate" target="_blank" rel="noopener noreferrer" class="footer__link-item">Boilerplate<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a href="https://stackblitz.com/~/github.com/fxdave/react-express-cuple-boilerplate/tree/stackblitz?file=backend/src/index.ts" target="_blank" rel="noopener noreferrer" class="footer__link-item">StackBlitz<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/fxdave/cuple" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="margin-bottom--sm"><img src="/cuple/v2/img/cuple_light_export.svg" class="footer__logo themedComponent_mlkZ themedComponent--light_NVdE" height="100px"><img src="/cuple/v2/img/cuple_dark_export.svg" class="footer__logo themedComponent_mlkZ themedComponent--dark_xIcU" height="100px"></div><div class="footer__copyright">This page is licensed under a Creative Commons Attribution-NoDerivatives 4.0 International License. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
