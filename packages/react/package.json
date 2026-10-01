@@ -1,6 +1,6 @@
 {
   "name": "@cuple/react",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "React bindings for Cuple RPC: Suspense reads, typed actions, explicit refresh",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/fxdave/cuple#readme",
   "peerDependencies": {
-    "@cuple/client": "*",
+    "@cuple/client": "^2.0.0",
     "react": ">=19",
     "@testing-library/react": ">=16"
   },

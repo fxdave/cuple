@@ -1,6 +1,6 @@
 {
   "name": "@cuple/mcp",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Expose Cuple routes as MCP tools",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,9 +9,9 @@
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "dependencies": {
-    "@cuple/client": "*",
-    "@cuple/inspect": "*",
-    "@cuple/openapi": "*",
+    "@cuple/client": "^2.0.0",
+    "@cuple/inspect": "^2.0.0",
+    "@cuple/openapi": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.30.1"
   },
   "peerDependencies": {
