@@ -1,6 +1,6 @@
 {
   "name": "@cuple/client",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "typescript-based RPC with REST compatibility",
   "scripts": {
     "build:browser": "tsc -p tsconfig.browser.json",
@@ -26,7 +26,9 @@
     ".": {
       "browser": {
         "types": "./dist/browser/index.d.ts",
-        "import": "./dist/browser/index.js"
+        "import": "./dist/browser/index.js",
+        "require": "./dist/browser/index.js",
+        "default": "./dist/browser/index.js"
       },
       "node": {
         "types": "./dist/node/index.d.ts",
@@ -36,7 +38,9 @@
       },
       "default": {
         "types": "./dist/node/index.d.ts",
-        "import": "./dist/node/index.js"
+        "import": "./dist/node/index.js",
+        "require": "./dist/node/index.js",
+        "default": "./dist/node/index.js"
       }
     }
   },
