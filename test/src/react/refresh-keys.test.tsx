@@ -94,7 +94,7 @@ describe("store.refreshKeys", () => {
     expect(await screen.findByText("user linus")).toBeDefined();
   });
 
-  it('onKeyChange "drop" (default): the old key\'s data is gone, switching back loads again', async () => {
+  it("keepOnKeyChange false (default): the old key's data is gone, switching back loads again", async () => {
     const { store } = await renderWhoAmI();
     current = "linus";
     await act(async () => store.refreshKeys());
@@ -106,8 +106,8 @@ describe("store.refreshKeys", () => {
     expect(calls.of("whoami:ada")).toBe(before + 1);
   });
 
-  it('onKeyChange "keep": switching back uses the cache', async () => {
-    const { store } = await renderWhoAmI({ cache: { onKeyChange: "keep" } });
+  it("keepOnKeyChange true: switching back uses the cache", async () => {
+    const { store } = await renderWhoAmI({ cache: { keepOnKeyChange: true } });
     current = "linus";
     await act(async () => store.refreshKeys());
     expect(await screen.findByText("user linus")).toBeDefined();
@@ -119,7 +119,7 @@ describe("store.refreshKeys", () => {
   });
 
   it("never refetches an entry under a key that is no longer current", async () => {
-    const { store } = await renderWhoAmI({ cache: { onKeyChange: "keep" } });
+    const { store } = await renderWhoAmI({ cache: { keepOnKeyChange: true } });
     const held = gate();
     hold = held.opened;
     // A refresh is in flight for ada, and a second one is queued behind it.

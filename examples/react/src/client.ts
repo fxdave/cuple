@@ -34,7 +34,7 @@ export const refreshes = {
 
 // Switching accounts re-reads only what depends on the account: every call's
 // key changed, so each reader reads again under the new one. The previous
-// account's data is dropped at once (the default `onKeyChange: "drop"`): the
+// account's data is dropped at once (the default `keepOnKeyChange: false`): the
 // next person at this screen may not be the same person.
 export function signIn(accountId: AccountId) {
   signedInAs = accountId;

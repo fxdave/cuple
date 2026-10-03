@@ -50,12 +50,13 @@ export type CupleConfig = {
      */
     storeStaleMs?: number;
     /**
-     * What `store.refreshKeys()` does with data whose key changed (the user a
-     * `with({ key })` getter returns, say): `"drop"` deletes it at once;
-     * `"keep"` keeps it like any data nobody reads, so switching back is
-     * instant. Read from the provider. Default: `"drop"`.
+     * Whether `store.refreshKeys()` keeps data whose key changed (the user a
+     * `with({ key })` getter returns, say). `false` deletes it at once, so
+     * nothing of the previous account can show again. `true` keeps it like
+     * any data nobody reads, so switching back is instant: only when one
+     * person owns every account. Read from the provider. Default: `false`.
      */
-    onKeyChange?: "drop" | "keep";
+    keepOnKeyChange?: boolean;
   };
   errors?: {
     /**
@@ -109,7 +110,7 @@ export type ResolvedConfig = {
 };
 
 export const defaultConfig: ResolvedConfig = {
-  cache: { enabled: true, freshMs: 0, storeStaleMs: 5 * 60_000, onKeyChange: "drop" },
+  cache: { enabled: true, freshMs: 0, storeStaleMs: 5 * 60_000, keepOnKeyChange: false },
   errors: { unhandled: "boundary", message: "Something went wrong." },
   loading: { blocking: false },
 };

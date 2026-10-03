@@ -62,7 +62,7 @@ export type CupleStore = {
    * - Key unchanged: stays as it is. No request, no re-render.
    * - Key changed: its readers read again under the new key — cached data for
    *   it shows at once, anything else loads. The old key's data is dropped, or
-   *   kept like any unread data with `cache.onKeyChange: "keep"`.
+   *   kept like any unread data with `cache.keepOnKeyChange: true`.
    * - Combined reads built from a changed call run again; streams reconnect.
    *
    * Nothing is ever refetched under a key that is no longer current, so data
@@ -238,7 +238,7 @@ export class Store implements CupleStore {
         }
       }
     }
-    const drop = this.defaults.cache.onKeyChange === "drop";
+    const drop = !this.defaults.cache.keepOnKeyChange;
     for (const key of changed) {
       const entry = this.entries.get(key);
       if (entry && (drop || rerun.has(entry))) this.evict(entry);

@@ -192,7 +192,7 @@ store.clear(); // sign-out
 ```
 
 - **`refresh` resolves when the new data has landed, and never rejects:** a failure goes to whoever reads the data. Data on screen stays until the new data arrives; data nobody reads is dropped and fetched fresh when next read.
-- **`refreshKeys`** re-reads only calls whose `with({ key })` changed. The old key's data is dropped, or kept for instant switch-back with `config.cache.onKeyChange: "keep"` (only when one person owns every account: the old data shows again at once). Sign-out still uses `clear()`.
+- **`refreshKeys`** re-reads only calls whose `with({ key })` changed. The old key's data is dropped, or kept for instant switch-back with `config.cache.keepOnKeyChange: true` (only when one person owns every account: the old data shows again at once). Sign-out still uses `clear()`.
 - **`preload` never rejects,** and a failed preload isn't kept: nobody was waiting for it.
 - **A read that misses the cache only because `"5"` and `5` differ** logs a warning: the router gave a string, the component a number, and both got fetched.
 - **In a router loader, call `preload` without returning it,** so loading and errors stay with `<Boundary>`.
@@ -232,7 +232,7 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 | `cache.enabled` | `true`; `false` drops data as soon as nobody reads it |
 | `cache.freshMs` | `0`: coming back to cached data refreshes it in the background |
 | `cache.storeStaleMs` | 5 minutes of being stale and unread |
-| `cache.onKeyChange` | `"drop"` (for `store.refreshKeys()`) |
+| `cache.keepOnKeyChange` | `false` (for `store.refreshKeys()`) |
 | `errors.unhandled` | `"boundary"` |
 | `errors.notify` | none |
 | `errors.message` | `"Something went wrong."` |
