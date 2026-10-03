@@ -65,8 +65,9 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
   `resolveOn: [...]` is the complete list instead: success is not implied. These are the same idea as `fetchCuple(...).thenResolveAlso([...])` / `.thenResolveOn([...])`: spelled as an option on a hook, and as a method on a request.
 - **Result names** (`"not-found-error"`, `"notFound"`) are whatever your server returns; pick one convention.
 - **Shared.** Every reader of the same call shares one request and one cached result.
-- **New args suspend again.** Old data belongs to other args. To keep it on screen while the new args load (search boxes), pass `useDeferredValue(args)`.
-- **Conditional fetching is conditional rendering:** `{id && <Order id={id} />}`. There is no `enabled` flag.
+- **New args suspend again.** Old data belongs to other args. To keep it on screen while the new args load, pass `useDeferredValue(args)`.
+- **Search boxes:** `{ config: { loading: { debounceMs: 300 }, cache: { enabled: false } } }` sends one request once typing pauses, keeps the old results on screen while the new ones load, and keeps nothing for searches nobody shows anymore.
+- **Conditional fetching is conditional rendering:** `{id && <Order id={id} />}`. There is no flag to skip a fetch.
 - **Polling:** `useGet(client.getStats, undefined, { config: { loading: { everyMs: 30_000 } } })`. It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
 - **Coming back to cached data** (another tab, a reopened panel) shows it at once and refreshes it in the background. See Configuration. "Coming back" means some component has read this data before; the first component to read it just loads it, once.
 
@@ -237,6 +238,7 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 | `errors.message` | `"Something went wrong."` |
 | `loading.blocking` | `false` |
 | `loading.everyMs` | none (reads only) |
+| `loading.debounceMs` | none (`useGet` only) |
 
 ## Why it works this way
 

@@ -84,6 +84,13 @@ export type CupleConfig = {
     blocking?: boolean;
     /** Reads only: refetch every this many ms while something reads it. */
     everyMs?: number;
+    /**
+     * `useGet` only: when its args change, keep showing the current ones until
+     * they've stayed the same for this many ms, then load the new ones as a
+     * transition — the current data stays on screen meanwhile. One request
+     * for a burst of typing, not one per keystroke. The first args load at once.
+     */
+    debounceMs?: number;
   };
 };
 
@@ -95,7 +102,7 @@ export type ResolvedConfig = {
     notify?: (error: CupleError) => void;
     message: string;
   };
-  loading: { blocking: boolean; everyMs?: number };
+  loading: { blocking: boolean; everyMs?: number; debounceMs?: number };
 };
 
 export const defaultConfig: ResolvedConfig = {

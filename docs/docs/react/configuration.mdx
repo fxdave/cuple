@@ -44,6 +44,7 @@ With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and lose
 | ------- | ------- | ------------ |
 | `blocking` | `false` | Counts for `useIsFetching({ blocking: true })`: actions while they run, reads while their data refetches. For a full-page overlay. See [The store](./store#full-page-loading). |
 | `everyMs` | none | Reads only: refetch every this many ms while something reads it. |
+| `debounceMs` | none | `useGet` only: when its args change, keep showing the current ones until the new ones have stayed the same this long, then load them as a transition, with the current data on screen meanwhile. One request for a burst of typing. The first args load at once. See [Reading](./reading#when-the-arguments-change). |
 
 ## Where each is used
 

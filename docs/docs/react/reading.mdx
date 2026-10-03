@@ -58,6 +58,13 @@ function SearchResults({ query }: { query: string }) {
 }
 ```
 
+That still sends a request per keystroke. To send one once typing pauses, set `config.loading.debounceMs`: new args wait until they've stayed the same that long, then load as a transition, so the old results stay on screen meanwhile, like `useDeferredValue`. The first args load at once. With `cache.enabled: false`, searches nobody shows anymore aren't kept:
+
+```tsx file=../../../examples/docs/search/app.tsx#search
+```
+
+To run it: `cd examples/docs && npm run dev:search`.
+
 ## Several fetches, one value
 
 An order page shows the order and the customer who placed it. The customer's id is in the order, so the second request can only start when the first one is done:

@@ -1,5 +1,5 @@
 import { CupleTransportError, transportErrorResult } from "@cuple/client";
-import { startTransition, use, useEffect, useReducer, useRef } from "react";
+import { startTransition, use, useEffect, useReducer, useRef, useState } from "react";
 import { type ResolvedConfig, useConfig } from "./config";
 import { useCupleContext } from "./provider";
 import { listsTransportError, resolveResult, retentionOf, type Store } from "./store";
@@ -18,7 +18,8 @@ import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from 
  * - Suspends until the first load lands, and again when the args change: the
  *   old data belongs to other args, and showing it under the new ones could
  *   lead to a write against the wrong item. To keep old content while new
- *   args load (search boxes), pass `useDeferredValue(args)`.
+ *   args load, pass `useDeferredValue(args)` — or, for search boxes,
+ *   `config.loading.debounceMs`, which does that too.
  * - Success only by default: anything else throws to the nearest `<Boundary>`.
  *   `resolveAlso` keeps the listed results as values; `resolveOn` keeps only
  *   the listed ones.
@@ -29,7 +30,7 @@ import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from 
  *   `config.cache.freshMs`.
  *
  * To fetch only sometimes, render the component only sometimes:
- * `{id && <Order id={id} />}`. There is no `enabled` flag.
+ * `{id && <Order id={id} />}`. There is no flag to skip a fetch.
  */
 export function useGet<
   R extends Readable,
@@ -38,9 +39,28 @@ export function useGet<
   const { store } = useCupleContext();
   const [args, options] = rest as unknown as [unknown, ReadOptions<Readable> | undefined];
   const config = useConfig(options?.config);
-  const key = store.keyOf(readable, args);
-  useSubscription(store, [key], config);
-  return readThrough(store, readable, args, config, options) as ReadValue<R, O>;
+  const call = useDebounced(
+    { readable, args, key: store.keyOf(readable, args) },
+    config.loading.debounceMs,
+  );
+  useSubscription(store, [call.key], config);
+  return readThrough(store, call.readable, call.args, config, options) as ReadValue<R, O>;
+}
+
+/**
+ * The call to show: the first one at once, then each new one once `ms` passed
+ * without another, switched to as a transition so the current one stays on
+ * screen while it loads. Without `ms`, always the latest.
+ */
+function useDebounced<T extends { key: string }>(call: T, ms: number | undefined): T {
+  const [shown, setShown] = useState(call);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `call.key` stands for `call`
+  useEffect(() => {
+    if (ms === undefined || call.key === shown.key) return;
+    const timer = setTimeout(() => startTransition(() => setShown(call)), ms);
+    return () => clearTimeout(timer);
+  }, [call.key, shown.key, ms]);
+  return ms === undefined ? call : shown;
 }
 
 /** Reads one call during render: the value, or suspends, or throws. Loop-safe. */
