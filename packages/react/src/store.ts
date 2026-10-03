@@ -144,6 +144,19 @@ type Entry = {
   readBefore: boolean;
   /** A read of it threw, so a boundary's retry should drop it. */
   threw: boolean;
+  /**
+   * The `useGet` renders asking for it: each a mounted component's token,
+   * released when it moves on to other args or unmounts.
+   */
+  claims: Set<symbol>;
+  /**
+   * Its first load may be aborted once every claim is released: only
+   * `useGet` ever asked for it. A preload, a combined read or `usePages`
+   * asking for it clears this.
+   */
+  abortable: boolean;
+  /** Aborts the request in flight. */
+  controller: AbortController | null;
   gcTimer?: ReturnType<typeof setTimeout>;
 };
 
@@ -191,7 +204,7 @@ export class Store implements CupleStore {
   }
 
   async preload<R extends Readable>(readable: R, ...rest: ReadRest<R, never>) {
-    const entry = this.ensure(readable, rest[0], "background");
+    const entry = this.ensure(readable, rest[0], { priority: "background" });
     if (entry.inflight) await entry.inflight;
     if (!entry.observed && !this.isRead(entry) && isFailure(entry)) this.evict(entry);
   }
@@ -239,19 +252,31 @@ export class Store implements CupleStore {
 
   /**
    * The entry for a call, created and fetching if it wasn't cached. A new
-   * entry is kept as `retention` says until someone subscribes.
+   * entry is kept as `retention` says until someone subscribes. `claim`: a
+   * `useGet` render asking, see {@link release}.
    */
   ensure(
     route: Readable,
     args: unknown,
-    priority: Priority = "foreground",
-    retention = retentionOf(this.defaults.cache),
+    options: { priority?: Priority; retention?: Retention; claim?: symbol } = {},
   ): Entry {
+    const {
+      priority = "foreground",
+      retention = retentionOf(this.defaults.cache),
+      claim,
+    } = options;
     const readable = toTarget(route);
     const key = keyOf(readable, args);
     const existing = this.entries.get(key);
-    if (existing) return existing;
+    if (existing) {
+      if (claim) existing.claims.add(claim);
+      else existing.abortable = false;
+      return existing;
+    }
     const entry = this.create(key, readable, args, retention);
+    if (claim) entry.claims.add(claim);
+    // A combined read's `load` takes no signal: aborting it would stop nothing.
+    entry.abortable = claim !== undefined && !isCombined(readable);
     this.warnNearMiss(entry);
     void this.fetchEntry(entry, priority);
     return entry;
@@ -285,6 +310,28 @@ export class Store implements CupleStore {
     }
     if (entry.hasValue) return { value: entry.value };
     return { pending: entry.first };
+  }
+
+  /**
+   * A `useGet` render no longer asks for `key`: its component moved on to
+   * other args, or unmounted. If that was the last one asking, nothing
+   * subscribed, and its first load is still in flight, the request is aborted
+   * and the entry dropped — on HTTP/1.1, browsers allow about 6 connections
+   * per host, and a search the user typed past shouldn't hold one.
+   */
+  release(key: string, claim: symbol) {
+    const entry = this.entries.get(key);
+    if (!entry?.claims.delete(claim) || entry.claims.size > 0) return;
+    // Never during render; and a StrictMode effect re-run may subscribe meanwhile.
+    queueMicrotask(() => {
+      if (this.entries.get(key) !== entry || !entry.abortable) return;
+      if (entry.claims.size > 0 || this.isRead(entry) || entry.hasValue) return;
+      if (!entry.inflight) return;
+      this.evict(entry);
+      entry.controller?.abort();
+      // A render still suspended on it, if any, retries and fetches again.
+      entry.settleFirst?.resolve(undefined);
+    });
   }
 
   /** A failed read: the entry holds a result the reader didn't ask for. */
@@ -425,6 +472,9 @@ export class Store implements CupleStore {
       childKeys: new Set(),
       retention,
       readBefore: false,
+      claims: new Set(),
+      abortable: false,
+      controller: null,
     };
     this.entries.set(key, entry);
     this.scheduleGc(entry);
@@ -462,17 +512,20 @@ export class Store implements CupleStore {
   private async request(entry: Entry, priority: Priority) {
     const busy = priority === "foreground" ? 1 : 0;
     this.setBusy(+busy);
+    const controller = new AbortController();
+    entry.controller = controller;
     try {
       const value = isCombined(entry.readable)
         ? await entry.readable.load(this.contextFor(entry), entry.args)
         : await fetchCuple(
             entry.readable as ClientEndpointRef,
-            entry.args as never,
+            withSignal(entry.args, controller.signal) as never,
           ).thenResolveAll();
       this.land(entry, { value });
     } catch (error) {
       this.land(entry, { error });
     } finally {
+      if (entry.controller === controller) entry.controller = null;
       this.setBusy(-busy);
     }
   }
@@ -504,7 +557,7 @@ export class Store implements CupleStore {
     return {
       get: async (readable: Readable, ...rest: unknown[]) => {
         const [args, options] = rest as [unknown, ResolveOptions<Readable> | undefined];
-        const child = this.ensure(readable, args, "foreground");
+        const child = this.ensure(readable, args);
         child.observed = true;
         parent.deps.add(child.target);
         parent.childKeys.add(child.key);
@@ -723,6 +776,12 @@ function keyOf(readable: Readable, args: unknown): string {
   if (isCombined(readable)) return `combined:${readable.id}:${stableStringify(args)}`;
   const [endpoint, client, input] = cupleRequestKey(readable as ClientEndpointRef, args);
   return `endpoint:${endpoint}:${stableStringify([client, input])}`;
+}
+
+/** The call's args, with a signal to abort it. */
+function withSignal(args: unknown, signal: AbortSignal) {
+  const given = args as { options?: object } | undefined;
+  return { ...given, options: { ...given?.options, signal } };
 }
 
 function looseKey(args: unknown) {

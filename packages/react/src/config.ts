@@ -89,6 +89,9 @@ export type CupleConfig = {
      * they've stayed the same for this many ms, then load the new ones as a
      * transition — the current data stays on screen meanwhile. One request
      * for a burst of typing, not one per keystroke. The first args load at once.
+     *
+     * A first load it moved on from (or unmounted during) is aborted, unless
+     * another component, a preload or a combined read asked for it too.
      */
     debounceMs?: number;
   };

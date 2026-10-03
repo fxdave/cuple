@@ -63,6 +63,8 @@ That still sends a request per keystroke. To send one once typing pauses, set `c
 ```tsx file=../../../examples/docs/search/app.tsx#search
 ```
 
+When the user types on while a search is loading, or closes the results, the request nobody waits for anymore is aborted: on HTTP/1.1 a browser opens only about 6 connections per host, and a stale search shouldn't hold one. Only a first load is aborted, and only when no other component reads it and no preload or combined read asked for it. The server finishes the handler regardless, unless it listens for the request closing.
+
 To run it: `cd examples/docs && npm run dev:search`.
 
 ## Several fetches, one value

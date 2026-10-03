@@ -39,28 +39,53 @@ export function useGet<
   const { store } = useCupleContext();
   const [args, options] = rest as unknown as [unknown, ReadOptions<Readable> | undefined];
   const config = useConfig(options?.config);
-  const call = useDebounced(
+  const { call, claim } = useDebounced(
+    store,
     { readable, args, key: store.keyOf(readable, args) },
     config.loading.debounceMs,
   );
   useSubscription(store, [call.key], config);
-  return readThrough(store, call.readable, call.args, config, options) as ReadValue<R, O>;
+  return readThrough(
+    store,
+    call.readable,
+    call.args,
+    config,
+    options,
+    claim,
+  ) as ReadValue<R, O>;
 }
 
 /**
  * The call to show: the first one at once, then each new one once `ms` passed
  * without another, switched to as a transition so the current one stays on
  * screen while it loads. Without `ms`, always the latest.
+ *
+ * With `ms`, its reads carry `claim`, and moving on from a call (or
+ * unmounting) releases it: a first load nobody else asked for is aborted.
+ * Only here does the hook know which call it moved on from — a render alone
+ * can't tell a superseded call from one a transition is still loading.
  */
-function useDebounced<T extends { key: string }>(call: T, ms: number | undefined): T {
+function useDebounced<T extends { key: string }>(
+  store: Store,
+  call: T,
+  ms: number | undefined,
+): { call: T; claim?: symbol } {
   const [shown, setShown] = useState(call);
+  // What it last asked for: what's shown, or what's loading to replace it.
+  const wanted = useRef(call.key);
+  const [claim] = useState(() => Symbol("useGet"));
   // biome-ignore lint/correctness/useExhaustiveDependencies: `call.key` stands for `call`
   useEffect(() => {
-    if (ms === undefined || call.key === shown.key) return;
-    const timer = setTimeout(() => startTransition(() => setShown(call)), ms);
+    if (ms === undefined || call.key === wanted.current) return;
+    const timer = setTimeout(() => {
+      store.release(wanted.current, claim);
+      wanted.current = call.key;
+      startTransition(() => setShown(call));
+    }, ms);
     return () => clearTimeout(timer);
-  }, [call.key, shown.key, ms]);
-  return ms === undefined ? call : shown;
+  }, [store, call.key, ms]);
+  useEffect(() => () => store.release(wanted.current, claim), [store, claim]);
+  return ms === undefined ? { call } : { call: shown, claim };
 }
 
 /** Reads one call during render: the value, or suspends, or throws. Loop-safe. */
@@ -70,8 +95,12 @@ export function readThrough(
   args: unknown,
   config: ResolvedConfig,
   options?: ResolveOptions<Readable>,
+  claim?: symbol,
 ): unknown {
-  const entry = store.ensure(readable, args, "foreground", retentionOf(config.cache));
+  const entry = store.ensure(readable, args, {
+    retention: retentionOf(config.cache),
+    claim,
+  });
   try {
     const outcome = store.read(entry);
     if ("pending" in outcome) use(outcome.pending);
