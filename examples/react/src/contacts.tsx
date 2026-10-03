@@ -73,7 +73,7 @@ export function Contacts() {
 function ImportSamples() {
   const importSamples = useAction(() => fetchCuple(client.importContacts.post), {
     refresh: refreshes.contacts,
-    config: { loading: { blocking: true }, errors: { unhandled: "notify" } },
+    config: { loading: { blocking: true }, errors: { onError: "notify" } },
   });
   return (
     <button type="button" onClick={() => importSamples.run()}>
@@ -112,7 +112,7 @@ function ContactRow(props: {
       });
       props.onDeleted(props.contact.id); // close its form if it's open
     },
-    { refresh: refreshes.contacts, config: { errors: { unhandled: "notify" } } },
+    { refresh: refreshes.contacts, config: { errors: { onError: "notify" } } },
   );
 
   return (
@@ -211,7 +211,7 @@ function ContactForm(props: {
       // Only a successful save changed anything worth refetching.
       refresh: { success: refreshes.contacts },
       // Anything the form doesn't handle is shown with notify; the form keeps what the user typed.
-      config: { errors: { unhandled: "notify" } },
+      config: { errors: { onError: "notify" } },
     },
   );
   const { errors } = form.formState;

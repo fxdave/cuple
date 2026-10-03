@@ -15,8 +15,9 @@ import type { Readable } from "./types";
  *   "succeeded"; check `value.result`. Listed failures are handled: they're
  *   yours to show, typed.
  * - `failed`: an error nobody handled. It already went where
- *   `config.errors.unhandled` says: the nearest `<Boundary>` (this component
- *   is then off screen) or `errors.notify`. Don't report it again; use it only
+ *   `config.errors.onError` says: the nearest `<Boundary>` (this component
+ *   is then off screen), `errors.notify`, or nowhere (`null`: this component
+ *   shows it). Unless it's yours to show, don't report it again; use it only
  *   to adjust what's on screen, e.g. re-enable a button.
  */
 export type ActionState<T> =
@@ -32,9 +33,9 @@ export type ActionOptions<T> = {
   /**
    * This action's settings, over the `<Boundary>`'s and the provider's. The
    * ones actions use:
-   * - `errors.unhandled`: where an error nobody handled goes — `"boundary"`
-   *   (default) or `"notify"`, or a function choosing per error
-   * - `errors.notify`, `errors.message`: how it's shown, and the fallback text
+   * - `errors.onError`: where an error nobody handled goes — `"boundary"`
+   *   (default), `"notify"`, `null` (handled), or a function choosing per error
+   * - `errors.notify`, `errors.fallbackMessage`: how it's shown, and the fallback text
    * - `loading.blocking`: while it runs, including its refresh,
    *   `useIsFetching({ blocking: true })` is true — for a full-page overlay
    */
@@ -138,13 +139,15 @@ export function useAction<TArgs extends unknown[], T>(
             next = { status: "done", value };
           } catch (error) {
             // Nobody handled it: handled failures are listed results, returned above.
-            const unhandled = toCupleError(error, config.errors.message);
+            const unhandled = toCupleError(error, config.errors.fallbackMessage);
             next = { status: "failed", error: unhandled };
-            const policy = config.errors.unhandled;
-            const choice = typeof policy === "function" ? policy(unhandled) : policy;
-            if (choice === "boundary") raise(error);
-            else if (config.errors.notify) config.errors.notify(unhandled);
-            else raise(missingNotify(error));
+            const { onError } = config.errors;
+            const route = typeof onError === "function" ? onError(unhandled) : onError;
+            if (route === "boundary") raise(error);
+            else if (route === "notify") {
+              if (config.errors.notify) config.errors.notify(unhandled);
+              else raise(missingNotify(error));
+            }
           }
           if (id === lastRun.current) setState(next);
           return next;

@@ -54,25 +54,34 @@ type TransportErrorResult = { result: "transport-error"; statusCode: number | nu
 | Field | Value |
 | ----- | ----- |
 | `kind` | `"response"`: the server answered with a result nobody listed. `"transport"`: no Cuple answer at all. `"bug"`: your code threw. |
-| `message` | Always readable. The server's message for `"response"` when it sent one; your own error's message for `"bug"` in development. Otherwise `errors.message` (default `"Something went wrong."`). |
+| `message` | Always readable. The server's message for `"response"` when it sent one; your own error's message for `"bug"` in development. Otherwise `errors.fallbackMessage` (default `"Something went wrong."`). |
 | `statusCode` | The HTTP status, when there was a response. |
 | `result` | For `"response"`: the result the server sent, e.g. `"forbidden-error"`. |
 | `cause` | What was actually thrown, for logging. |
 
-`errors.message` is set like any config, on the provider, a `<Boundary config>`, or one request:
+`errors.fallbackMessage` is set like any config, on the provider, a `<Boundary config>`, or one request:
 
 ```tsx
-<Boundary config={{ errors: { message: "Couldn't load the report." } }} error={(e) => <p>{e.message}</p>}>
+<Boundary config={{ errors: { fallbackMessage: "Couldn't load the report." } }} error={(e) => <p>{e.message}</p>}>
 ```
 
 ## Keeping the page: `"notify"`
 
-Some unhandled errors shouldn't replace a region: a failed row delete, a dropped connection. `errors.unhandled: "notify"` shows them with `errors.notify` (a toast, a banner) instead, and the page stays:
+Some unhandled errors shouldn't replace a region: a failed row delete, a dropped connection. `errors.onError: "notify"` shows them with `errors.notify` (a toast, a banner) instead, and the page stays:
 
 ```tsx file=../../../examples/react/src/App.tsx#config
 ```
 
- - `unhandled` is `"boundary"` (the default), `"notify"`, or a function choosing per `CupleError`: here a dropped connection is a toast, and anything else goes to the boundary.
+ - `onError` is `"boundary"` (the default), `"notify"`, `null`, or a function choosing per `CupleError`: here a dropped connection is a toast, and anything else goes to the boundary.
+ - `null` means handled: nothing shows it but the component, from the action's `status: "failed"` and `error`. A function must return, so a branch that forgot to decide doesn't compile:
+
+```tsx
+onError: (error) => {
+  if (error.statusCode !== 409) return "boundary";
+  setConflict(true); // shown by this component
+  return null;
+},
+```
  - Set it on the provider, on a `<Boundary config>` for a region, or on one action's `config`.
  - With `"notify"`, the action's `status` becomes `"failed"` and `error` is the `CupleError`, so the component can show something locally too.
 
@@ -103,7 +112,7 @@ For a failure that is a normal outcome (a deleted item), list it with `resolveAl
 :::note[Why it works this way]
 
 - **List what you handle, instead of catching it.** `catch (error)` gives you `unknown`: a validation error's `issues` have to be narrowed out by hand, and a typo in a result name still compiles. A listed result is in the return type, with its real shape.
-- **Unhandled errors go to a boundary by default.** An error kept in `action.error` that no component renders is an error nobody sees. Sending it where a failed read goes makes the default visible; `"notify"` is a choice you make where it fits.
-- **One `CupleError` with a message.** The boundary is written once, for every kind of failure. Given raw errors, it would need to know about results, network errors and bugs. And a bug's own message can leak internals, so in production it's replaced by `errors.message`.
+- **Unhandled errors go to a boundary by default.** An error kept in `action.error` that no component renders is an error nobody sees. Sending it where a failed read goes makes the default visible; `"notify"` and `null` are choices you make where they fit.
+- **One `CupleError` with a message.** The boundary is written once, for every kind of failure. Given raw errors, it would need to know about results, network errors and bugs. And a bug's own message can leak internals, so in production it's replaced by `errors.fallbackMessage`.
 
 :::

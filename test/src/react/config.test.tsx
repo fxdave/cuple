@@ -85,7 +85,7 @@ describe("config cascades: request > Boundary > Provider > built-in", () => {
 
   it("the provider's errors apply to actions inside it", async () => {
     const notify = vi.fn();
-    const { wrapper } = provider({ errors: { unhandled: "notify", notify } });
+    const { wrapper } = provider({ errors: { onError: "notify", notify } });
     await renderAsync(<Failing />, { wrapper });
     await click();
     expect(await screen.findByText("status failed")).toBeDefined();
@@ -95,7 +95,7 @@ describe("config cascades: request > Boundary > Provider > built-in", () => {
   it("a Boundary's config overrides the provider's for what's inside it", async () => {
     const notify = vi.fn();
     const regional = vi.fn();
-    const { wrapper } = provider({ errors: { unhandled: "notify", notify } });
+    const { wrapper } = provider({ errors: { onError: "notify", notify } });
     await renderAsync(
       <Boundary config={{ errors: { notify: regional } }}>
         <Failing />
@@ -112,14 +112,14 @@ describe("config cascades: request > Boundary > Provider > built-in", () => {
     const notify = vi.fn();
     const { wrapper } = provider({ errors: { notify } });
     await renderAsync(
-      <Boundary config={{ errors: { message: "Region message." } }}>
-        <Failing config={{ errors: { unhandled: "notify" } }} />
+      <Boundary config={{ errors: { fallbackMessage: "Region message." } }}>
+        <Failing config={{ errors: { onError: "notify" } }} />
       </Boundary>,
       { wrapper },
     );
     await click();
     expect(await screen.findByText("status failed")).toBeDefined();
-    // `notify` comes from the provider, `unhandled` from the request.
+    // `notify` comes from the provider, `onError` from the request.
     expect(notify).toHaveBeenCalledTimes(1);
   });
 

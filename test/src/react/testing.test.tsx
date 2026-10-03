@@ -51,7 +51,7 @@ describe("renderWithCuple", () => {
     let run!: () => Promise<unknown>;
     function Adder() {
       run = useAction(() => fetchCuple(client.addTodo.post, { body: { text: "x" } }), {
-        config: { errors: { unhandled: "notify" } },
+        config: { errors: { onError: "notify" } },
       }).run;
       return null;
     }

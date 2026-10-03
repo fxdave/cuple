@@ -32,7 +32,7 @@ export function Boundary(props: {
   /**
    * What to show instead of the children when something inside fails. It
    * gets a {@link CupleError}: `error.message` is always readable (the
-   * server's message, or `config.errors.message`). Or `"notify"`: pass it to
+   * server's message, or `config.errors.fallbackMessage`). Or `"notify"`: pass it to
    * `config.errors.notify`, and show nothing in
    * this region while the rest of the page stays.
    */
@@ -47,7 +47,7 @@ export function Boundary(props: {
   const { store } = useCupleContext();
   const parent = useContext(ConfigContext);
   const config = useMemo(() => mergeConfig(parent, props.config), [parent, props.config]);
-  const { notify, message } = config.errors;
+  const { notify, fallbackMessage } = config.errors;
   const suspended =
     props.fallback === undefined ? (
       props.children
@@ -70,7 +70,7 @@ export function Boundary(props: {
           if (!notify) throw missingNotify(error);
           return null;
         }}
-        onCaught={(error) => notify?.(toCupleError(error, message))}
+        onCaught={(error) => notify?.(toCupleError(error, fallbackMessage))}
         onRetry={() => store.dropFailed()}
       >
         {content}
@@ -79,7 +79,7 @@ export function Boundary(props: {
   }
   return (
     <Catch
-      render={(error, retry) => show(toCupleError(error, message), retry)}
+      render={(error, retry) => show(toCupleError(error, fallbackMessage), retry)}
       onRetry={() => store.dropFailed()}
     >
       {content}

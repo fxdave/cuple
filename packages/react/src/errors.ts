@@ -15,7 +15,7 @@ import { CupleTransportError, CupleUnexpectedResponseError } from "@cuple/client
  */
 export type CupleError = {
   kind: "response" | "transport" | "bug";
-  /** Always readable; `config.errors.message` when there's nothing better. */
+  /** Always readable; `config.errors.fallbackMessage` when there's nothing better. */
   message: string;
   /** The HTTP status, when there was a response. */
   statusCode: number | null;

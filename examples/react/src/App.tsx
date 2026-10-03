@@ -36,9 +36,9 @@ export default function App() {
         notify: (error) => setNotice(error.message),
         // An error no code handled: a dropped connection is shown and the page
         // stays; anything else goes to the nearest <Boundary>.
-        unhandled: (error) => (error.kind === "transport" ? "notify" : "boundary"),
+        onError: (error) => (error.kind === "transport" ? "notify" : "boundary"),
         // The message when there's nothing more specific, like a dropped connection.
-        message: "Something went wrong. Check your connection and try again.",
+        fallbackMessage: "Something went wrong. Check your connection and try again.",
       },
     }),
     [],
@@ -241,7 +241,7 @@ function NoteRow(props: {
         params: { id: props.note.id },
       }),
     // A failed row action shouldn't take the page with it.
-    { refresh: refreshes.notes, config: { errors: { unhandled: "notify" } } },
+    { refresh: refreshes.notes, config: { errors: { onError: "notify" } } },
   );
 
   return (

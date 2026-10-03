@@ -5,7 +5,7 @@
  */
 export { Boundary, useIsFetching } from "./boundary";
 export { combine } from "./combine";
-export type { CupleConfig, Unhandled, UnhandledPolicy } from "./config";
+export type { CupleConfig, ErrorRoute, OnError } from "./config";
 export { type CupleError, toCupleError } from "./errors";
 export { CupleProvider } from "./provider";
 export { type CupleStore, createCupleStore } from "./store";

@@ -16,7 +16,7 @@ In this example:
 
  - `form.handleSubmit(save.run)`: `run` resolves when the save and its refresh are done, and never rejects, so react-hook-form's `isSubmitting` covers the whole save.
  - `thenResolveAlso(["validation-error", "transport-error"])` keeps what the form can explain as values: the server's validation errors go on the fields, a dropped connection on the form, and the user's input stays.
- - Anything else (a 500, a bug) is unhandled; `errors.unhandled: "notify"` shows it without replacing the form.
+ - Anything else (a 500, a bug) is unhandled; `errors.onError: "notify"` shows it without replacing the form.
  - `refresh: { success: [...] }`: only a successful save changed anything worth refetching.
 
  - NOTE: To clear the form after a save, call `form.reset()` after `run` resolves, not inside the action. `reset` also clears `isSubmitting`, which would end the submission before the refresh.

@@ -17,7 +17,7 @@ const CupleContext = createContext<CupleContextValue | null>(null);
  *   config={{
  *     errors: {
  *       notify: (error) => toast(error.message),
- *       unhandled: (error) => (error.kind === "transport" ? "notify" : "boundary"),
+ *       onError: (error) => (error.kind === "transport" ? "notify" : "boundary"),
  *     },
  *   }}
  * >

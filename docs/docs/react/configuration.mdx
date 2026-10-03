@@ -34,9 +34,9 @@ With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and lose
 
 | Setting | Default | What it does |
 | ------- | ------- | ------------ |
-| `unhandled` | `"boundary"` | Actions: where an error nobody handled goes. `"boundary"`, `"notify"`, or a function choosing per `CupleError`. See [Errors](./errors). |
+| `onError` | `"boundary"` | Actions: where an error nobody handled goes. `"boundary"`, `"notify"`, `null` (handled: the action's `error` holds it, nothing else shows it), or a function choosing per `CupleError`. See [Errors](./errors). |
 | `notify` | none | How the app shows an error without replacing the page, given a `CupleError`. Used by `"notify"` and `<Boundary error="notify">`. |
-| `message` | `"Something went wrong."` | The `CupleError` message when there's nothing more readable: a network failure, a server result without a message, a bug in production. |
+| `fallbackMessage` | `"Something went wrong."` | The `CupleError` message when there's nothing more readable: a network failure, a server result without a message, a bug in production. |
 
 ## loading
 
@@ -50,7 +50,7 @@ With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and lose
 
  - `useGet`, `usePages`: `cache`, `loading`.
  - `useAction`: `errors`, `loading.blocking`.
- - `<Boundary error>`: `errors.message`; with `"notify"`, `errors.notify`.
+ - `<Boundary error>`: `errors.fallbackMessage`; with `"notify"`, `errors.notify`.
  - Plain code on the store (`store.preload`, `store.refreshKeys`): the provider's config.
 
 :::note[Why it works this way]

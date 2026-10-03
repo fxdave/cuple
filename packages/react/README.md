@@ -36,7 +36,7 @@ import { Boundary, CupleProvider } from "@cuple/react";
     errors: {
       notify: (error) => toast(error.message),
       // An error nobody handled: offline is a toast, anything else goes to the nearest <Boundary>.
-      unhandled: (error) => (error.kind === "transport" ? "notify" : "boundary"),
+      onError: (error) => (error.kind === "transport" ? "notify" : "boundary"),
     },
   }}
 >
@@ -132,16 +132,16 @@ const save = useAction(
 | `idle`    | Nothing has happened yet. |
 | `pending` | Running, including the refresh it asked for. The screen keeps the old data until the new data lands. |
 | `done`    | Your function finished. `value` is what it returned, including failures you listed with `thenResolveAlso`, so check `value.result`. |
-| `failed`  | Your function threw something nobody handled, and `errors.unhandled` is `"notify"`. `error` is the `CupleError`. |
+| `failed`  | Your function threw something nobody handled, and `errors.onError` sent it to `"notify"` or `null`. `error` is the `CupleError`. |
 
 ### Errors
 
 - **Handled = listed.** Results you list with `thenResolveAlso` (and `"transport-error"`, for no answer at all) are typed values in `value`.
-- **Unhandled = everything else** (an unlisted result, an unlisted network failure, a bug), normalized to a `CupleError` (`kind`, an always-readable `message`, `statusCode`, `result`, `cause`). `config.errors.unhandled`, on the action, a `<Boundary>`, or the provider, decides where it goes:
+- **Unhandled = everything else** (an unlisted result, an unlisted network failure, a bug), normalized to a `CupleError` (`kind`, an always-readable `message`, `statusCode`, `result`, `cause`). `config.errors.onError`, on the action, a `<Boundary>`, or the provider, decides where it goes (`null`: handled, only the action's `error` holds it):
   - `"boundary"`: the nearest `<Boundary>`. The default.
   - `"notify"`: `config.errors.notify` shows it; the page stays, status `failed`.
   - Or a function choosing per error: `(error) => (error.kind === "transport" ? "notify" : "boundary")`.
-- **`message` is always readable:** the server's message, your own error's in development, otherwise `config.errors.message` (`"Something went wrong."`).
+- **`message` is always readable:** the server's message, your own error's in development, otherwise `config.errors.fallbackMessage` (`"Something went wrong."`).
 - **Reads:** `<Boundary error="notify">` notifies and shows nothing in that region; the rest of the page stays.
 - **Errors never end up only in the console.**
 - **`run` never rejects.** It resolves with the resulting state, so form libraries don't hang and event handlers don't produce unhandled rejections.
@@ -233,9 +233,9 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 | `cache.freshMs` | `0`: coming back to cached data refreshes it in the background |
 | `cache.storeStaleMs` | 5 minutes of being stale and unread |
 | `cache.keepOnKeyChange` | `false` (for `store.refreshKeys()`) |
-| `errors.unhandled` | `"boundary"` |
+| `errors.onError` | `"boundary"` |
 | `errors.notify` | none |
-| `errors.message` | `"Something went wrong."` |
+| `errors.fallbackMessage` | `"Something went wrong."` |
 | `loading.blocking` | `false` |
 | `loading.everyMs` | none (reads only) |
 | `loading.debounceMs` | none (`useGet` only) |

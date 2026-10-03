@@ -200,10 +200,10 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
   });
 
   it("the fallback message is used when there's nothing readable, and cascades", async () => {
-    const { wrapper } = setup({ errors: { message: "Something went wrong." } });
+    const { wrapper } = setup({ errors: { fallbackMessage: "Something went wrong." } });
     await renderAsync(
       <Boundary
-        config={{ errors: { message: "Couldn't save." } }}
+        config={{ errors: { fallbackMessage: "Couldn't save." } }}
         error={(error) => <p>{`boundary: ${error.kind} ${error.message}`}</p>}
       >
         <Saver fn={() => fetchCuple(offline.getStats.get)} />
@@ -239,9 +239,9 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
     }
   });
 
-  it('unhandled: "notify" shows it with errors.notify; the page stays, status failed', async () => {
+  it('onError: "notify" shows it with errors.notify; the page stays, status failed', async () => {
     const notify = vi.fn();
-    await renderSaver({}, { errors: { notify, unhandled: "notify" } });
+    await renderSaver({}, { errors: { notify, onError: "notify" } });
     await click("save");
     expect(await screen.findByText("failed: not yours")).toBeDefined();
     expect(notify).toHaveBeenCalledWith(
@@ -254,12 +254,12 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
     expect(screen.queryByText(/boundary:/)).toBeNull();
   });
 
-  it("unhandled can choose per error: e.g. network failures notify, the rest goes to the boundary", async () => {
+  it("onError can choose per error: e.g. network failures notify, the rest goes to the boundary", async () => {
     const notify = vi.fn();
     const { wrapper } = setup({
       errors: {
         notify,
-        unhandled: (error) => (error.kind === "transport" ? "notify" : "boundary"),
+        onError: (error) => (error.kind === "transport" ? "notify" : "boundary"),
       },
     });
     const { result } = renderHook(
@@ -271,9 +271,42 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
     expect(result.current.status).toBe("failed");
   });
 
+  it("onError: null keeps it on the action: no boundary, no notification, status failed", async () => {
+    const notify = vi.fn();
+    await renderSaver({ config: { errors: { onError: null } } }, { errors: { notify } });
+    await click("save");
+    expect(await screen.findByText("failed: not yours")).toBeDefined();
+    expect(notify).not.toHaveBeenCalled();
+    expect(screen.queryByText(/boundary:/)).toBeNull();
+  });
+
+  it("onError can return null for the errors it handled itself", async () => {
+    const handled = vi.fn();
+    const notify = vi.fn();
+    await renderSaver(
+      {
+        config: {
+          errors: {
+            onError: (error) => {
+              if (error.statusCode !== 403) return "boundary";
+              handled(error.message);
+              return null;
+            },
+          },
+        },
+      },
+      { errors: { notify } },
+    );
+    await click("save");
+    expect(await screen.findByText("failed: not yours")).toBeDefined();
+    expect(handled).toHaveBeenCalledWith("not yours");
+    expect(notify).not.toHaveBeenCalled();
+    expect(screen.queryByText(/boundary:/)).toBeNull();
+  });
+
   it("a listed transport-error is a value, never a notification", async () => {
     const notify = vi.fn();
-    const { wrapper } = setup({ errors: { notify, unhandled: "notify" } });
+    const { wrapper } = setup({ errors: { notify, onError: "notify" } });
     const { result } = renderHook(
       () =>
         useAction(() =>
@@ -288,7 +321,7 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
   });
 
   it('"notify" without errors.notify says what\'s missing, at the boundary', async () => {
-    await renderSaver({ config: { errors: { unhandled: "notify" } } });
+    await renderSaver({ config: { errors: { onError: "notify" } } });
     await click("save");
     expect(await screen.findByText(/boundary: bug .*notify/)).toBeDefined();
   });

@@ -30,7 +30,7 @@ In this example:
 | `idle`    | Nothing has happened yet. |
 | `pending` | Running, including the refresh it asked for. The screen keeps the old data until the new data lands. |
 | `done`    | Your function finished. `value` is what it returned, including failures you listed, so check `value.result`. |
-| `failed`  | Your function threw something nobody handled, and `errors.unhandled` is `"notify"`. `error` is the `CupleError`. |
+| `failed`  | Your function threw something nobody handled, and `errors.onError` sent it to `"notify"` or `null`. `error` is the `CupleError`. |
 
 `run` never rejects. It resolves with the resulting state, so it can go straight into a form library's submit handler.
 
@@ -59,7 +59,7 @@ Nothing is refreshed unless the action names it. List what a write changes. When
 
 ## Errors
 
-Errors you handle are results you list with `thenResolveAlso`, `"transport-error"` included: typed values in `value`. Anything else your function throws (a result it didn't list, a network failure it didn't list, a bug) is unhandled, and `config.errors.unhandled` decides where it goes: per action, per `<Boundary>`, or app-wide on the provider:
+Errors you handle are results you list with `thenResolveAlso`, `"transport-error"` included: typed values in `value`. Anything else your function throws (a result it didn't list, a network failure it didn't list, a bug) is unhandled, and `config.errors.onError` decides where it goes: per action, per `<Boundary>`, or app-wide on the provider:
 
 - `"boundary"`: the nearest `<Boundary>`, as a `CupleError`. The default.
 - `"notify"`: `config.errors.notify` shows it; the page stays, and the status becomes `failed`.
