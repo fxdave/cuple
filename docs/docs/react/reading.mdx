@@ -91,7 +91,7 @@ To run it: `cd examples/docs && npm run dev:orders`.
 ## Polling
 
 ```tsx
-const { count } = useGet(client.getStats, undefined, { config: { loading: { every: 30_000 } } });
+const { count } = useGet(client.getStats, undefined, { config: { loading: { everyMs: 30_000 } } });
 ```
 
 It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.

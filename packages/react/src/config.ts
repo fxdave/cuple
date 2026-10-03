@@ -16,35 +16,44 @@ export type UnhandledPolicy = Unhandled | ((error: CupleError) => Unhandled);
  * How Cuple behaves, grouped by concern. The same shape is accepted by
  * `<CupleProvider config>`, `<Boundary config>` and each request's
  * `{ config }`. Every setting cascades on its own — request over Boundary over
- * Provider over the built-in default — so setting `cache.keep` somewhere never
- * resets `cache.refreshOnRead` from above.
+ * Provider over the built-in default — so setting `cache.freshMs` somewhere
+ * never resets `cache.storeStaleMs` from above.
  */
 export type CupleConfig = {
   cache?: {
     /**
-     * How long data nobody reads stays in memory, in ms. `0` drops it as soon
-     * as the last reader unmounts. With several readers, the longest wins.
-     * Default: 5 minutes.
+     * `false`: keep nothing once it's unread — data is dropped as soon as the
+     * last reader unmounts, and refetched when read again. Readers mounted at
+     * the same time still share one request. The same as `freshMs: 0,
+     * storeStaleMs: 0`, for search boxes and other args that keep changing.
+     * Default: `true`.
      */
-    keep?: number;
+    enabled?: boolean;
     /**
-     * What happens when a component starts reading data that is already
-     * cached — switching back to a tab, reopening a panel:
-     * - `"stale"`: show it at once; refetch in the background if it's older
-     *   than `freshFor`. The screen updates when the new data lands.
-     * - `"always"`: show it at once and always refetch in the background.
-     * - `"never"`: show it; nothing refetches.
+     * How long data counts as fresh after it lands, in ms. A component that
+     * starts reading fresh data (switching back to a tab, reopening a panel)
+     * gets it from the cache as is; stale data is shown at once too, and
+     * refetched in the background. `0` always refetches, `Infinity` never.
+     * Fresh data nobody reads is never dropped.
      *
-     * A first load is never fetched twice. Default: `"stale"`.
+     * Only coming back to data counts: polls, refreshes and actions' `refresh`
+     * refetch fresh data too. A first load is never fetched twice. Default: 0.
+     *
+     * With `Infinity`, data nobody reads stays for good: right for reference
+     * data, wrong for args that keep changing (a search), which pile up.
      */
-    refreshOnRead?: "never" | "stale" | "always";
-    /** How long data counts as fresh for `refreshOnRead: "stale"`, in ms. Default: 0. */
-    freshFor?: number;
+    freshMs?: number;
+    /**
+     * How long data nobody reads stays in memory once it's stale, in ms: the
+     * clock starts when it is both stale and unread, whichever comes last.
+     * With several readers, the longest wins. Default: 5 minutes.
+     */
+    storeStaleMs?: number;
     /**
      * What `store.refreshKeys()` does with data whose key changed (the user a
      * `with({ key })` getter returns, say): `"drop"` deletes it at once;
-     * `"keep"` keeps it for `keep` ms, so switching back is instant.
-     * Read from the provider. Default: `"drop"`.
+     * `"keep"` keeps it like any data nobody reads, so switching back is
+     * instant. Read from the provider. Default: `"drop"`.
      */
     onKeyChange?: "drop" | "keep";
   };
@@ -74,7 +83,7 @@ export type CupleConfig = {
      */
     blocking?: boolean;
     /** Reads only: refetch every this many ms while something reads it. */
-    every?: number;
+    everyMs?: number;
   };
 };
 
@@ -86,11 +95,11 @@ export type ResolvedConfig = {
     notify?: (error: CupleError) => void;
     message: string;
   };
-  loading: { blocking: boolean; every?: number };
+  loading: { blocking: boolean; everyMs?: number };
 };
 
 export const defaultConfig: ResolvedConfig = {
-  cache: { keep: 5 * 60_000, refreshOnRead: "stale", freshFor: 0, onKeyChange: "drop" },
+  cache: { enabled: true, freshMs: 0, storeStaleMs: 5 * 60_000, onKeyChange: "drop" },
   errors: { unhandled: "boundary", message: "Something went wrong." },
   loading: { blocking: false },
 };

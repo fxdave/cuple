@@ -2,7 +2,7 @@ import { CupleTransportError, transportErrorResult } from "@cuple/client";
 import { startTransition, use, useEffect, useReducer, useRef } from "react";
 import { type ResolvedConfig, useConfig } from "./config";
 import { useCupleContext } from "./provider";
-import { listsTransportError, resolveResult, type Store } from "./store";
+import { listsTransportError, resolveResult, retentionOf, type Store } from "./store";
 import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from "./types";
 
 /**
@@ -25,7 +25,8 @@ import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from 
  * - Every reader of the same call shares one request and one cached result.
  * - A refresh keeps the current data on screen until the new data lands.
  * - Coming back to cached data (another tab, a reopened panel) shows it at once
- *   and refreshes it in the background, as `config.cache.refreshOnRead` says.
+ *   and refreshes it in the background, unless it's younger than
+ *   `config.cache.freshMs`.
  *
  * To fetch only sometimes, render the component only sometimes:
  * `{id && <Order id={id} />}`. There is no `enabled` flag.
@@ -39,7 +40,7 @@ export function useGet<
   const config = useConfig(options?.config);
   const key = store.keyOf(readable, args);
   useSubscription(store, [key], config);
-  return readThrough(store, readable, args, options) as ReadValue<R, O>;
+  return readThrough(store, readable, args, config, options) as ReadValue<R, O>;
 }
 
 /** Reads one call during render: the value, or suspends, or throws. Loop-safe. */
@@ -47,9 +48,10 @@ export function readThrough(
   store: Store,
   readable: Readable,
   args: unknown,
+  config: ResolvedConfig,
   options?: ResolveOptions<Readable>,
 ): unknown {
-  const entry = store.ensure(readable, args);
+  const entry = store.ensure(readable, args, "foreground", retentionOf(config.cache));
   try {
     const outcome = store.read(entry);
     if ("pending" in outcome) use(outcome.pending);
@@ -86,23 +88,27 @@ export function useSubscription(store: Store, keys: string[], config: ResolvedCo
   const latest = useRef(config);
   latest.current = config;
   const joined = keys.join("\n");
-  const { every, blocking } = config.loading;
-  const { keep } = config.cache;
+  const { everyMs, blocking } = config.loading;
+  const { freshMs, storeStaleMs } = retentionOf(config.cache);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `joined` stands for `keys`
   useEffect(() => {
     const update = (change = { urgent: false }) =>
       change.urgent ? rerender() : startTransition(rerender);
     const unsubscribe = keys.map((key) =>
-      store.subscribe(key, update, { every, blocking, keep }),
+      store.subscribe(key, update, {
+        everyMs,
+        blocking,
+        retention: { freshMs, storeStaleMs },
+      }),
     );
     // Something landed between render and subscribe.
     if (keys.some((key, i) => store.versionOf(key) !== seen.current[i])) update();
     keys.forEach((key, i) => {
-      if (returning.current[i]) store.refreshOnRead(key, latest.current.cache);
+      if (returning.current[i]) store.refreshIfStale(key, latest.current.cache);
     });
     return () => {
       for (const stop of unsubscribe) stop();
     };
-  }, [store, joined, every, blocking, keep]);
+  }, [store, joined, everyMs, blocking, freshMs, storeStaleMs]);
 }

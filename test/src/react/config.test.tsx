@@ -150,8 +150,8 @@ describe("config cascades: request > Boundary > Provider > built-in", () => {
   });
 });
 
-describe("cache.refreshOnRead: coming back to cached data", () => {
-  it("default: shows the cached data at once, and refreshes it in the background", async () => {
+describe("cache.freshMs: coming back to cached data", () => {
+  it("default 0: shows the cached data at once, and refreshes it in the background", async () => {
     const { wrapper } = provider();
     await renderAsync(
       <Tab>
@@ -187,8 +187,8 @@ describe("cache.refreshOnRead: coming back to cached data", () => {
     expect(calls.of("getStats") - before).toBe(1);
   });
 
-  it('"never": shows the cache, nothing refetches', async () => {
-    const { wrapper } = provider({ cache: { refreshOnRead: "never" } });
+  it("Infinity: shows the cache, nothing refetches", async () => {
+    const { wrapper } = provider({ cache: { freshMs: Infinity } });
     await renderAsync(
       <Tab>
         <Stats />
@@ -203,8 +203,8 @@ describe("cache.refreshOnRead: coming back to cached data", () => {
     expect(calls.of("getStats")).toBe(before);
   });
 
-  it("freshFor: data younger than that is not refetched", async () => {
-    const { wrapper } = provider({ cache: { freshFor: 60_000 } });
+  it("data younger than freshMs is not refetched", async () => {
+    const { wrapper } = provider({ cache: { freshMs: 60_000 } });
     await renderAsync(
       <Tab>
         <Stats />
@@ -245,32 +245,71 @@ describe("cache.refreshOnRead: coming back to cached data", () => {
   });
 });
 
-describe("cache.keep: how long data nobody reads stays", () => {
-  it("keep: 0 drops it when the last reader unmounts", async () => {
-    const { wrapper } = provider();
+describe("cache.storeStaleMs and cache.enabled: how long data nobody reads stays", () => {
+  /**
+   * Hides the tab, waits, shows it again. `dropped`: it showed the fallback,
+   * so the data was gone, not just refreshed in the background.
+   */
+  async function leaveFor(ms: number) {
+    await toggleTab();
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    const before = calls.of("getStats");
+    const held = gate();
+    hold = held.opened;
+    await toggleTab();
+    const dropped = screen.queryByText("loading") !== null;
+    held.open();
+    expect(await screen.findAllByText("count 1")).toBeDefined();
+    return { dropped, requests: calls.of("getStats") - before };
+  }
+
+  it("enabled: false drops it when the last reader unmounts", async () => {
+    const { wrapper } = provider({ cache: { freshMs: 60_000 } });
     await renderAsync(
       <Tab>
-        <Stats config={{ cache: { keep: 0 } }} />
+        <Stats config={{ cache: { enabled: false } }} />
       </Tab>,
       { wrapper },
     );
     expect(await screen.findByText("count 1")).toBeDefined();
-    await toggleTab();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    const before = calls.of("getStats");
-    await toggleTab();
-    // Gone from the cache: a first load again, not a background refresh of cached data.
-    expect(await screen.findByText("count 1")).toBeDefined();
-    expect(calls.of("getStats")).toBe(before + 1);
+    // Gone from the cache, though freshMs would have kept it.
+    expect(await leaveFor(20)).toEqual({ dropped: true, requests: 1 });
   });
 
-  it("the longest keep among the readers wins, whatever order they came in", async () => {
-    const { wrapper } = provider({ cache: { refreshOnRead: "never" } });
+  it("storeStaleMs: 0 drops stale data when the last reader unmounts", async () => {
+    const { wrapper } = provider({ cache: { storeStaleMs: 0 } });
     await renderAsync(
       <Tab>
-        {/* keep: 0 subscribes last, so "the last reader's keep" would drop it. */}
         <Stats />
-        <Stats config={{ cache: { keep: 0 } }} />
+      </Tab>,
+      { wrapper },
+    );
+    expect(await screen.findByText("count 1")).toBeDefined();
+    expect(await leaveFor(20)).toEqual({ dropped: true, requests: 1 });
+  });
+
+  it("fresh data nobody reads stays until it goes stale, then storeStaleMs more", async () => {
+    const { wrapper } = provider({ cache: { freshMs: 150, storeStaleMs: 0 } });
+    await renderAsync(
+      <Tab>
+        <Stats />
+      </Tab>,
+      { wrapper },
+    );
+    expect(await screen.findByText("count 1")).toBeDefined();
+    // Still fresh: kept, and not refetched.
+    expect(await leaveFor(20)).toEqual({ dropped: false, requests: 0 });
+    // Stale and unread, with nothing more to keep it for: dropped.
+    expect(await leaveFor(250)).toEqual({ dropped: true, requests: 1 });
+  });
+
+  it("the longest storeStaleMs among the readers wins, whatever order they came in", async () => {
+    const { wrapper } = provider({ cache: { freshMs: Infinity } });
+    await renderAsync(
+      <Tab>
+        {/* storeStaleMs: 0 subscribes last, so "the last reader's" would drop it. */}
+        <Stats />
+        <Stats config={{ cache: { storeStaleMs: 0 } }} />
       </Tab>,
       { wrapper },
     );
@@ -279,8 +318,30 @@ describe("cache.keep: how long data nobody reads stays", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     const before = calls.of("getStats");
     await toggleTab();
-    // The default 5 minutes won over keep: 0: still cached, no request.
+    // The default 5 minutes won over 0: still cached, no request.
     expect(screen.getAllByText("count 1")).toHaveLength(2);
     expect(calls.of("getStats")).toBe(before);
+  });
+
+  it("a request's settings apply from its first render, before it ever shows", async () => {
+    const { wrapper } = provider();
+    const held = gate();
+    hold = held.opened;
+    await renderAsync(
+      <Tab>
+        <Stats config={{ cache: { enabled: false } }} />
+      </Tab>,
+      { wrapper },
+    );
+    expect(screen.getByText("loading")).toBeDefined();
+    // Left while loading: the render that fetched it never shows.
+    await toggleTab();
+    await act(async () => held.open());
+    // A render waiting for data gets a second to show it before it's dropped.
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    const before = calls.of("getStats");
+    await toggleTab();
+    expect(await screen.findByText("count 1")).toBeDefined();
+    expect(calls.of("getStats")).toBe(before + 1);
   });
 });

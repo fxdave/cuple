@@ -24,8 +24,8 @@ import type {
  *
  * Cached data changes only when an action that names it finishes,
  * `refresh()` or `refreshKeys()` is called, a poll fires, a component starts
- * reading data its config calls stale (`cache.refreshOnRead`), or an entry
- * nobody reads expires. Nothing refetches on focus or on a timer you didn't
+ * reading data that is no longer fresh (`cache.freshMs`), or an entry nobody
+ * reads expires. Nothing refetches on focus or on a timer you didn't
  * ask for.
  */
 export type CupleStore = {
@@ -62,7 +62,7 @@ export type CupleStore = {
    * - Key unchanged: stays as it is. No request, no re-render.
    * - Key changed: its readers read again under the new key — cached data for
    *   it shows at once, anything else loads. The old key's data is dropped, or
-   *   kept for `cache.keep` with `cache.onKeyChange: "keep"`.
+   *   kept like any unread data with `cache.onKeyChange: "keep"`.
    * - Combined reads built from a changed call run again; streams reconnect.
    *
    * Nothing is ever refetched under a key that is no longer current, so data
@@ -91,6 +91,24 @@ type Change = { urgent: boolean };
 type Priority = "foreground" | "background";
 type Listener = (change: Change) => void;
 
+/** How long a reader keeps data, once `cache.enabled` is applied. */
+type Retention = { freshMs: number; storeStaleMs: number };
+
+export function retentionOf(cache: ResolvedConfig["cache"]): Retention {
+  return cache.enabled
+    ? { freshMs: cache.freshMs, storeStaleMs: cache.storeStaleMs }
+    : { freshMs: 0, storeStaleMs: 0 };
+}
+
+/**
+ * How long data nobody has subscribed to yet is kept at least: a render that
+ * suspended on it reads it when it retries, right after the data lands, and
+ * only subscribes once it commits. Dropping it before then would refetch.
+ */
+const PENDING_RENDER_MS = 1_000;
+/** `setTimeout` fires at once past this (about 24.8 days); longer waits re-arm. */
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
 type Entry = {
   key: string;
   readable: Readable;
@@ -116,12 +134,12 @@ type Entry = {
   version: number;
   /** A component or combined read has read it; a preload alone doesn't count. */
   observed: boolean;
-  /** When its data last landed, for `cache.freshFor`. 0 until then. */
+  /** When its data last landed, for `cache.freshMs`. 0 until then. */
   fetchedAt: number;
   /** Keys of the calls this combined read fetched through `get`, on its last run. */
   childKeys: Set<string>;
-  /** The longest `cache.keep` among its readers since it was last unread. */
-  keep: number;
+  /** The longest `freshMs` and `storeStaleMs` among its readers since it was last unread. */
+  retention: Retention;
   /** Some component has subscribed to it before. */
   readBefore: boolean;
   /** A read of it threw, so a boundary's retry should drop it. */
@@ -219,13 +237,21 @@ export class Store implements CupleStore {
 
   // For the hooks
 
-  /** The entry for a call, created and fetching if it wasn't cached. */
-  ensure(route: Readable, args: unknown, priority: Priority = "foreground"): Entry {
+  /**
+   * The entry for a call, created and fetching if it wasn't cached. A new
+   * entry is kept as `retention` says until someone subscribes.
+   */
+  ensure(
+    route: Readable,
+    args: unknown,
+    priority: Priority = "foreground",
+    retention = retentionOf(this.defaults.cache),
+  ): Entry {
     const readable = toTarget(route);
     const key = keyOf(readable, args);
     const existing = this.entries.get(key);
     if (existing) return existing;
-    const entry = this.create(key, readable, args);
+    const entry = this.create(key, readable, args, retention);
     this.warnNearMiss(entry);
     void this.fetchEntry(entry, priority);
     return entry;
@@ -269,27 +295,40 @@ export class Store implements CupleStore {
   subscribe(
     key: string,
     listener: Listener,
-    options: { every?: number; blocking?: boolean; keep?: number } = {},
+    options: { everyMs?: number; blocking?: boolean; retention?: Retention } = {},
   ) {
-    const { every, blocking = false, keep = this.defaults.cache.keep } = options;
+    const {
+      everyMs,
+      blocking = false,
+      retention = retentionOf(this.defaults.cache),
+    } = options;
     if (blocking) this.countBlockingReader(key, +1);
     const set = this.listeners.get(key) ?? new Set();
     const entry = this.entries.get(key);
     if (entry) {
       clearTimeout(entry.gcTimer);
-      // A new period of being read starts from this reader's `keep`.
-      entry.keep = set.size === 0 ? keep : Math.max(entry.keep, keep);
+      // A new period of being read starts from this reader's retention.
+      entry.retention =
+        set.size === 0
+          ? retention
+          : {
+              freshMs: Math.max(entry.retention.freshMs, retention.freshMs),
+              storeStaleMs: Math.max(
+                entry.retention.storeStaleMs,
+                retention.storeStaleMs,
+              ),
+            };
     }
     set.add(listener);
     this.listeners.set(key, set);
     if (entry) entry.readBefore = true;
     const token = Symbol();
-    if (every !== undefined) this.addPoller(key, token, every);
+    if (everyMs !== undefined) this.addPoller(key, token, everyMs);
     return () => {
       if (blocking) this.countBlockingReader(key, -1);
       set.delete(listener);
       if (set.size === 0) this.listeners.delete(key);
-      if (every !== undefined) this.removePoller(key, token);
+      if (everyMs !== undefined) this.removePoller(key, token);
       const current = this.entries.get(key);
       if (current && !this.isRead(current)) this.scheduleGc(current);
     };
@@ -297,13 +336,12 @@ export class Store implements CupleStore {
 
   /**
    * A reader started reading `key`, whose data was already cached when it
-   * rendered: refetch in the background if its `refreshOnRead` says so.
+   * rendered: refetch it in the background unless it's still fresh.
    */
-  refreshOnRead(key: string, cache: ResolvedConfig["cache"]) {
+  refreshIfStale(key: string, cache: ResolvedConfig["cache"]) {
     const entry = this.entries.get(key);
-    if (!entry?.hasValue || entry.inflight || cache.refreshOnRead === "never") return;
-    if (cache.refreshOnRead === "stale" && Date.now() - entry.fetchedAt < cache.freshFor)
-      return;
+    if (!entry?.hasValue || entry.inflight) return;
+    if (Date.now() - entry.fetchedAt < retentionOf(cache).freshMs) return;
     void this.fetchEntry(entry, "background");
   }
 
@@ -355,7 +393,12 @@ export class Store implements CupleStore {
 
   // Internals
 
-  private create(key: string, readable: Readable, args: unknown): Entry {
+  private create(
+    key: string,
+    readable: Readable,
+    args: unknown,
+    retention: Retention,
+  ): Entry {
     let settleFirst: Entry["settleFirst"] = null;
     const first = new Promise<unknown>((resolve, reject) => {
       settleFirst = { resolve, reject };
@@ -380,7 +423,7 @@ export class Store implements CupleStore {
       threw: false,
       fetchedAt: 0,
       childKeys: new Set(),
-      keep: this.defaults.cache.keep,
+      retention,
       readBefore: false,
     };
     this.entries.set(key, entry);
@@ -406,9 +449,10 @@ export class Store implements CupleStore {
       entry.inflight = null;
       const queued = entry.queued;
       entry.queued = false;
-      if (queued && this.entries.get(entry.key) === entry)
-        return this.fetchEntry(entry, queued);
+      const current = this.entries.get(entry.key) === entry;
+      if (queued && current) return this.fetchEntry(entry, queued);
       this.emitActivity();
+      if (current) this.scheduleGc(entry);
     });
     entry.inflight = landed;
     this.emitActivity();
@@ -530,13 +574,32 @@ export class Store implements CupleStore {
     if (byLoose?.get(loose) === entry) byLoose.delete(loose);
   }
 
+  /**
+   * Drops an entry nobody reads once it is stale and `storeStaleMs` more has
+   * passed. Called whenever that may start: its last reader leaving, its
+   * request landing.
+   */
   private scheduleGc(entry: Entry) {
     clearTimeout(entry.gcTimer);
-    entry.gcTimer = setTimeout(() => {
-      if (!this.isRead(entry) && !entry.inflight) this.evict(entry);
-      else if (!this.isRead(entry)) this.scheduleGc(entry);
-    }, entry.keep);
-    (entry.gcTimer as { unref?: () => void }).unref?.();
+    if (this.isRead(entry) || entry.inflight) return;
+    const { freshMs, storeStaleMs } = entry.retention;
+    const now = Date.now();
+    const staleAt = entry.hasValue ? entry.fetchedAt + freshMs : now;
+    let dueAt = Math.max(now, staleAt) + storeStaleMs;
+    if (!entry.readBefore) dueAt = Math.max(dueAt, now + PENDING_RENDER_MS);
+    if (dueAt === Infinity) return;
+    const arm = () => {
+      entry.gcTimer = setTimeout(
+        () => {
+          if (this.isRead(entry) || entry.inflight) return;
+          if (Date.now() < dueAt) arm();
+          else this.evict(entry);
+        },
+        Math.min(dueAt - Date.now(), MAX_TIMEOUT_MS),
+      );
+      (entry.gcTimer as { unref?: () => void }).unref?.();
+    };
+    arm();
   }
 
   private notify(key: string, change: Change = { urgent: false }) {
@@ -575,9 +638,9 @@ export class Store implements CupleStore {
     for (const listener of [...this.activityListeners]) listener();
   }
 
-  private addPoller(key: string, token: symbol, every: number) {
+  private addPoller(key: string, token: symbol, everyMs: number) {
     const polls = this.pollers.get(key) ?? new Map();
-    polls.set(token, every);
+    polls.set(token, everyMs);
     this.pollers.set(key, polls);
     this.restartPoll(key);
   }

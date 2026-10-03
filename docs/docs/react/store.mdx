@@ -46,7 +46,7 @@ It checks every cached call's key again:
 
  - Key unchanged: stays as it is. No request, no re-render.
  - Key changed: its readers read again under the new key, even memoized ones. Cached data for the new key shows at once; anything else loads.
- - The old key's data is deleted at once (`cache.onKeyChange: "drop"`, the default), so nothing of it can show again. `"keep"` keeps it for `cache.keep`, so switching back is instant: use it only when one person owns every account, like work and personal inboxes.
+ - The old key's data is deleted at once (`cache.onKeyChange: "drop"`, the default), so nothing of it can show again. `"keep"` keeps it like any unread data, so switching back is instant: use it only when one person owns every account, like work and personal inboxes.
  - Combined reads built from a changed call run again; streams reconnect.
 
 Wrap it in `startTransition` to keep the current screen until the new data is ready. Signing out calls `store.clear()`: nothing of the account stays in memory.

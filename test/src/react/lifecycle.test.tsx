@@ -43,9 +43,9 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-function Stats(props: { every?: number }) {
+function Stats(props: { everyMs?: number }) {
   const { count } = useGet(client.getStats.get, undefined, {
-    config: { loading: { every: props.every } },
+    config: { loading: { everyMs: props.everyMs } },
   });
   return <p>{`count ${count}`}</p>;
 }
@@ -117,7 +117,7 @@ describe("store.clear", () => {
 
 describe("garbage collection", () => {
   it("drops an entry nobody reads after gcTime, so the next read fetches", async () => {
-    const { wrapper } = setup({ cache: { keep: 20 } });
+    const { wrapper } = setup({ cache: { storeStaleMs: 20 } });
     function Toggle() {
       const [open, setOpen] = useState(true);
       return (
@@ -140,7 +140,7 @@ describe("garbage collection", () => {
   });
 
   it("keeps an entry while someone reads it", async () => {
-    const { wrapper } = setup({ cache: { keep: 20 } });
+    const { wrapper } = setup({ cache: { storeStaleMs: 20 } });
     await renderAsync(
       <Boundary fallback={<p>loading</p>}>
         <Stats />
@@ -160,7 +160,7 @@ describe("polling", () => {
     const { wrapper } = setup();
     const view = await renderAsync(
       <Boundary fallback={<p>loading</p>}>
-        <Stats every={20} />
+        <Stats everyMs={20} />
       </Boundary>,
       { wrapper },
     );

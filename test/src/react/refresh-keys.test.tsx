@@ -62,7 +62,7 @@ async function renderWhoAmI(config?: Config) {
     return (
       <CupleProvider
         store={store}
-        config={{ ...config, cache: { refreshOnRead: "never", ...config?.cache } }}
+        config={{ ...config, cache: { freshMs: Infinity, ...config?.cache } }}
       >
         {children}
       </CupleProvider>

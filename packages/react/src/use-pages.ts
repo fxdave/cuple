@@ -80,7 +80,7 @@ export function usePages<R extends GetEndpoint | Route>(
   const pages: ReadValue<R>[] = [];
   args = first;
   for (let i = 0; i < count && args !== null; i++) {
-    const page = readThrough(store, endpoint, args) as ReadValue<R>;
+    const page = readThrough(store, endpoint, args, config) as ReadValue<R>;
     pages.push(page);
     args = next(page);
   }

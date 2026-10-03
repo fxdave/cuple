@@ -67,7 +67,7 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
 - **Shared.** Every reader of the same call shares one request and one cached result.
 - **New args suspend again.** Old data belongs to other args. To keep it on screen while the new args load (search boxes), pass `useDeferredValue(args)`.
 - **Conditional fetching is conditional rendering:** `{id && <Order id={id} />}`. There is no `enabled` flag.
-- **Polling:** `useGet(client.getStats, undefined, { config: { loading: { every: 30_000 } } })`. It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
+- **Polling:** `useGet(client.getStats, undefined, { config: { loading: { everyMs: 30_000 } } })`. It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
 - **Coming back to cached data** (another tab, a reopened panel) shows it at once and refreshes it in the background. See Configuration. "Coming back" means some component has read this data before; the first component to read it just loads it, once.
 
 - **A route stands for its GET endpoint:** `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, the same cached call. It works wherever something is read or refreshed. A route itself named like an HTTP method (`client.get`) needs `.get` written out.
@@ -228,15 +228,15 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 
 | Setting | Default |
 | ------- | ------- |
-| `cache.keep` | 5 minutes of nobody reading it; `0` drops at once |
-| `cache.refreshOnRead` | `"stale"`: coming back to cached data refreshes it in the background |
-| `cache.freshFor` | `0` ms |
+| `cache.enabled` | `true`; `false` drops data as soon as nobody reads it |
+| `cache.freshMs` | `0`: coming back to cached data refreshes it in the background |
+| `cache.storeStaleMs` | 5 minutes of being stale and unread |
 | `cache.onKeyChange` | `"drop"` (for `store.refreshKeys()`) |
 | `errors.unhandled` | `"boundary"` |
 | `errors.notify` | none |
 | `errors.message` | `"Something went wrong."` |
 | `loading.blocking` | `false` |
-| `loading.every` | none (reads only) |
+| `loading.everyMs` | none (reads only) |
 
 ## Why it works this way
 

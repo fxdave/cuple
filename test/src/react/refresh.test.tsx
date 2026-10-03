@@ -285,11 +285,11 @@ describe("Boundary", () => {
 });
 
 describe("polling", () => {
-  it("every refetches while mounted", async () => {
+  it("everyMs refetches while mounted", async () => {
     const { wrapper } = setup();
     function Stats() {
       const { count } = useGet(client.getStats.get, undefined, {
-        config: { loading: { every: 30 } },
+        config: { loading: { everyMs: 30 } },
       });
       return <p>{`count ${count}`}</p>;
     }
@@ -353,7 +353,7 @@ describe("useIsFetching", () => {
     function Stats() {
       seen.push(useIsFetching());
       const { count } = useGet(client.getStats.get, undefined, {
-        config: { loading: { every: 20 } },
+        config: { loading: { everyMs: 20 } },
       });
       return <p>{`count ${count}`}</p>;
     }

@@ -9,22 +9,26 @@ Every behavior is set through one `config` object, grouped by concern. The same 
 
 ```tsx
 <CupleProvider store={store} config={appConfig}>       // the app's defaults
-  <Boundary config={{ cache: { keep: 0 } }}>          // everything inside this region
+  <Boundary config={{ cache: { enabled: false } }}>   // everything inside this region
     <Report />                                        // useGet(client.report, args, { config: { ... } })
   </Boundary>
 </CupleProvider>
 ```
 
-Each setting cascades on its own: the request's wins over the Boundary's, over the provider's, over the built-in default. Setting `cache.keep` on a Boundary never resets `cache.refreshOnRead` from the provider.
+Each setting cascades on its own: the request's wins over the Boundary's, over the provider's, over the built-in default. Setting `cache.freshMs` on a Boundary never resets `cache.storeStaleMs` from the provider.
 
 ## cache
 
 | Setting | Default | What it does |
 | ------- | ------- | ------------ |
-| `keep` | 5 minutes | How long data nobody reads stays in memory. `0` drops it as soon as the last reader unmounts: for large data. With several readers, the longest wins. |
-| `refreshOnRead` | `"stale"` | A component starts reading data that's already cached (another tab, a reopened panel): it shows at once, and `"stale"` refetches it in the background if it's older than `freshFor`. `"always"` always does, `"never"` never does. A first load is never fetched twice: "coming back" means some component has read this data before. |
-| `freshFor` | `0` | How long data counts as fresh for `"stale"`, in ms. |
-| `onKeyChange` | `"drop"` | What `store.refreshKeys()` does with data whose key changed: `"drop"` deletes it at once, `"keep"` keeps it for `keep`, so switching back is instant: only when one person owns every account, since the old account's data shows again at once. Read from the provider. |
+| `enabled` | `true` | `false` keeps nothing once it's unread: data is dropped as soon as the last reader unmounts, and fetched again when read again. Readers mounted at the same time still share one request. The same as `freshMs: 0, storeStaleMs: 0`: for search boxes, and large data. |
+| `freshMs` | `0` | How long data counts as fresh after it lands. A component that starts reading cached data (another tab, a reopened panel) shows it at once, and refetches it in the background only if it's stale. `0` always refetches, `Infinity` never. Fresh data nobody reads is never dropped. A first load is never fetched twice: "coming back" means some component has read this data before. |
+| `storeStaleMs` | 5 minutes | How long data nobody reads stays in memory once it's stale. The clock starts when it is both stale and unread, whichever comes last. With several readers, the longest wins. |
+| `onKeyChange` | `"drop"` | What `store.refreshKeys()` does with data whose key changed: `"drop"` deletes it at once, `"keep"` keeps it like any unread data, so switching back is instant: only when one person owns every account, since the old account's data shows again at once. Read from the provider. |
+
+With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and loses its last reader at 3s is still fresh: it stays, and a reader coming back at 20s gets it without a request. It goes stale at 30s, and is dropped at 90s.
+
+`freshMs` decides only what coming back does: polls, `store.refresh()` and an action's `refresh` refetch fresh data too. With `Infinity`, data nobody reads stays for good: right for reference data, wrong for args that keep changing, like a search, which pile up.
 
 ## errors
 
@@ -39,7 +43,7 @@ Each setting cascades on its own: the request's wins over the Boundary's, over t
 | Setting | Default | What it does |
 | ------- | ------- | ------------ |
 | `blocking` | `false` | Counts for `useIsFetching({ blocking: true })`: actions while they run, reads while their data refetches. For a full-page overlay. See [The store](./store#full-page-loading). |
-| `every` | none | Reads only: refetch every this many ms while something reads it. |
+| `everyMs` | none | Reads only: refetch every this many ms while something reads it. |
 
 ## Where each is used
 
@@ -51,6 +55,6 @@ Each setting cascades on its own: the request's wins over the Boundary's, over t
 :::note[Why it works this way]
 
 - **The same config in three places.** A setting often needs to change for one region (a report that should drop its data when it's closed) or one request. With one shape at every level, moving a setting from a request to a region is a copy-paste, not a different API.
-- **Each setting cascades on its own.** A region that only changes `keep` shouldn't reset the app's `refreshOnRead`. Merging per setting keeps overrides small.
+- **Each setting cascades on its own.** A region that only changes `storeStaleMs` shouldn't reset the app's `freshMs`. Merging per setting keeps overrides small.
 
 :::
