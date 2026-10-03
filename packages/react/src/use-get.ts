@@ -103,7 +103,9 @@ export function readThrough(
   });
   try {
     const outcome = store.read(entry);
-    if ("pending" in outcome) use(outcome.pending);
+    // On every render, not only while loading: React replays a render that
+    // suspended once its data lands, and expects the same `use` calls.
+    use("pending" in outcome ? outcome.pending : entry.first);
   } catch (error) {
     // A network failure the reader listed is a value, like any listed result.
     // (Anything else rethrows — including React's own suspense signal.)

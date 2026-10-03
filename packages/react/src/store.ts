@@ -119,7 +119,11 @@ type Entry = {
   value: unknown;
   hasError: boolean;
   error: unknown;
-  /** Settles with the first load; what a suspended reader waits on. */
+  /**
+   * Settles with the first load; what a suspended reader waits on. Once it
+   * has data, a fulfilled promise React's `use` returns from at once: readers
+   * call `use` on every render, as React requires, not only while loading.
+   */
   first: Promise<unknown>;
   settleFirst: { resolve(value: unknown): void; reject(error: unknown): void } | null;
   inflight: Promise<void> | null;
@@ -539,12 +543,24 @@ export class Store implements CupleStore {
       entry.error = undefined;
       entry.threw = false;
       entry.fetchedAt = Date.now();
-      entry.settleFirst?.resolve(entry.value);
+      if (entry.settleFirst) {
+        entry.settleFirst.resolve(entry.value);
+        markSettled(entry.first, { status: "fulfilled", value: entry.value });
+      } else if ((entry.first as { status?: string }).status !== "fulfilled") {
+        // Its first load failed; this one didn't.
+        entry.first = markSettled(Promise.resolve(entry.value), {
+          status: "fulfilled",
+          value: entry.value,
+        });
+      }
     } else {
       entry.hasError = true;
       entry.error = outcome.error;
       if (outcome.error instanceof CupleTransportError) this.retryWhenOnline();
-      if (!entry.hasValue) entry.settleFirst?.reject(outcome.error);
+      if (!entry.hasValue && entry.settleFirst) {
+        entry.settleFirst.reject(outcome.error);
+        markSettled(entry.first, { status: "rejected", reason: outcome.error });
+      }
     }
     entry.settleFirst = null;
     entry.version++;
@@ -776,6 +792,19 @@ function keyOf(readable: Readable, args: unknown): string {
   if (isCombined(readable)) return `combined:${readable.id}:${stableStringify(args)}`;
   const [endpoint, client, input] = cupleRequestKey(readable as ClientEndpointRef, args);
   return `endpoint:${endpoint}:${stableStringify([client, input])}`;
+}
+
+/**
+ * Marks a promise settled the way React's `use` reads it, so `use` returns (or
+ * throws) at once instead of suspending for a tick.
+ */
+function markSettled<T>(
+  promise: Promise<T>,
+  outcome:
+    | { status: "fulfilled"; value: unknown }
+    | { status: "rejected"; reason: unknown },
+): Promise<T> {
+  return Object.assign(promise, outcome);
 }
 
 /** The call's args, with a signal to abort it. */

@@ -8,7 +8,7 @@ import {
 } from "@cuple/react";
 import { apiResponse, success } from "@cuple/server";
 import { act, screen } from "@testing-library/react";
-import { useState } from "react";
+import { StrictMode, startTransition, useState } from "react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { counter, renderAsync, serve, setup } from "./serve";
@@ -274,5 +274,40 @@ describe("types", () => {
     void [unknownResult, both];
     expect(CupleTransportError).toBeDefined();
     expect(CupleUnexpectedResponseError).toBeDefined();
+  });
+});
+
+describe("React's rules for use()", () => {
+  const misuse = /did not call use\(\) when it finished/;
+  const logged = () =>
+    vi.mocked(console.error).mock.calls.some((args) => misuse.test(String(args[0])));
+
+  function Order({ id }: { id: number }) {
+    const { order } = useGet(client.getOrder.get, { params: { id } });
+    return <p>{`order ${order.id}`}</p>;
+  }
+
+  it("calls use() on every render, also once the data landed", async () => {
+    const { wrapper } = setup();
+    let show!: (id: number) => void;
+    function Orders() {
+      const [id, setId] = useState(1);
+      show = (next) => startTransition(() => setId(next));
+      return <Order id={id} />;
+    }
+    await renderAsync(
+      <StrictMode>
+        <Boundary fallback={<p>loading</p>}>
+          <Orders />
+        </Boundary>
+      </StrictMode>,
+      { wrapper },
+    );
+    expect(await screen.findByText("order 1")).toBeDefined();
+    for (const id of [2, 3, 4, 5]) {
+      await act(async () => show(id));
+      expect(await screen.findByText(`order ${id}`)).toBeDefined();
+    }
+    expect(logged()).toBe(false);
   });
 });
