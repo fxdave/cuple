@@ -1,23 +1,45 @@
 ---
 sidebar_position: 6
-description: 'usePages'
+description: 'load more with combine and useState'
 ---
 
 # Pagination
+
+"Load more" needs no special hook: a combined read loads the first `count` pages, and the component holds `count`.
 
 ```tsx file=../../../examples/react/src/App.tsx#notes
 ```
 
 In this example:
 
- - The third argument returns the next page's arguments from the last page, or `null` when there are no more.
- - `pages` holds the loaded pages, success only. A failed page throws to the nearest `<Boundary>`.
- - `loadMore` keeps the loaded pages on screen, and `isPending` is true until the next page lands.
- - While `isPending` is true, placeholder rows show where the next page will land.
- - Every page is an ordinary cached call. Refreshing `client.getNotes` refetches every loaded page, and when a deleted note shifts the pages, the next arguments follow.
+ - `notePages` is pure: the same `count` always gives the same notes. The component only decides how many pages it wants.
+ - "Show more" raises `count` inside `startTransition`, so the loaded notes stay on screen and `isPending` is true until the next page lands. Placeholder rows show where it will land.
+ - Load more fetches one page. The combined read owns the pages it fetched, so pages 1 to n are still there, whatever their own cache settings say.
+ - Page numbers don't depend on each other, so `Promise.all` fetches them in parallel, which matters when a refresh refetches every loaded page.
+ - `refresh: [client.getNotes]` re-runs the combined read: every loaded page is fetched again, and the list stays on screen meanwhile.
+
+With cursors, each page's cursor comes from the page before, so the walk is sequential:
+
+```ts
+export const notePages = combine({
+  load: async (ctx, args: { count: number }) => {
+    const pages = [];
+    let cursor: number | null | undefined;
+    while (cursor !== null && pages.length < args.count) {
+      const page = await ctx.get(client.getNotes, { query: { cursor } });
+      pages.push(page);
+      cursor = page.nextCursor;
+    }
+    return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
+  },
+});
+```
+
+A cursor walk survives deletions: when a note is deleted, a refresh recomputes the cursors, and nothing is skipped. Page numbers shift instead, and the refresh realigns them.
 
 :::note[Why it works this way]
 
-- **Pages are ordinary cached calls.** Infinite-query caches have their own rules for refetching and invalidation. Here a page is a normal read, so `refresh: [client.getNotes]` refreshes the loaded pages like any other read, and follows cursors that moved when an item was deleted.
+- **No pagination hook.** Pages are what `combine` already does: several calls, one value, refreshed together. The only state is how many pages to show, and that's React state. To keep it across navigation, put `count` in the URL.
+- **A combined read owns its pages.** Without that, the pages would follow their own cache settings, and a long-open list would quietly refetch every page on the next "load more".
 
 :::

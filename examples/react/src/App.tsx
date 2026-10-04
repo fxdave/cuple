@@ -3,13 +3,13 @@ import {
   Boundary,
   type CupleConfig,
   CupleProvider,
+  combine,
   type StreamEvent,
   useAction,
   useGet,
-  usePages,
   useStream,
 } from "@cuple/react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   ACCOUNTS,
   type AccountId,
@@ -202,25 +202,44 @@ function NewNote() {
 }
 
 // #region notes
+/** The first `count` pages of notes, fetched in parallel: page numbers don't depend on each other. */
+const notePages = combine({
+  load: async (ctx, args: { count: number }) => {
+    const pages = await Promise.all(
+      Array.from({ length: args.count }, (_, page) =>
+        ctx.get(client.getNotes, { query: { page } }),
+      ),
+    );
+    const last = pages[pages.length - 1]!;
+    return {
+      notes: pages.flatMap((page) => page.notes),
+      total: last.total,
+      hasMore: last.hasMore,
+    };
+  },
+});
+
 function Notes({ onOpen }: { onOpen: (id: number) => void }) {
-  const list = usePages(client.getNotes, { query: { page: 0 } }, (last) =>
-    last.hasMore ? { query: { page: last.page + 1 } } : null,
-  );
+  const [count, setCount] = useState(1);
+  const [isPending, startTransition] = useTransition();
+  const list = useGet(notePages, { count });
 
   return (
-    <section aria-busy={list.isPending}>
-      <h2>Your notes ({list.pages[0]?.total ?? 0})</h2>
+    <section aria-busy={isPending}>
+      <h2>Your notes ({list.total})</h2>
       <ul>
-        {list.pages
-          .flatMap((page) => page.notes)
-          .map((note) => (
-            <NoteRow key={note.id} note={note} onOpen={onOpen} />
-          ))}
+        {list.notes.map((note) => (
+          <NoteRow key={note.id} note={note} onOpen={onOpen} />
+        ))}
       </ul>
       {/* The next page shows up where it will land, not as a changed label. */}
-      {list.isPending && <RowsSkeleton rows={2} />}
+      {isPending && <RowsSkeleton rows={2} />}
       {list.hasMore && (
-        <button type="button" onClick={list.loadMore} disabled={list.isPending}>
+        <button
+          type="button"
+          onClick={() => startTransition(() => setCount(count + 1))}
+          disabled={isPending}
+        >
           Show more
         </button>
       )}

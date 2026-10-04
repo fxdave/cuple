@@ -28,5 +28,4 @@ export {
   useAction,
 } from "./use-action";
 export { useGet, useGetWrapped, type WrappedRead } from "./use-get";
-export { usePages } from "./use-pages";
 export { type StreamEvent, useStream } from "./use-stream";

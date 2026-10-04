@@ -49,7 +49,7 @@ With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and lose
 
 ## Where each is used
 
- - `useGet`, `usePages`: `cache`, `loading`.
+ - `useGet`, `useGetWrapped`: `cache`, `loading`.
  - `useAction`: `errors`, `loading.blocking`.
  - `<Boundary error>`: `errors.fallbackMessage`; with `"notify"`, `errors.notify`.
  - Plain code on the store (`store.preload`, `store.refreshKeys`): the provider's config.

@@ -73,7 +73,7 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
 - **Coming back to cached data** (another tab, a reopened panel) shows it at once and refreshes it in the background. See Configuration. "Coming back" means some component has read this data before; the first component to read it just loads it, once.
 
 - **A route stands for its GET endpoint:** `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, the same cached call. It works wherever something is read or refreshed. A route itself named like an HTTP method (`client.get`) needs `.get` written out.
-- **Args:** optional when the endpoint takes no input. A middle argument can't be left out, so pass `undefined`: `useGet(client.getStats, undefined, { config })`, `usePages(client.getFeed, undefined, next)`.
+- **Args:** optional when the endpoint takes no input. A middle argument can't be left out, so pass `undefined`: `useGet(client.getStats, undefined, { config })`.
 
 ### Several fetches, one value: `combine`
 
@@ -96,20 +96,33 @@ const { order, customer } = useGet(loadOrderWithCustomer, id);
 - **One failed `get` fails the whole read.** If `getOrder` returns a 404, `loadOrderWithCustomer` throws to the `<Boundary>`, like any read. To go on without it, list it: `ctx.get(client.getOrder, args, { resolveAlso: ["not-found-error"] })`.
 - **Args must be JSON** (numbers, strings, plain objects and arrays): they are the cache key. A `Date` or a class instance would not match itself later.
 
-### Pages
+### Load more: `combine` + `useState`
 
 ```tsx
-const notes = usePages(client.getNotes, { query: {} }, (last) =>
-  last.nextCursor === null ? null : { query: { cursor: last.nextCursor } },
-);
+// module level: the first `count` pages, walking the cursors
+export const notePages = combine({
+  load: async (ctx, args: { count: number }) => {
+    const pages = [];
+    let cursor: number | null | undefined;
+    while (cursor !== null && pages.length < args.count) {
+      const page = await ctx.get(client.getNotes, { query: { cursor } });
+      pages.push(page);
+      cursor = page.nextCursor;
+    }
+    return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
+  },
+});
 
-notes.pages.flatMap((page) => page.notes);
-<button onClick={notes.loadMore} disabled={!notes.hasMore || notes.isPending}>More</button>
+// the component holds how many pages it wants
+const [count, setCount] = useState(1);
+const [isPending, startTransition] = useTransition();
+const list = useGet(notePages, { count });
+<button onClick={() => startTransition(() => setCount(count + 1))} disabled={!list.hasMore || isPending}>More</button>
 ```
 
-- Every page is an ordinary cached call.
-- A refresh refetches the loaded pages and follows cursors that changed.
-- `loadMore` keeps the loaded pages on screen while the next one loads.
+- **Load more fetches one page:** the combined read owns the pages it fetched, so the earlier ones are still there.
+- **The loaded pages stay on screen** while the next one loads: the change is a transition.
+- **A refresh refetches the loaded pages** and follows cursors that changed. With page numbers, fetch them in parallel with `Promise.all`.
 
 ## Writing: `useAction`
 

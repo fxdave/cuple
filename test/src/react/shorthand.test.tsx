@@ -1,5 +1,5 @@
 import { fetchCuple } from "@cuple/client";
-import { Boundary, combine, useAction, useGet, usePages } from "@cuple/react";
+import { Boundary, combine, useAction, useGet } from "@cuple/react";
 import { apiResponse, success } from "@cuple/server";
 import { act, screen } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -19,11 +19,6 @@ const { client, close } = await serve((builder) => ({
       ? apiResponse("not-found-error", 404, { message: "gone" })
       : success({ order: { id: data.params.id, title } });
   }),
-  getNotes: builder
-    .querySchema(z.object({ page: z.coerce.number() }))
-    .get(async ({ data }) =>
-      success({ page: data.query.page, notes: [`n${data.query.page}`] }),
-    ),
   rename: builder.post(async () => {
     calls.hit("rename");
     title = "Chair";
@@ -100,7 +95,7 @@ describe("route shorthand", () => {
     expect(screen.getByText("Lamp")).toBeDefined();
   });
 
-  it("get inside combine and usePages accept routes", async () => {
+  it("get inside combine accepts routes", async () => {
     const { wrapper } = setup();
     const titled = combine({
       load: async ({ get }, id: number) => {
@@ -109,11 +104,7 @@ describe("route shorthand", () => {
       },
     });
     function Page() {
-      const upper = useGet(titled, 1);
-      const list = usePages(client.getNotes, { query: { page: 0 } }, (last) =>
-        last.page < 1 ? { query: { page: last.page + 1 } } : null,
-      );
-      return <p>{`${upper} ${list.pages.flatMap((p) => p.notes).join(",")}`}</p>;
+      return <p>{useGet(titled, 1)}</p>;
     }
     await renderAsync(
       <Boundary fallback={<p>loading</p>}>
@@ -121,7 +112,7 @@ describe("route shorthand", () => {
       </Boundary>,
       { wrapper },
     );
-    expect(await screen.findByText("DESK n0")).toBeDefined();
+    expect(await screen.findByText("DESK")).toBeDefined();
   });
 });
 
@@ -145,13 +136,12 @@ describe("reads are GET only", () => {
     expect(calls.of("rename")).toBe(before);
   });
 
-  it("types: reads, refresh lists and usePages accept GET only; args of no-input pages may be undefined", () => {
+  it("types: reads and refresh lists accept GET only", () => {
     // @ts-expect-error a POST endpoint is a write, not a read
     const read = () => useGet(client.rename.post);
     // @ts-expect-error nor can it be refreshed
     const refresh = () => useAction(async () => {}, { refresh: [client.rename.post] });
-    const pages = () => usePages(client.getNotes, { query: { page: 0 } }, () => null);
-    void [read, refresh, pages];
+    void [read, refresh];
   });
 
   it("types: the map form of refresh needs a function that returns Cuple results", () => {

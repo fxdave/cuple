@@ -161,7 +161,7 @@ type Entry = {
   claims: Set<symbol>;
   /**
    * Its first load may be aborted once every claim is released: only
-   * `useGet` ever asked for it. A preload, a combined read or `usePages`
+   * `useGet` ever asked for it. A preload or a combined read
    * asking for it clears this.
    */
   abortable: boolean;
