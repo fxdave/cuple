@@ -58,7 +58,7 @@ function SearchResults({ query }: { query: string }) {
 }
 ```
 
-That still sends a request per keystroke. To send one once typing pauses, set `config.loading.debounceMs`: new args wait until they've stayed the same that long, then load as a transition, so the old results stay on screen meanwhile, like `useDeferredValue`. The first args load at once. With `cache.enabled: false`, searches nobody shows anymore aren't kept:
+That still sends a request per keystroke. To send one once typing pauses, set `config.loading.debounceMs`: new args wait until they've stayed the same that long, then load as a transition, so the old results stay on screen meanwhile, like `useDeferredValue`. The first args load at once. With `cache.enabled: false`, searches nobody shows anymore aren't kept. `useGetWrapped` is `useGet` with the data wrapped in an object, next to `isPending`: newer args are waiting or loading, so the results can be dimmed:
 
 ```tsx file=../../../examples/docs/search/app.tsx#search
 ```

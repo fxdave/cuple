@@ -1,4 +1,4 @@
-import { Boundary, CupleProvider, useGet } from "@cuple/react";
+import { Boundary, CupleProvider, useGetWrapped } from "@cuple/react";
 import { useState } from "react";
 import { client, store } from "./client";
 
@@ -15,15 +15,16 @@ export function App() {
 }
 
 function Results({ q }: { q: string }) {
-  const { products } = useGet(
+  const found = useGetWrapped(
     client.searchProducts,
     { query: { q } },
     // One request once typing pauses; nothing kept for searches nobody shows.
     { config: { loading: { debounceMs: 300 }, cache: { enabled: false } } },
   );
+  // isPending: what's shown is for an earlier q, until the new results land.
   return (
-    <ul>
-      {products.map((product) => (
+    <ul className={found.isPending ? "stale" : undefined}>
+      {found.data.products.map((product) => (
         <li key={product.id}>{product.name}</li>
       ))}
     </ul>

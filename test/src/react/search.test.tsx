@@ -1,4 +1,4 @@
-import { Boundary, useGet } from "@cuple/react";
+import { Boundary, useGet, useGetWrapped } from "@cuple/react";
 import { success } from "@cuple/server";
 import { act, fireEvent, screen } from "@testing-library/react";
 import { useState } from "react";
@@ -211,5 +211,58 @@ describe("aborting first loads nobody waits for", () => {
     expect(signals.get("ab")?.aborted).toBe(false);
     held.open();
     expect(await screen.findByText("results for abc")).toBeDefined();
+  });
+});
+
+describe("useGetWrapped", () => {
+  function WrappedSearch() {
+    const [q, setQ] = useState("a");
+    const found = useGetWrapped(
+      client.search.get,
+      { query: { q } },
+      { config: { loading: { debounceMs: 50 } } },
+    );
+    return (
+      <>
+        <input aria-label="search" value={q} onChange={(e) => setQ(e.target.value)} />
+        <p>{`results for ${found.data.q}${found.isPending ? " (pending)" : ""}`}</p>
+      </>
+    );
+  }
+
+  it("isPending: newer args are waiting for the debounce, then loading", async () => {
+    const { wrapper } = setup();
+    await renderAsync(
+      <Boundary fallback={<p>loading</p>}>
+        <WrappedSearch />
+      </Boundary>,
+      { wrapper },
+    );
+    expect(await screen.findByText("results for a")).toBeDefined();
+    const held = gate();
+    hold = held.opened;
+    await type("ab");
+    // Waiting for the pause.
+    expect(screen.getByText("results for a (pending)")).toBeDefined();
+    await act(() => wait(100));
+    // Loading.
+    expect(screen.getByText("results for a (pending)")).toBeDefined();
+    held.open();
+    expect(await screen.findByText("results for ab")).toBeDefined();
+  });
+
+  it("without debounceMs, data is useGet's value and isPending stays false", async () => {
+    const { wrapper } = setup();
+    function Plain() {
+      const found = useGetWrapped(client.search.get, { query: { q: "plain" } });
+      return <p>{`results for ${found.data.q} ${found.isPending}`}</p>;
+    }
+    await renderAsync(
+      <Boundary fallback={<p>loading</p>}>
+        <Plain />
+      </Boundary>,
+      { wrapper },
+    );
+    expect(await screen.findByText("results for plain false")).toBeDefined();
   });
 });

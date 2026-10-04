@@ -67,6 +67,7 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
 - **Shared.** Every reader of the same call shares one request and one cached result.
 - **New args suspend again.** Old data belongs to other args. To keep it on screen while the new args load, pass `useDeferredValue(args)`.
 - **Search boxes:** `{ config: { loading: { debounceMs: 300 }, cache: { enabled: false } } }` sends one request once typing pauses, keeps the old results on screen while the new ones load, aborts a search the user typed past while it loads, and keeps nothing for searches nobody shows anymore.
+- **More than the data:** `useGetWrapped` takes the same arguments and returns `{ data, isPending }`. `isPending`: newer args are waiting for `debounceMs` or loading, so `data` is still the previous args', e.g. to dim search results.
 - **Conditional fetching is conditional rendering:** `{id && <Order id={id} />}`. There is no flag to skip a fetch.
 - **Polling:** `useGet(client.getStats, undefined, { config: { loading: { everyMs: 30_000 } } })`. It polls only while something reads it. When several readers poll the same data at different intervals, the shortest wins.
 - **Coming back to cached data** (another tab, a reopened panel) shows it at once and refreshes it in the background. See Configuration. "Coming back" means some component has read this data before; the first component to read it just loads it, once.

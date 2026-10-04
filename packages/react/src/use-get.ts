@@ -31,28 +31,52 @@ import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from 
  *
  * To fetch only sometimes, render the component only sometimes:
  * `{id && <Order id={id} />}`. There is no flag to skip a fetch.
+ *
+ * For more than the data — whether newer args are on their way — use
+ * {@link useGetWrapped}.
  */
 export function useGet<
   R extends Readable,
   const O extends ReadOptions<R> = ReadOptions<R>,
 >(readable: R, ...rest: ReadRest<R, O>): ReadValue<R, O> {
+  return useGetWrapped(readable, ...rest).data;
+}
+
+/** What {@link useGetWrapped} returns: the data, and what's known about it. */
+export type WrappedRead<T> = {
+  /** What `useGet` returns. */
+  data: T;
+  /**
+   * Newer args are waiting for `config.loading.debounceMs` to pass, or
+   * loading: `data` is still the previous args'. Always `false` without
+   * `debounceMs` — new args then suspend, and the fallback shows instead.
+   */
+  isPending: boolean;
+};
+
+/**
+ * `useGet`, with the data wrapped in an object, next to what's known about
+ * it. Same arguments and options.
+ *
+ * ```tsx
+ * const found = useGetWrapped(client.search, { query: { q } }, {
+ *   config: { loading: { debounceMs: 300 } },
+ * });
+ * <ul className={found.isPending ? "stale" : undefined}>…</ul>
+ * ```
+ */
+export function useGetWrapped<
+  R extends Readable,
+  const O extends ReadOptions<R> = ReadOptions<R>,
+>(readable: R, ...rest: ReadRest<R, O>): WrappedRead<ReadValue<R, O>> {
   const { store } = useCupleContext();
   const [args, options] = rest as unknown as [unknown, ReadOptions<Readable> | undefined];
   const config = useConfig(options?.config);
-  const { call, claim } = useDebounced(
-    store,
-    { readable, args, key: store.keyOf(readable, args) },
-    config.loading.debounceMs,
-  );
+  const latest = { readable, args, key: store.keyOf(readable, args) };
+  const { call, claim } = useDebounced(store, latest, config.loading.debounceMs);
   useSubscription(store, [call.key], config);
-  return readThrough(
-    store,
-    call.readable,
-    call.args,
-    config,
-    options,
-    claim,
-  ) as ReadValue<R, O>;
+  const data = readThrough(store, call.readable, call.args, config, options, claim);
+  return { data: data as ReadValue<R, O>, isPending: call.key !== latest.key };
 }
 
 /**
