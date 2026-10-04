@@ -200,7 +200,7 @@ export class Store implements CupleStore {
     );
     const landed: Promise<void>[] = [];
     for (const entry of ordered) {
-      if (this.isRead(entry) || entry.inflight)
+      if (this.isHeld(entry) || entry.inflight)
         landed.push(this.fetchEntry(entry, "foreground"));
       else this.evict(entry);
     }
@@ -381,7 +381,7 @@ export class Store implements CupleStore {
       if (set.size === 0) this.listeners.delete(key);
       if (everyMs !== undefined) this.removePoller(key, token);
       const current = this.entries.get(key);
-      if (current && !this.isRead(current)) this.scheduleGc(current);
+      if (current && !this.isHeld(current)) this.scheduleGc(current);
     };
   }
 
@@ -518,6 +518,7 @@ export class Store implements CupleStore {
     this.setBusy(+busy);
     const controller = new AbortController();
     entry.controller = controller;
+    const owned = new Set(entry.childKeys);
     try {
       const value = isCombined(entry.readable)
         ? await entry.readable.load(this.contextFor(entry), entry.args)
@@ -531,6 +532,8 @@ export class Store implements CupleStore {
     } finally {
       if (entry.controller === controller) entry.controller = null;
       this.setBusy(-busy);
+      // Calls this run no longer made follow their own settings again.
+      for (const key of owned) if (!entry.childKeys.has(key)) this.disown(key);
     }
   }
 
@@ -634,6 +637,25 @@ export class Store implements CupleStore {
     return (this.listeners.get(entry.key)?.size ?? 0) > 0;
   }
 
+  /**
+   * Read, or made by a combined read that is still cached: a combined call
+   * owns the calls it makes through `get`, so they last as long as it does,
+   * whatever their own settings say. A cache setting never drops what a
+   * cached combined read is built from.
+   */
+  private isHeld(entry: Entry) {
+    if (this.isRead(entry)) return true;
+    for (const owner of this.entries.values())
+      if (owner !== entry && owner.childKeys.has(entry.key)) return true;
+    return false;
+  }
+
+  /** `key` lost an owner: it follows its own settings, unless something else holds it. */
+  private disown(key: string) {
+    const entry = this.entries.get(key);
+    if (entry && !this.isHeld(entry)) this.scheduleGc(entry);
+  }
+
   private evict(entry: Entry) {
     clearTimeout(entry.gcTimer);
     if (this.entries.get(entry.key) !== entry) return;
@@ -641,6 +663,7 @@ export class Store implements CupleStore {
     const byLoose = this.looseKeys.get(entry.target);
     const loose = looseKey(entry.args);
     if (byLoose?.get(loose) === entry) byLoose.delete(loose);
+    for (const key of entry.childKeys) this.disown(key);
   }
 
   /**
@@ -650,7 +673,7 @@ export class Store implements CupleStore {
    */
   private scheduleGc(entry: Entry) {
     clearTimeout(entry.gcTimer);
-    if (this.isRead(entry) || entry.inflight) return;
+    if (this.isHeld(entry) || entry.inflight) return;
     const { freshMs, storeStaleMs } = entry.retention;
     const now = Date.now();
     const staleAt = entry.hasValue ? entry.fetchedAt + freshMs : now;
@@ -660,7 +683,7 @@ export class Store implements CupleStore {
     const arm = () => {
       entry.gcTimer = setTimeout(
         () => {
-          if (this.isRead(entry) || entry.inflight) return;
+          if (this.isHeld(entry) || entry.inflight) return;
           if (Date.now() < dueAt) arm();
           else this.evict(entry);
         },
