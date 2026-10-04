@@ -1,0 +1,67 @@
+---
+sidebar_position: 2.5
+description: 'combine: several reads, one cached value'
+---
+
+# Combining reads
+
+`combine` turns several reads into one value. It's a plain async function: `ctx.get` reads through the cache, and what you return is what `useGet` gives back.
+
+```ts
+export const loadSomething = combine({
+  load: async (ctx, args: Args) => {
+    const a = await ctx.get(client.someRoute, ...);
+    return /* anything built from them */;
+  },
+});
+
+const value = useGet(loadSomething, args);
+```
+
+The examples below run as one app: `cd examples/docs && npm run dev:combine`. Its routes:
+
+```ts file=../../../examples/docs/combine/server.ts#routes
+```
+
+## Reads that don't depend on each other
+
+`Promise.all` runs them at once, so the page waits for the slowest, not for the sum:
+
+```tsx file=../../../examples/docs/combine/app.tsx#parallel
+```
+
+## A read that needs another's result
+
+The customer's id is in the order, so the second `ctx.get` waits for the first. A deleted customer is a normal outcome here, so it's listed with `resolveAlso` and comes back as a value. Anything unlisted fails the whole read and goes to the `<Boundary>`:
+
+```tsx file=../../../examples/docs/combine/app.tsx#dependent
+```
+
+## A POST that only reads
+
+Reads are GET only. A search sent as a POST is still a read, so wrap it: it's cached by its args like any read. `fetchCuple` sends the request directly, without the cache:
+
+```tsx file=../../../examples/docs/combine/app.tsx#post-read
+```
+
+## Load more
+
+The combined read loads the first `count` pages. The component holds `count`, and raises it in a transition, so the loaded notes stay on screen while the next page loads. See [Pagination](./pagination) for page numbers and how refresh works:
+
+```tsx file=../../../examples/docs/combine/app.tsx#load-more
+```
+
+## The rules
+
+ - **Create combined reads at module level.** A combined read's identity is its cache identity; one created during render would never hit the cache.
+ - **Args must be JSON** (numbers, strings, plain objects and arrays): they're the cache key.
+ - **It owns what it fetches.** The calls made through `ctx.get` are kept as long as the combined read is, whatever their own cache settings. So "load more" fetches one page, never all of them again.
+ - **Refreshing a route re-runs every combined read that read it.** `refresh: [client.getOrder]` updates `loadOrderWithCustomer` too.
+ - **`ctx.get` shares requests** with every other reader: if the list already loaded a customer, the order page doesn't fetch it again.
+
+:::note[Why it works this way]
+
+- **A function, not a query language.** Dependent reads are `await`, parallel ones are `Promise.all`, conditions are `if`. Nothing to learn beyond TypeScript.
+- **No state inside.** A combined read is a pure function of its args. What changes over time, like how many pages to show, is React state passed in as args, so it's visible in the component and resets when it should.
+
+:::

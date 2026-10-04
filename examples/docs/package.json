@@ -8,6 +8,7 @@
     "dev:server": "cd ../.. && tsx watch examples/docs/todos/server.ts",
     "dev:orders": "concurrently \"cd ../.. && tsx watch examples/docs/orders/server.ts\" \"vite --config vite.config.ts orders\"",
     "dev:search": "concurrently \"cd ../.. && tsx watch examples/docs/search/server.ts\" \"vite --config vite.config.ts search\"",
+    "dev:combine": "concurrently \"cd ../.. && tsx watch examples/docs/combine/server.ts\" \"vite --config vite.config.ts combine\"",
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },

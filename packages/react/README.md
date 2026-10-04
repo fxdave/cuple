@@ -90,6 +90,7 @@ const { order, customer } = useGet(loadOrderWithCustomer, id);
 ```
 
 - **A plain async function:** dependent fetches use `await`, parallel ones use `Promise.all`.
+- **More examples** (parallel reads, an optional piece, a POST that only reads, load more): the docs' "Combining reads" page.
 - **`ctx.get` reads through the cache,** so it shares requests with every other reader. It's also what lets refreshing `client.getOrder` re-run this combined read.
 - **It owns what it fetches:** the calls made through `ctx.get` are kept as long as the combined read is, whatever their own cache settings say. `storeStaleMs: Infinity` on the combined read means its pieces stay too, so the next run never refetches them behind your back.
 - **Create combined reads at module level.** A combined read's identity is its cache key.
