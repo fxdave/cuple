@@ -55,6 +55,15 @@ export type CupleConfig = {
      */
     storeStaleMs?: number;
     /**
+     * How many calls of one endpoint (or one combined read) nobody reads are
+     * kept, whatever `freshMs` and `storeStaleMs` say: past it, the one unread
+     * the longest is dropped. Calls something reads never count, and neither
+     * do the calls a cached combined read made. Different args are different
+     * calls: a search keeps its last few queries, not every keystroke. With
+     * several readers, the largest wins. Default: 3.
+     */
+    maxStoredCalls?: number;
+    /**
      * Whether `store.refreshKeys()` keeps data whose key changed (the user a
      * `with({ key })` getter returns, say). `false` deletes it at once, so
      * nothing of the previous account can show again. `true` keeps it like
@@ -116,7 +125,13 @@ export type ResolvedConfig = {
 };
 
 export const defaultConfig: ResolvedConfig = {
-  cache: { enabled: true, freshMs: 0, storeStaleMs: 5 * 60_000, keepOnKeyChange: false },
+  cache: {
+    enabled: true,
+    freshMs: 0,
+    storeStaleMs: 5 * 60_000,
+    maxStoredCalls: 3,
+    keepOnKeyChange: false,
+  },
   errors: { onError: "boundary", fallbackMessage: "Something went wrong." },
   loading: { blocking: false },
 };

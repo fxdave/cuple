@@ -92,12 +92,16 @@ type Priority = "foreground" | "background";
 type Listener = (change: Change) => void;
 
 /** How long a reader keeps data, once `cache.enabled` is applied. */
-type Retention = { freshMs: number; storeStaleMs: number };
+type Retention = { freshMs: number; storeStaleMs: number; maxStoredCalls: number };
 
 export function retentionOf(cache: ResolvedConfig["cache"]): Retention {
   return cache.enabled
-    ? { freshMs: cache.freshMs, storeStaleMs: cache.storeStaleMs }
-    : { freshMs: 0, storeStaleMs: 0 };
+    ? {
+        freshMs: cache.freshMs,
+        storeStaleMs: cache.storeStaleMs,
+        maxStoredCalls: cache.maxStoredCalls,
+      }
+    : { freshMs: 0, storeStaleMs: 0, maxStoredCalls: 0 };
 }
 
 /**
@@ -142,8 +146,10 @@ type Entry = {
   fetchedAt: number;
   /** Keys of the calls this combined read fetched through `get`, on its last run. */
   childKeys: Set<string>;
-  /** The longest `freshMs` and `storeStaleMs` among its readers since it was last unread. */
+  /** The largest of each setting among its readers since it was last unread. */
   retention: Retention;
+  /** When something last started or stopped using it: for `maxStoredCalls`. */
+  usedAt: number;
   /** Some component has subscribed to it before. */
   readBefore: boolean;
   /** A read of it threw, so a boundary's retry should drop it. */
@@ -173,6 +179,8 @@ export class Store implements CupleStore {
   private pollers = new Map<string, Map<symbol, number>>();
   private pollTimers = new Map<string, ReturnType<typeof setInterval>>();
   private busyCount = 0;
+  /** Targets to check against `maxStoredCalls` once the current commit is done. */
+  private toTrim = new Set<string>();
   /** Blocking actions and refreshes in progress. */
   private blockingCount = 0;
   /** Calls read with `{ blocking: true }`, and how many readers ask for it. */
@@ -368,6 +376,10 @@ export class Store implements CupleStore {
                 entry.retention.storeStaleMs,
                 retention.storeStaleMs,
               ),
+              maxStoredCalls: Math.max(
+                entry.retention.maxStoredCalls,
+                retention.maxStoredCalls,
+              ),
             };
     }
     set.add(listener);
@@ -475,6 +487,7 @@ export class Store implements CupleStore {
       fetchedAt: 0,
       childKeys: new Set(),
       retention,
+      usedAt: Date.now(),
       readBefore: false,
       claims: new Set(),
       abortable: false,
@@ -650,6 +663,40 @@ export class Store implements CupleStore {
     return false;
   }
 
+  /**
+   * Drops the calls of `target` nobody holds past each one's `maxStoredCalls`,
+   * the one unread the longest first. Calls loading, and calls a render may
+   * still be waiting to show (never subscribed, within the grace), don't count.
+   */
+  private trimSoon(target: string) {
+    // After the commit: React unsubscribes the old args before it subscribes
+    // the new ones, and the new ones must not count as unread meanwhile.
+    if (this.toTrim.size === 0) queueMicrotask(() => this.trimAll());
+    this.toTrim.add(target);
+  }
+
+  private trimAll() {
+    const targets = [...this.toTrim];
+    this.toTrim.clear();
+    for (const target of targets) this.trim(target);
+  }
+
+  private trim(target: string) {
+    const now = Date.now();
+    const unread = [...this.entries.values()]
+      .filter(
+        (entry) =>
+          entry.target === target &&
+          !entry.inflight &&
+          (entry.readBefore || now - entry.usedAt >= PENDING_RENDER_MS) &&
+          !this.isHeld(entry),
+      )
+      .sort((a, b) => b.usedAt - a.usedAt);
+    unread.forEach((entry, rank) => {
+      if (rank >= entry.retention.maxStoredCalls) this.evict(entry);
+    });
+  }
+
   /** `key` lost an owner: it follows its own settings, unless something else holds it. */
   private disown(key: string) {
     const entry = this.entries.get(key);
@@ -674,6 +721,8 @@ export class Store implements CupleStore {
   private scheduleGc(entry: Entry) {
     clearTimeout(entry.gcTimer);
     if (this.isHeld(entry) || entry.inflight) return;
+    entry.usedAt = Date.now();
+    this.trimSoon(entry.target);
     const { freshMs, storeStaleMs } = entry.retention;
     const now = Date.now();
     const staleAt = entry.hasValue ? entry.fetchedAt + freshMs : now;

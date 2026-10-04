@@ -164,7 +164,7 @@ export function useSubscription(store: Store, keys: string[], config: ResolvedCo
   latest.current = config;
   const joined = keys.join("\n");
   const { everyMs, blocking } = config.loading;
-  const { freshMs, storeStaleMs } = retentionOf(config.cache);
+  const { freshMs, storeStaleMs, maxStoredCalls } = retentionOf(config.cache);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `joined` stands for `keys`
   useEffect(() => {
@@ -174,7 +174,7 @@ export function useSubscription(store: Store, keys: string[], config: ResolvedCo
       store.subscribe(key, update, {
         everyMs,
         blocking,
-        retention: { freshMs, storeStaleMs },
+        retention: { freshMs, storeStaleMs, maxStoredCalls },
       }),
     );
     // Something landed between render and subscribe.
@@ -185,5 +185,5 @@ export function useSubscription(store: Store, keys: string[], config: ResolvedCo
     return () => {
       for (const stop of unsubscribe) stop();
     };
-  }, [store, joined, everyMs, blocking, freshMs, storeStaleMs]);
+  }, [store, joined, everyMs, blocking, freshMs, storeStaleMs, maxStoredCalls]);
 }

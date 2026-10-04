@@ -236,6 +236,7 @@ One `config` object, grouped into `cache`, `errors` and `loading`, accepted by `
 | `cache.enabled` | `true`; `false` drops data as soon as nobody reads it |
 | `cache.freshMs` | `0`: coming back to cached data refreshes it in the background |
 | `cache.storeStaleMs` | 5 minutes of being stale and unread |
+| `cache.maxStoredCalls` | `3` unread calls per endpoint or combined read |
 | `cache.keepOnKeyChange` | `false` (for `store.refreshKeys()`) |
 | `errors.onError` | `"boundary"` |
 | `errors.notify` | none |
