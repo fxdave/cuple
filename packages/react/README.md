@@ -78,19 +78,21 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
 ### Several fetches, one value: `combine`
 
 ```ts
-export const loadOrderWithCustomer = combine(async ({ get }, id: number) => {
-  const { order } = await get(client.getOrder, { params: { id } });
-  const { customer } = await get(client.getCustomer, { params: { id: order.customerId } });
-  return { order, customer };
+export const loadOrderWithCustomer = combine({
+  load: async (ctx, id: number) => {
+    const { order } = await ctx.get(client.getOrder, { params: { id } });
+    const { customer } = await ctx.get(client.getCustomer, { params: { id: order.customerId } });
+    return { order, customer };
+  },
 });
 
 const { order, customer } = useGet(loadOrderWithCustomer, id);
 ```
 
 - **A plain async function:** dependent fetches use `await`, parallel ones use `Promise.all`.
-- **`get` reads through the cache,** so it shares requests with every other reader. It's also what lets refreshing `client.getOrder` re-run this combined read.
+- **`ctx.get` reads through the cache,** so it shares requests with every other reader. It's also what lets refreshing `client.getOrder` re-run this combined read.
 - **Create combined reads at module level.** A combined read's identity is its cache key.
-- **One failed `get` fails the whole read.** If `getOrder` returns a 404, `loadOrderWithCustomer` throws to the `<Boundary>`, like any read. To go on without it, list it: `get(client.getOrder, args, { resolveAlso: ["not-found-error"] })`.
+- **One failed `get` fails the whole read.** If `getOrder` returns a 404, `loadOrderWithCustomer` throws to the `<Boundary>`, like any read. To go on without it, list it: `ctx.get(client.getOrder, args, { resolveAlso: ["not-found-error"] })`.
 - **Args must be JSON** (numbers, strings, plain objects and arrays): they are the cache key. A `Date` or a class instance would not match itself later.
 
 ### Pages

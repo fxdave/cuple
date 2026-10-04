@@ -178,9 +178,11 @@ describe("store.refresh", () => {
 
   it("re-runs combined read that fetched a refreshed endpoint through get", async () => {
     const { store, wrapper } = setup();
-    const loadTitle = combine(async ({ get }, id: number) => {
-      const { order } = await get(client.getOrder.get, { params: { id } });
-      return order.title.toUpperCase();
+    const loadTitle = combine({
+      load: async ({ get }, id: number) => {
+        const { order } = await get(client.getOrder.get, { params: { id } });
+        return order.title.toUpperCase();
+      },
     });
     function Title() {
       return <p>{useGet(loadTitle, 1)}</p>;

@@ -4,12 +4,14 @@ import { client, store } from "./client";
 
 // #region combine
 /** An order and the customer who placed it. The customer's id is in the order. */
-export const loadOrderWithCustomer = combine(async ({ get }, id: number) => {
-  const { order } = await get(client.getOrder, { params: { id } });
-  const { customer } = await get(client.getCustomer, {
-    params: { id: order.customerId },
-  });
-  return { order, customer };
+export const loadOrderWithCustomer = combine({
+  load: async (ctx, id: number) => {
+    const { order } = await ctx.get(client.getOrder, { params: { id } });
+    const { customer } = await ctx.get(client.getCustomer, {
+      params: { id: order.customerId },
+    });
+    return { order, customer };
+  },
 });
 // #endregion
 

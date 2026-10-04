@@ -147,9 +147,11 @@ describe("store.refreshKeys", () => {
 
   it("re-runs a combined read when a call it read changed its key", async () => {
     const { store, wrapper } = await renderWhoAmI();
-    const shouting = combine(async ({ get }) => {
-      const { user } = await get(client.whoami);
-      return user.toUpperCase();
+    const shouting = combine({
+      load: async ({ get }) => {
+        const { user } = await get(client.whoami);
+        return user.toUpperCase();
+      },
     });
     function Shout() {
       return <p>{`shout ${useGet(shouting)}`}</p>;

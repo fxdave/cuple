@@ -18,9 +18,9 @@ In this example:
 
 ## Routes and endpoints
 
-Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine(async (_, q: string) => fetchCuple(client.search.post, { body: { q } }))`.
+Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine({ load: async (_ctx, q: string) => fetchCuple(client.search.post, { body: { q } }) })`.
 
-A route stands for its GET endpoint: `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, and both are the same cached call. The short form works wherever something is read or refreshed: `useGet`, `usePages`, `get` inside `combine`, `refresh` lists, `store.refresh` and `store.preload`.
+A route stands for its GET endpoint: `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, and both are the same cached call. The short form works wherever something is read or refreshed: `useGet`, `usePages`, `ctx.get` inside `combine`, `refresh` lists, `store.refresh` and `store.preload`.
 
  - NOTE: A route that is itself named like an HTTP method (`client.get`) needs `.get` written out: at runtime, that's the only way to tell a route from an endpoint.
 
@@ -89,9 +89,9 @@ The order list shows each order's customer with a plain `useGet`:
 
 In this example:
 
- - `get` reads through the same cache as `useGet`. The list already loaded each customer, so opening an order sends one request, `getOrder`, and Ada is fetched once even though she has two orders.
+ - `ctx.get` reads through the same cache as `useGet`. The list already loaded each customer, so opening an order sends one request, `getOrder`, and Ada is fetched once even though she has two orders.
  - `OrderDetails` suspends once, until both are there. Use `await` for a fetch that needs another's result, and `Promise.all` for independent ones.
- - One failed `get` fails the whole read, and the `<Boundary>` shows it. To go on without it, list the result: `get(client.getCustomer, args, { resolveAlso: ["not-found-error"] })`.
+ - One failed `ctx.get` fails the whole read, and the `<Boundary>` shows it. To go on without it, list the result: `ctx.get(client.getCustomer, args, { resolveAlso: ["not-found-error"] })`.
  - Refreshing `client.getOrder` or `client.getCustomer` re-runs `loadOrderWithCustomer`.
  - NOTE: Create combined reads at module level: a combined read's identity is its cache key. Its arguments must be JSON (numbers, strings, plain objects and arrays), because they are part of the key too.
 

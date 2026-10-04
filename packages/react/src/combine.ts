@@ -7,10 +7,12 @@ let nextId = 0;
  * function. Only needed for composition — a single endpoint is read directly.
  *
  * ```ts
- * export const loadOrderWithCustomer = combine(async ({ get }, id: number) => {
- *   const { order } = await get(client.getOrder.get, { params: { id } });
- *   const { customer } = await get(client.getCustomer.get, { params: { id: order.customerId } });
- *   return { order, customer };
+ * export const loadOrderWithCustomer = combine({
+ *   load: async (ctx, id: number) => {
+ *     const { order } = await ctx.get(client.getOrder, { params: { id } });
+ *     const { customer } = await ctx.get(client.getCustomer, { params: { id: order.customerId } });
+ *     return { order, customer };
+ *   },
  * });
  *
  * const { order, customer } = useGet(loadOrderWithCustomer, 5);
@@ -21,10 +23,11 @@ let nextId = 0;
  *
  * Args must be JSON: they are the cache key.
  */
-export function combine<TArgs = undefined, TValue = unknown>(
-  load: (context: CombineContext, args: TArgs) => Promise<TValue>,
-): Combined<TArgs, TValue> {
-  return { kind: "cuple-combined", id: nextId++, load };
+export function combine<TArgs = undefined, TValue = unknown>(definition: {
+  /** Computes the value from `args`, reading through `ctx.get`. */
+  load: (ctx: CombineContext, args: TArgs) => Promise<TValue>;
+}): Combined<TArgs, TValue> {
+  return { kind: "cuple-combined", id: nextId++, load: definition.load };
 }
 
 export function isCombined(value: unknown): value is Combined<unknown, unknown> {

@@ -192,12 +192,14 @@ describe("useGet", () => {
 });
 
 describe("combine", () => {
-  const loadOrderWithCustomer = combine(async ({ get }, id: number) => {
-    const { order } = await get(client.getOrder.get, { params: { id } });
-    const { customer } = await get(client.getCustomer.get, {
-      params: { id: order.customerId },
-    });
-    return { order, customer };
+  const loadOrderWithCustomer = combine({
+    load: async ({ get }, id: number) => {
+      const { order } = await get(client.getOrder.get, { params: { id } });
+      const { customer } = await get(client.getCustomer.get, {
+        params: { id: order.customerId },
+      });
+      return { order, customer };
+    },
   });
 
   it("composes dependent fetches with await", async () => {
