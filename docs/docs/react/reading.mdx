@@ -18,7 +18,7 @@ In this example:
 
 ## Routes and endpoints
 
-Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine({ load: async (_ctx, q: string) => fetchCuple(client.search.post, { body: { q } }) })`.
+Reads are GET only: a read runs on every render, refresh and poll, so a write endpoint (`client.createTodo.post`) is refused, by the types and at runtime. For a POST that only reads, like a search, wrap it: `combine(async (_ctx, q: string) => fetchCuple(client.search.post, { body: { q } }))`.
 
 A route stands for its GET endpoint: `useGet(client.getNote, ...)` is `useGet(client.getNote.get, ...)`, and both are the same cached call. The short form works wherever something is read or refreshed: `useGet`, `ctx.get` inside `combine`, `refresh` lists, `store.refresh` and `store.preload`.
 

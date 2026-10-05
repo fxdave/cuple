@@ -78,12 +78,10 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
 ### Several fetches, one value: `combine`
 
 ```ts
-export const loadOrderWithCustomer = combine({
-  load: async (ctx, id: number) => {
-    const { order } = await ctx.get(client.getOrder, { params: { id } });
-    const { customer } = await ctx.get(client.getCustomer, { params: { id: order.customerId } });
-    return { order, customer };
-  },
+export const loadOrderWithCustomer = combine(async (ctx, id: number) => {
+  const { order } = await ctx.get(client.getOrder, { params: { id } });
+  const { customer } = await ctx.get(client.getCustomer, { params: { id: order.customerId } });
+  return { order, customer };
 });
 
 const { order, customer } = useGet(loadOrderWithCustomer, id);
@@ -101,17 +99,15 @@ const { order, customer } = useGet(loadOrderWithCustomer, id);
 
 ```tsx
 // module level: the first `count` pages, walking the cursors
-export const notePages = combine({
-  load: async (ctx, args: { count: number }) => {
-    const pages = [];
-    let cursor: number | null | undefined;
-    while (cursor !== null && pages.length < args.count) {
-      const page = await ctx.get(client.getNotes, { query: { cursor } });
-      pages.push(page);
-      cursor = page.nextCursor;
-    }
-    return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
-  },
+export const notePages = combine(async (ctx, args: { count: number }) => {
+  const pages = [];
+  let cursor: number | null | undefined;
+  while (cursor !== null && pages.length < args.count) {
+    const page = await ctx.get(client.getNotes, { query: { cursor } });
+    pages.push(page);
+    cursor = page.nextCursor;
+  }
+  return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
 });
 
 // the component holds how many pages it wants

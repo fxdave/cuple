@@ -34,17 +34,15 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-const notePages = combine({
-  load: async (ctx, args: { count: number }) => {
-    const pages = [];
-    let cursor: number | null | undefined;
-    while (cursor !== null && pages.length < args.count) {
-      const page = await ctx.get(client.getNotes, { query: { cursor } });
-      pages.push(page);
-      cursor = page.nextCursor;
-    }
-    return { items: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
-  },
+const notePages = combine(async (ctx, args: { count: number }) => {
+  const pages = [];
+  let cursor: number | null | undefined;
+  while (cursor !== null && pages.length < args.count) {
+    const page = await ctx.get(client.getNotes, { query: { cursor } });
+    pages.push(page);
+    cursor = page.nextCursor;
+  }
+  return { items: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
 });
 
 function useNotes() {

@@ -97,11 +97,9 @@ describe("route shorthand", () => {
 
   it("get inside combine accepts routes", async () => {
     const { wrapper } = setup();
-    const titled = combine({
-      load: async ({ get }, id: number) => {
-        const { order } = await get(client.getOrder, { params: { id } });
-        return order.title.toUpperCase();
-      },
+    const titled = combine(async ({ get }, id: number) => {
+      const { order } = await get(client.getOrder, { params: { id } });
+      return order.title.toUpperCase();
     });
     function Page() {
       return <p>{useGet(titled, 1)}</p>;

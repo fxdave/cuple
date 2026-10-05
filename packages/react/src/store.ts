@@ -848,7 +848,7 @@ function toTarget(readable: Readable): Readable {
     const name = [...(segments ?? []), method].join(".");
     throw new Error(
       `@cuple/react: reads are GET only, but ${name} is a ${method.toUpperCase()}: a write, which would run on every render, refresh and poll. ` +
-        "For a POST that only reads, wrap it: combine({ load: () => fetchCuple(...) }).",
+        "For a POST that only reads, wrap it: combine(() => fetchCuple(...)).",
     );
   }
   return readable;

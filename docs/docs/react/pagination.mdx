@@ -21,17 +21,15 @@ In this example:
 With cursors, each page's cursor comes from the page before, so the walk is sequential:
 
 ```ts
-export const notePages = combine({
-  load: async (ctx, args: { count: number }) => {
-    const pages = [];
-    let cursor: number | null | undefined;
-    while (cursor !== null && pages.length < args.count) {
-      const page = await ctx.get(client.getNotes, { query: { cursor } });
-      pages.push(page);
-      cursor = page.nextCursor;
-    }
-    return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
-  },
+export const notePages = combine(async (ctx, args: { count: number }) => {
+  const pages = [];
+  let cursor: number | null | undefined;
+  while (cursor !== null && pages.length < args.count) {
+    const page = await ctx.get(client.getNotes, { query: { cursor } });
+    pages.push(page);
+    cursor = page.nextCursor;
+  }
+  return { notes: pages.flatMap((page) => page.notes), hasMore: cursor !== null };
 });
 ```
 

@@ -203,20 +203,18 @@ function NewNote() {
 
 // #region notes
 /** The first `count` pages of notes, fetched in parallel: page numbers don't depend on each other. */
-const notePages = combine({
-  load: async (ctx, args: { count: number }) => {
-    const pages = await Promise.all(
-      Array.from({ length: args.count }, (_, page) =>
-        ctx.get(client.getNotes, { query: { page } }),
-      ),
-    );
-    const last = pages[pages.length - 1]!;
-    return {
-      notes: pages.flatMap((page) => page.notes),
-      total: last.total,
-      hasMore: last.hasMore,
-    };
-  },
+const notePages = combine(async (ctx, args: { count: number }) => {
+  const pages = await Promise.all(
+    Array.from({ length: args.count }, (_, page) =>
+      ctx.get(client.getNotes, { query: { page } }),
+    ),
+  );
+  const last = pages[pages.length - 1]!;
+  return {
+    notes: pages.flatMap((page) => page.notes),
+    total: last.total,
+    hasMore: last.hasMore,
+  };
 });
 
 function Notes({ onOpen }: { onOpen: (id: number) => void }) {

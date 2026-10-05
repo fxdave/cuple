@@ -25,15 +25,13 @@ beforeEach(() => {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const notePages = combine({
-  load: async (ctx, args: { count: number }) => {
-    const pages = await Promise.all(
-      Array.from({ length: args.count }, (_, page) =>
-        ctx.get(client.getNotes, { query: { page } }),
-      ),
-    );
-    return pages.flatMap((page) => page.notes);
-  },
+const notePages = combine(async (ctx, args: { count: number }) => {
+  const pages = await Promise.all(
+    Array.from({ length: args.count }, (_, page) =>
+      ctx.get(client.getNotes, { query: { page } }),
+    ),
+  );
+  return pages.flatMap((page) => page.notes);
 });
 
 let loadMore!: () => Promise<void>;

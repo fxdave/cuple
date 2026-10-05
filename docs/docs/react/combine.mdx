@@ -8,11 +8,9 @@ description: 'combine: several reads, one cached value'
 `combine` turns several reads into one value. It's a plain async function: `ctx.get` reads through the cache, and what you return is what `useGet` gives back.
 
 ```ts
-export const loadSomething = combine({
-  load: async (ctx, args: Args) => {
-    const a = await ctx.get(client.someRoute, ...);
-    return /* anything built from them */;
-  },
+export const loadSomething = combine(async (ctx, args: Args) => {
+  const a = await ctx.get(client.someRoute, ...);
+  return /* anything built from them */;
 });
 
 const value = useGet(loadSomething, args);
