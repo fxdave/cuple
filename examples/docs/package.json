@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "description": "The code shown in the docs. Pages import regions of these files, so every snippet is type-checked.",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"vite\"",
-    "dev:server": "cd ../.. && tsx watch examples/docs/todos/server.ts",
+    "dev:todos": "concurrently \"cd ../.. && tsx watch examples/docs/todos/server.ts\" \"vite --config vite.config.ts todos\"",
     "dev:orders": "concurrently \"cd ../.. && tsx watch examples/docs/orders/server.ts\" \"vite --config vite.config.ts orders\"",
     "dev:search": "concurrently \"cd ../.. && tsx watch examples/docs/search/server.ts\" \"vite --config vite.config.ts search\"",
     "dev:combine": "concurrently \"cd ../.. && tsx watch examples/docs/combine/server.ts\" \"vite --config vite.config.ts combine\"",

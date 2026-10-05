@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  root: "todos",
   plugins: [react()],
   resolve: {
     alias: {
@@ -11,7 +10,7 @@ export default defineConfig({
       "@cuple/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
     },
   },
-  // The app root is one example; tests live in all of them.
+  // Each `dev:*` script passes its example's folder as the root; tests live in all of them.
   test: { dir: __dirname },
   server: {
     proxy: { "/rpc": "http://localhost:3002" },
