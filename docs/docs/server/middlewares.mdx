@@ -32,7 +32,7 @@ builder
 In this example:
 
  - If the middleware returns `{ next: true }`, the execution proceeds to the next handler. You can also type-safely add data, as shown with `randomValue` in `data.randomValue`
- - If the middleware returns `{ next: false }`, it sends an immediate response, which requires a `statusCode`. It's recommended to include a `result: 'some-error' as const` for having a proper discriminated union in the response.
+ - If the middleware returns `{ next: false }`, it sends an immediate response, which requires a `statusCode`. It's recommended to include a `result: 'some-error' as const`: the client can check `res.result` instead of `res.statusCode`, and if it relies on `result`, every response needs one.
 
 ## Middleware Chaining
 
@@ -156,8 +156,16 @@ function createAdminModule(builder: CupleBuilder, userRepository: UserRepository
 ```
 - note: `CupleBuilder` is an exported type from the `index.ts` file
 
+## Express middlewares
+
+Middlewares added with `app.use` still run before Cuple routes, but their effects aren't in the types. Cuple parses JSON bodies itself, so a middleware that changes normal request handling (rewrites the body, or sends its own response) can break Cuple endpoints.
+
 :::note[Why it works this way]
 
-- **Middlewares return data instead of attaching it to `req`.** `req.user` set by a middleware is invisible to TypeScript, and a route that forgot the middleware still compiles. Returned data is typed in `data`, and exists only on routes that chain the middleware.
+Middlewares return data instead of attaching it to `req`. `req.user` set by a middleware is invisible to TypeScript, and a route that forgot the middleware still compiles. Returned data is typed in `data`, and exists only on routes that use the middleware.
+
+`next: true | false` makes the return a discriminated union, so TypeScript knows which return is data for the next step and which is a response to the client.
+
+Links exist so a middleware made of several builder steps, like auth (`headersSchema` + `middleware`), can be moved out of the route as one piece.
 
 :::

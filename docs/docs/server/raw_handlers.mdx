@@ -21,7 +21,7 @@ builder.deleteRaw(async ({ req, res, data }) => {/* ... */})
 
 Use raw handlers when you need:
 - **Non-JSON responses** (XML, CSV, binary files, downloads)
-- **Streaming responses** (Server-Sent Events, file streams)
+- **Streaming responses** (file streams). For Server-Sent Events, use [`getSSE`](./sse).
 
 | Feature | Normal Handlers | Raw Handlers |
 |---------|----------------|--------------|
@@ -89,6 +89,10 @@ Please check express tutorials for more.
 
 :::note[Why it works this way]
 
-- **Raw handlers are separate.** A file download or a CSV isn't a typed result. Keeping them in their own handlers keeps every other route fully typed, instead of widening all responses to "anything".
+Raw handlers are separate because a file download or a CSV isn't a typed result. Keeping them apart keeps every other route fully typed, instead of widening all responses to "anything".
+
+Middleware failures aren't sent automatically, because a raw route may need to answer an error in its own format (XML, plain text), not JSON.
+
+The Cuple client can't call raw routes yet. Supporting them, for example returning a `Blob` for a download, would be welcome.
 
 :::

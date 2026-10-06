@@ -45,7 +45,10 @@ app.listen(8080, () => {
 
 :::note[Why it works this way]
 
-- **Express underneath.** Logging, CORS, sessions and deployment stay as they are in an Express app; Cuple routes are added next to the ones you have.
-- **Routes are one exported object.** Its type is the contract: the client, the OpenAPI generator and the MCP server all read it, so they can't disagree.
+Cuple runs on Express because it started there: Express registers the endpoints and parses the JSON bodies. That's history, not a design goal. Supporting other frameworks would be welcome. Until then, being an Express app has a side benefit: logging, CORS, sessions and deployment stay as they are, and Cuple routes sit next to the ones you already have.
+
+The `routes` object exists only for its type. Each `builder.get(...)` already registers its route on `app`, so ideally defining a route would be enough. But TypeScript can't collect types from side effects, so the routes have to be gathered into one value. Its type is the contract: the client, the OpenAPI generator and the MCP server all read it, so they can't disagree. It's exported only so the client can import the type. Usually you also export `type Routes = typeof routes` and the client uses `import type`. The OpenAPI generator and the MCP server find the variable by name, so they don't need the export.
+
+`initRpc` is needed because the client has no code generator. Without generated code, it doesn't know each route's URL, so it calls every route on one endpoint and names the route in the request. `initRpc` creates that endpoint, and without it the client can't call anything. It's a separate step because it's simple enough on its own, and because on a platform where one shared endpoint makes no sense (AWS Lambda, if it's ever supported), it wouldn't apply. Every setup supported today needs it. Routes with `.path()` are still plain REST for other clients.
 
 :::

@@ -24,7 +24,7 @@ builder
 
 In this example:
 
- - Middlewares run first. If one of them fails, the client gets a normal JSON error response.
+ - Middlewares run before the stream opens. Opening a stream sends the status (`200`) first, so after that an error can only close the stream. Running auth and validation before it means a rejection is still a normal JSON result with its own status.
  - When the client disconnects, the generator is stopped, and `disconnectSignal` is aborted.
 
 ## Client
@@ -39,11 +39,12 @@ for await (const event of stream) {
 
 In React, use [useStream](../react/streams).
 
- - NOTE: If your generator ends on its own, and it should finish even without the client, use `getSSE(generator, { returnOnDisconnect: false })`. Never do this with an endless loop.
+ - NOTE: By default the generator is stopped when the client disconnects, so a client that navigates away doesn't leave a subscription or a loop running on the server. If your generator ends on its own, and it should finish even without the client, use `getSSE(generator, { returnOnDisconnect: false })`. Never do this with an endless loop.
 
 :::note[Why it works this way]
 
-- **Middlewares run before the stream opens.** Once an event stream has started, an error can't change the HTTP status. Running auth and validation first means a rejection is a normal JSON result, handled like any failed request.
-- **Generators stop on disconnect.** A client that navigates away would otherwise leave a subscription or a loop running on the server.
+A stream is an async generator because `yield` is the closest thing to `return`: a handler that streams reads like one that responds once, and the yielded type flows to the client.
+
+SSE is here because it was low-hanging fruit on plain HTTP. WebSockets are planned. The separate methods (`getSSE`, `postSSE`, …) are a typing limit and an ergonomics choice: a streaming handler has a different type from a normal one.
 
 :::

@@ -22,7 +22,7 @@ export const routes = {
     .paramsSchema(z.strictObject({ id: z.coerce.number() }))
     .get(async ({ data }) => {
       const post = await getPost(data.params.id);
-      if (!post) return apiResponse("not-found", 404, { message: "Post not found" });
+      if (!post) return apiResponse("post-not-found", 404, { message: "Post not found" });
       return success({ post });
     }),
 
@@ -51,7 +51,7 @@ In this example:
 
  - `"routes"` is the name of the exported variable that holds your routes.
  - `/api/posts/:id` becomes `/api/posts/{id}`.
- - Every possible response is included, grouped by status code, so `404 not-found` is in the spec as well.
+ - Every possible response is included, grouped by status code, so `404 post-not-found` is in the spec as well.
  - `.meta({ description })` becomes the operation's description.
  - The operation id is the name of the route, e.g. `getPost`, or `posts.getPost` if it's nested.
 
@@ -85,6 +85,10 @@ for (const route of inspectRoutes("./src/routes.ts", "routes")) {
 
 :::note[Why it works this way]
 
-- **Generated from the source.** Hand-written specs and annotations drift from what the handlers return. Reading the same types the client uses keeps the spec true without extra code.
+The spec is generated from the source, because hand-written specs drift from what the handlers return. It's read at build time because return types don't exist at runtime.
+
+Passing a file path and a variable name instead of the `routes` object is a TypeScript compiler API limit: the generator needs the object's type, not its value. Passing `routes` directly would be better if a way is found.
+
+OpenAPI 3.0 is only the first version written. Updating to 3.1 is planned.
 
 :::

@@ -54,6 +54,7 @@ listPosts: builder
 `listPosts`'s tool requires `headers.authorization`, so the agent calls `login` with the credentials you give it, and sends the token it gets back with the gated calls. There's nothing to configure.
 
  - NOTE: The token goes through the conversation, like anything the agent reads. Give an agent an account with only the access it needs.
+ - TIP: For local testing, accept a dev token that only works in development mode, and give it to the agent. Then it can call gated routes without signing in itself.
 
 ## Other transports
 
@@ -68,7 +69,10 @@ await server.connect(transport); // any transport from @modelcontextprotocol/sdk
 
 :::note[Why it works this way]
 
-- **Tools call your running server.** An agent gets the same validation, middlewares and auth as your app, so it can reach nothing a normal client can't.
-- **The route's types are the instructions.** An agent learns that `listPosts` needs `authorization` the same way it learns it needs `params`, so logging in first follows from the types, with no extra setup to keep in sync.
+MCP is here so AI agents can easily call Cuple endpoints. They're good with HTTP but don't know Cuple's `/rpc` protocol, and the tools do that part for them. It's early and not well tested yet.
+
+Tools call your running server, so an agent gets the same validation, middlewares and auth as your app, and can reach nothing a normal client can't. The route's types are its instructions: an agent learns that `listPosts` needs `authorization` the same way it learns it needs `params`, with no extra setup to keep in sync.
+
+Running as a separate process that reads the source is only where it started. An `initRpc` option that also serves MCP from the app would be simpler. Choosing which routes become tools isn't done yet either.
 
 :::

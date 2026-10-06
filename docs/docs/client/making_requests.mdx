@@ -62,9 +62,3 @@ The server's route declares every result it can send, and the client knows them 
 ```
 
 `fetchCuple` resolves with the `success` one and rejects the others, unless you list them. See [Handling results](./handling_results).
-
-:::note[Why it works this way]
-
-- **The method is written at the call site.** `client.createTodo.post` says on the wire and in review that this call changes data, and it's what lets `useGet` refuse writes by type.
-
-:::
