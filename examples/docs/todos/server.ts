@@ -1,4 +1,4 @@
-import { createBuilder, initRpc, success, zodValidationError } from "@cuple/server";
+import { createBuilder, initRpc, invalidInput, success } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
 
@@ -21,7 +21,7 @@ export const routes = {
     .bodySchema(z.strictObject({ text: z.string().min(1, "Write something first.") }))
     .post(async ({ data }) => {
       if (todos.some((todo) => todo.text === data.body.text)) {
-        return zodValidationError([
+        return invalidInput("body", [
           { code: "custom", path: ["text"], message: "You already have this todo." },
         ]);
       }

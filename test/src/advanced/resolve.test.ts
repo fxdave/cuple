@@ -73,18 +73,18 @@ describe("fetchCuple: success by default", () => {
   });
 });
 
-describe("thenResolveAll", () => {
+describe("thenResolveAnyResponse", () => {
   it("resolves every result the server sent, typed as the full union", async () => {
     const cs = await createClientAndServer(routes);
     await cs.run(async (client) => {
       const response = await fetchCuple(client.getOrder.get, {
         params: { id: 3 },
-      }).thenResolveAll();
+      }).thenResolveAnyResponse();
       expectTypeOf(response.result).toEqualTypeOf<
         | "success"
         | "not-found-error"
         | "forbidden-error"
-        | "validation-error"
+        | "invalid-params"
         | "unexpected-error"
       >();
       expect(response.result).toBe("forbidden-error");
@@ -97,17 +97,17 @@ describe("thenResolveAll", () => {
       path: "http://localhost:1/rpc",
     });
     await expect(
-      fetchCuple(offline.getOrder.get, { params: { id: 1 } }).thenResolveAll(),
+      fetchCuple(offline.getOrder.get, { params: { id: 1 } }).thenResolveAnyResponse(),
     ).rejects.toBeInstanceOf(CupleTransportError);
     const listed = await fetchCuple(offline.getOrder.get, { params: { id: 1 } })
-      .thenResolveAll()
+      .thenResolveAnyResponse()
       .thenResolveAlso(["transport-error"]);
     expect(listed.result).toBe("transport-error");
   });
 });
 
-describe("thenWrapAbort", () => {
-  it("adds the abort to what the request already resolves", async () => {
+describe("abort", () => {
+  it("can be listed like a result", async () => {
     const cs = await createClientAndServer(routes);
     await cs.run(async (client) => {
       const controller = new AbortController();
@@ -115,10 +115,62 @@ describe("thenWrapAbort", () => {
       const aborted = await fetchCuple(client.getOrder.get, {
         params: { id: 1 },
         options: { signal: controller.signal },
-      }).thenWrapAbort();
+      }).thenResolveAlso(["abort"]);
       expectTypeOf(aborted.result).toEqualTypeOf<"success" | "abort">();
       expect(aborted.result).toBe("abort");
     });
+  });
+
+  it("rejects as AbortError unless it's listed", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const controller = new AbortController();
+      controller.abort();
+      await expect(
+        fetchCuple(client.getOrder.get, {
+          params: { id: 1 },
+          options: { signal: controller.signal },
+        }).thenResolveAnyResponse(),
+      ).rejects.toMatchObject({ name: "AbortError" });
+    });
+  });
+});
+
+describe("thenResolveAll", () => {
+  it("resolves every result, a network failure and an abort too", async () => {
+    const cs = await createClientAndServer(routes);
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.getOrder.get, {
+        params: { id: 3 },
+      }).thenResolveAll();
+      expectTypeOf(response.result).toEqualTypeOf<
+        | "success"
+        | "not-found-error"
+        | "forbidden-error"
+        | "invalid-params"
+        | "unexpected-error"
+        | "transport-error"
+        | "abort"
+      >();
+      expect(response.result).toBe("forbidden-error");
+
+      const controller = new AbortController();
+      controller.abort();
+      const aborted = await fetchCuple(client.getOrder.get, {
+        params: { id: 1 },
+        options: { signal: controller.signal },
+      }).thenResolveAll();
+      expect(aborted.result).toBe("abort");
+    });
+
+    const { createClient } = await import("@cuple/client");
+    const offline = createClient<ReturnType<typeof routes>>({
+      path: "http://localhost:1/rpc",
+    });
+    const unreachable = await fetchCuple(offline.getOrder.get, {
+      params: { id: 1 },
+    }).thenResolveAll();
+    expect(unreachable.result).toBe("transport-error");
   });
 });
 

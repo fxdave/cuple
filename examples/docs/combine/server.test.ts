@@ -13,8 +13,8 @@ const client = createClient<typeof routes>({
 it("serves what the combine examples read", async () => {
   const deleted = await fetchCuple(client.getCustomer.get, {
     params: { id: 2 },
-  }).thenResolveAlso(["not-found-error"]);
-  expect(deleted.result).toBe("not-found-error");
+  }).thenResolveAlso(["customer-not-found"]);
+  expect(deleted.result).toBe("customer-not-found");
 
   const { products } = await fetchCuple(client.searchProducts.post, {
     body: { q: "LAP" },

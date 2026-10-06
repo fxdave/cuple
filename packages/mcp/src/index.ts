@@ -112,7 +112,7 @@ export function createMcpServer(
       const response = await fetchCuple(
         endpointOf(client, route),
         input,
-      ).thenResolveAll();
+      ).thenResolveAnyResponse();
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
         isError: response.result !== "success",

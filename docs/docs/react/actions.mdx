@@ -19,7 +19,7 @@ An action is your own async function. `useAction` runs it and gives you its stat
 
 In this example:
 
- - `fetchCuple` resolves with `success` and throws anything else. `thenResolveAlso(["validation-error"])` lists the one failure this form handles, so it comes back as a typed value instead. Both the schema's error and the custom one are `validation-error`, with `path: ["text"]`.
+ - `fetchCuple` resolves with `success` and throws anything else. `thenResolveAlso(["invalid-body"])` lists the one failure this form handles, so it comes back as a typed value instead. Both the schema's error and the custom one are `invalid-body`, with `path: ["text"]`.
  - `create.value` is what the function returned, typed, so the form can show the issue next to the input.
  - `refresh: { success: [...] }` names what the action changes, and when: the todos are refetched only when one was created. Nothing else is.
 

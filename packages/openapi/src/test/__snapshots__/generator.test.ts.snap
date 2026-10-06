@@ -187,7 +187,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-query",
                       ],
                       "type": "string",
                     },
@@ -201,7 +201,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-query",
           },
           "500": {
             "content": {
@@ -414,7 +414,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-body",
                       ],
                       "type": "string",
                     },
@@ -428,7 +428,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-body",
           },
           "500": {
             "content": {
@@ -606,7 +606,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-params",
                       ],
                       "type": "string",
                     },
@@ -620,7 +620,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-params",
           },
           "500": {
             "content": {
@@ -798,7 +798,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-params",
                       ],
                       "type": "string",
                     },
@@ -812,7 +812,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-params",
           },
           "500": {
             "content": {
@@ -937,126 +937,366 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "properties": {
-                    "issues": {
-                      "items": {
-                        "properties": {
-                          "code": {
-                            "oneOf": [
-                              {
-                                "enum": [
-                                  "custom",
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "issues": {
+                          "items": {
+                            "properties": {
+                              "code": {
+                                "oneOf": [
+                                  {
+                                    "enum": [
+                                      "custom",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_type",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "unrecognized_keys",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_big",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_small",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_format",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "not_multiple_of",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_union",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_key",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_element",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_value",
+                                    ],
+                                    "type": "string",
+                                  },
                                 ],
+                              },
+                              "message": {
                                 "type": "string",
                               },
-                              {
-                                "enum": [
-                                  "invalid_type",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "unrecognized_keys",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "too_big",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "too_small",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "invalid_format",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "not_multiple_of",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "invalid_union",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "invalid_key",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "invalid_element",
-                                ],
-                                "type": "string",
-                              },
-                              {
-                                "enum": [
-                                  "invalid_value",
-                                ],
-                                "type": "string",
-                              },
-                            ],
-                          },
-                          "message": {
-                            "type": "string",
-                          },
-                          "path": {
-                            "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string",
+                              "path": {
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                    },
+                                    {
+                                      "type": "number",
+                                    },
+                                  ],
                                 },
-                                {
-                                  "type": "number",
-                                },
-                              ],
+                                "type": "array",
+                              },
                             },
-                            "type": "array",
+                            "required": [
+                              "code",
+                              "message",
+                              "path",
+                            ],
+                            "type": "object",
                           },
+                          "type": "array",
                         },
-                        "required": [
-                          "code",
-                          "message",
-                          "path",
-                        ],
-                        "type": "object",
+                        "message": {
+                          "type": "string",
+                        },
+                        "result": {
+                          "enum": [
+                            "invalid-params",
+                          ],
+                          "type": "string",
+                        },
                       },
-                      "type": "array",
-                    },
-                    "message": {
-                      "type": "string",
-                    },
-                    "result": {
-                      "enum": [
-                        "validation-error",
+                      "required": [
+                        "message",
+                        "issues",
+                        "result",
                       ],
-                      "type": "string",
+                      "type": "object",
                     },
-                  },
-                  "required": [
-                    "message",
-                    "issues",
-                    "result",
+                    {
+                      "properties": {
+                        "issues": {
+                          "items": {
+                            "properties": {
+                              "code": {
+                                "oneOf": [
+                                  {
+                                    "enum": [
+                                      "custom",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_type",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "unrecognized_keys",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_big",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_small",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_format",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "not_multiple_of",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_union",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_key",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_element",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_value",
+                                    ],
+                                    "type": "string",
+                                  },
+                                ],
+                              },
+                              "message": {
+                                "type": "string",
+                              },
+                              "path": {
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                    },
+                                    {
+                                      "type": "number",
+                                    },
+                                  ],
+                                },
+                                "type": "array",
+                              },
+                            },
+                            "required": [
+                              "code",
+                              "message",
+                              "path",
+                            ],
+                            "type": "object",
+                          },
+                          "type": "array",
+                        },
+                        "message": {
+                          "type": "string",
+                        },
+                        "result": {
+                          "enum": [
+                            "invalid-body",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "message",
+                        "issues",
+                        "result",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "issues": {
+                          "items": {
+                            "properties": {
+                              "code": {
+                                "oneOf": [
+                                  {
+                                    "enum": [
+                                      "custom",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_type",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "unrecognized_keys",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_big",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "too_small",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_format",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "not_multiple_of",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_union",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_key",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_element",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  {
+                                    "enum": [
+                                      "invalid_value",
+                                    ],
+                                    "type": "string",
+                                  },
+                                ],
+                              },
+                              "message": {
+                                "type": "string",
+                              },
+                              "path": {
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                    },
+                                    {
+                                      "type": "number",
+                                    },
+                                  ],
+                                },
+                                "type": "array",
+                              },
+                            },
+                            "required": [
+                              "code",
+                              "message",
+                              "path",
+                            ],
+                            "type": "object",
+                          },
+                          "type": "array",
+                        },
+                        "message": {
+                          "type": "string",
+                        },
+                        "result": {
+                          "enum": [
+                            "invalid-headers",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "message",
+                        "issues",
+                        "result",
+                      ],
+                      "type": "object",
+                    },
                   ],
-                  "type": "object",
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-params | invalid-body | invalid-headers",
           },
           "500": {
             "content": {
@@ -1246,7 +1486,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-params",
                       ],
                       "type": "string",
                     },
@@ -1260,7 +1500,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-params",
           },
           "500": {
             "content": {
@@ -1493,7 +1733,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-params",
                       ],
                       "type": "string",
                     },
@@ -1507,7 +1747,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-params",
           },
           "500": {
             "content": {
@@ -1693,7 +1933,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     },
                     "result": {
                       "enum": [
-                        "validation-error",
+                        "invalid-headers",
                       ],
                       "type": "string",
                     },
@@ -1707,7 +1947,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "validation-error",
+            "description": "invalid-headers",
           },
           "500": {
             "content": {

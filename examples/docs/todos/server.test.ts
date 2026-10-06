@@ -13,16 +13,16 @@ const client = createClient<typeof routes>({
 it("works as the docs describe it", async () => {
   const empty = await fetchCuple(client.createTodo.post, {
     body: { text: "" },
-  }).thenResolveAlso(["validation-error"]);
+  }).thenResolveAlso(["invalid-body"]);
   expect(empty).toMatchObject({
-    result: "validation-error",
+    result: "invalid-body",
     issues: [{ path: ["text"], message: "Write something first." }],
   });
 
   await fetchCuple(client.createTodo.post, { body: { text: "Milk" } });
   const duplicate = await fetchCuple(client.createTodo.post, {
     body: { text: "Milk" },
-  }).thenResolveAlso(["validation-error"]);
+  }).thenResolveAlso(["invalid-body"]);
   expect(duplicate).toMatchObject({
     issues: [{ path: ["text"], message: "You already have this todo." }],
   });

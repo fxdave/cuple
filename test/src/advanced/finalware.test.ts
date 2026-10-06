@@ -19,8 +19,8 @@ describe("client.with({ finalware })", () => {
       const seen: string[] = [];
       const watched = client.with({ finalware: (res) => void seen.push(res.result) });
 
-      await fetchCuple((watched as any).ok.get).thenResolveAll();
-      await fetchCuple((watched as any).gone.get).thenResolveAll();
+      await fetchCuple((watched as any).ok.get).thenResolveAnyResponse();
+      await fetchCuple((watched as any).gone.get).thenResolveAnyResponse();
       assert.deepEqual(seen, ["success", "notFound"]);
     });
   });
@@ -31,7 +31,7 @@ describe("client.with({ finalware })", () => {
     }));
     await cs.run(async (client) => {
       const watched = client.with({ finalware: () => undefined });
-      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAll();
+      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAnyResponse();
       assert.equal(res.result, "success");
       assert.equal(res.v, 1);
     });
@@ -45,7 +45,7 @@ describe("client.with({ finalware })", () => {
       const watched = client.with({
         finalware: (res) => ({ ...res, v: res.v + 41 }),
       });
-      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAll();
+      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAnyResponse();
       assert.equal(res.v, 42);
     });
   });
@@ -63,7 +63,7 @@ describe("client.with({ finalware })", () => {
         },
       });
       await expect(
-        fetchCuple((watched as any).denied.get).thenResolveAll(),
+        fetchCuple((watched as any).denied.get).thenResolveAnyResponse(),
       ).rejects.toThrow("redirect to login");
     });
   });
@@ -79,7 +79,7 @@ describe("client.with({ finalware })", () => {
           return { ...res, v: 99 };
         },
       });
-      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAll();
+      const res: any = await fetchCuple((watched as any).ok.get).thenResolveAnyResponse();
       assert.equal(res.v, 99);
     });
   });
@@ -97,7 +97,9 @@ describe("client.with({ finalware })", () => {
           seen = res.result;
         },
       });
-      const stream: any = await fetchCupleSSE((watched as any).feed.get).thenResolveAll();
+      const stream: any = await fetchCupleSSE(
+        (watched as any).feed.get,
+      ).thenResolveAnyResponse();
       for await (const _ of stream) {
         // drain
       }
@@ -119,7 +121,7 @@ describe("client.with({ finalware })", () => {
         },
         finalware: () => void calls.push("finalware"),
       });
-      await fetchCuple((watched as any).ok.get).thenResolveAll();
+      await fetchCuple((watched as any).ok.get).thenResolveAnyResponse();
       assert.deepEqual(calls, ["middleware", "finalware"]);
     });
   });

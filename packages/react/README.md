@@ -127,14 +127,14 @@ const list = useGet(notePages, { count });
 const save = useAction(
   (values: FormValues) =>
     fetchCuple(client.updateOrder.put, { params: { id }, body: values })
-      .thenResolveAlso(["validation-error", "transport-error"]),
+      .thenResolveAlso(["invalid-body", "transport-error"]),
   { refresh: [client.getOrder, client.getOrders] },
 );
 
 <form onSubmit={form.handleSubmit(save.run)}>
   <button disabled={save.isPending} aria-busy={save.isPending}>Save</button>
   {save.value?.result === "success" && <p>Saved</p>}
-  {save.value?.result === "validation-error" && <Issues issues={save.value.issues} />}
+  {save.value?.result === "invalid-body" && <Issues issues={save.value.issues} />}
   {save.value?.result === "transport-error" && <p>You're offline. Try again.</p>}
 </form>
 ```

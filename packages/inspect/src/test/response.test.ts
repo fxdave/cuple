@@ -49,13 +49,11 @@ describe("response extraction", () => {
     expect(forbiddenVariant!.statusCode).toBe(403);
   });
 
-  it("should extract validation-error response from schema validation", () => {
+  it("should extract invalid-body response from schema validation", () => {
     const route = routes.find((r) => r.name === "posts.createPost");
     expect(route).toBeDefined();
 
-    const validationVariant = route!.response.find(
-      (r) => r.result === "validation-error",
-    );
+    const validationVariant = route!.response.find((r) => r.result === "invalid-body");
     expect(validationVariant).toBeDefined();
     expect(validationVariant!.statusCode).toBe(422);
   });

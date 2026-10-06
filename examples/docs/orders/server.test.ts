@@ -18,6 +18,6 @@ it("serves an order, and the customer it points to", async () => {
   expect(customer.name).toBe("Ada Lovelace");
   const missing = await fetchCuple(client.getOrder.get, {
     params: { id: 999 },
-  }).thenResolveAlso(["not-found-error"]);
-  expect(missing.result).toBe("not-found-error");
+  }).thenResolveAlso(["order-not-found"]);
+  expect(missing.result).toBe("order-not-found");
 });

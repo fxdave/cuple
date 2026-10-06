@@ -66,7 +66,7 @@ function useRename(id: number) {
     fetchCuple(client.renameOrder.patch, {
       params: { id },
       body: { title },
-    }).thenResolveAlso(["validation-error", "conflict-error"]),
+    }).thenResolveAlso(["invalid-body", "conflict-error"]),
   );
 }
 
@@ -111,8 +111,8 @@ describe("useAction", () => {
     await act(() => result.current.run(""));
     expect(result.current.status).toBe("done");
     const value = result.current.value;
-    expect(value?.result).toBe("validation-error");
-    if (value?.result === "validation-error")
+    expect(value?.result).toBe("invalid-body");
+    if (value?.result === "invalid-body")
       expect(value.issues[0]).toMatchObject({
         path: ["title"],
         message: "Title is required",
@@ -155,7 +155,7 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
           : fetchCuple(client.renameOrder.patch, {
               params: { id: 1 },
               body: { title },
-            }).thenResolveAlso(["validation-error", "transport-error"]),
+            }).thenResolveAlso(["invalid-body", "transport-error"]),
       { config: props.config },
     );
     return (
@@ -471,7 +471,7 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenResolveAlso(["validation-error"]),
+          }).thenResolveAlso(["invalid-body"]),
         { refresh: [client.getOrder.get] },
       );
       return (
@@ -496,7 +496,7 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenResolveAlso(["validation-error"]),
+          }).thenResolveAlso(["invalid-body"]),
         { refresh: { success: [client.getOrder.get] } },
       );
       return (
@@ -558,7 +558,7 @@ describe("refresh types", () => {
             fetchCuple(client.renameOrder.patch, {
               params: { id: 1 },
               body: { title: "x" },
-            }).thenResolveAlso(["validation-error"]),
+            }).thenResolveAlso(["invalid-body"]),
           // @ts-expect-error "conflict-error" is not listed, so it can't be returned
           { refresh: { "conflict-error": [client.getOrder.get] } },
         ),

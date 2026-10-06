@@ -78,7 +78,7 @@ export function useStream<TEndpoint extends ClientSSEEndpointRef>(
         const options = [
           { ...args, options: { ...args?.options, signal: controller.signal } },
         ] as unknown as FetchCupleSSEArgs<TEndpoint>;
-        const result = await fetchCupleSSE(endpoint, ...options).thenResolveAll();
+        const result = await fetchCupleSSE(endpoint, ...options).thenResolveAnyResponse();
 
         // A rejection arrives as a JSON result instead of a stream.
         if (result.result !== "success") {

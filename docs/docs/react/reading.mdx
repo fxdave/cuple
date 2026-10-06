@@ -91,7 +91,7 @@ In this example:
 
  - `ctx.get` reads through the same cache as `useGet`. The list already loaded each customer, so opening an order sends one request, `getOrder`, and Ada is fetched once even though she has two orders.
  - `OrderDetails` suspends once, until both are there. Use `await` for a fetch that needs another's result, and `Promise.all` for independent ones.
- - One failed `ctx.get` fails the whole read, and the `<Boundary>` shows it. To go on without it, list the result: `ctx.get(client.getCustomer, args, { resolveAlso: ["not-found-error"] })`.
+ - One failed `ctx.get` fails the whole read, and the `<Boundary>` shows it. To go on without it, list the result: `ctx.get(client.getCustomer, args, { resolveAlso: ["customer-not-found"] })`.
  - Refreshing `client.getOrder` or `client.getCustomer` re-runs `loadOrderWithCustomer`.
  - NOTE: Create combined reads at module level: a combined read's identity is its cache key. Its arguments must be JSON (numbers, strings, plain objects and arrays), because they are part of the key too.
 

@@ -13,6 +13,7 @@ You can validate, parse, and convert each part of an HTTP request.
 ## Headers validation
 
 Internally it parses express' `req.headers` object, so you should use the same naming.
+Use `z.looseObject`: every request carries headers you didn't declare (`host`, `user-agent`, …), and a strict object would reject them.
 Successfully parsed result will be added to `data.headers`.
 
 ```ts
@@ -54,7 +55,7 @@ Successfully parsed result will be added to `data.query`.
 
 Note: Path parameters are always strings!
 Luckily zod can convert it to number if you use `z.coerce.number()`.
-Successfully parsed result will be added to `data.body`.
+Successfully parsed result will be added to `data.params`.
 
 ```ts
 // For URL params parsing
@@ -64,11 +65,11 @@ Successfully parsed result will be added to `data.body`.
 
 ## On error
 
-In case of error Cuple sends a ZodValidationError error.
-An example response:
+A failed schema answers with status `422`, and the result names the part that failed: `invalid-body`, `invalid-query`, `invalid-params` or `invalid-headers`.
+An issue's `path` is relative to that part. An example response for a body:
 ```ts
 {
-    result: 'validation-error',
+    result: 'invalid-body',
     statusCode: 422,
     message: "We found some incorrect field(s) during validating the form.",
     issues: [{
@@ -79,8 +80,12 @@ An example response:
 }
 ```
 
+To report a rule only the server can check (an email already in use) the same way, return it with `invalidInput("body", issues)`. See [Request handlers](./request_handlers#response-factory-methods).
+
 :::note[Why it works this way]
 
-- **Invalid input is a normal result.** A form sending bad input is expected, not exceptional. As a `validation-error` with paths, the client can put each message on its field, and the type says what the issues look like.
+Invalid input is a normal result, not a thrown error, and this is why Cuple was started. A thrown error isn't typed. An `invalid-body` in the response union has typed issues with a `path`, so the client can type-safely put each message on its field.
+
+Zod was the safest choice: fields are required by default and type inference is good. Only the issues needed a small patch, to narrow each `path` to strings and numbers. No better option is known today.
 
 :::

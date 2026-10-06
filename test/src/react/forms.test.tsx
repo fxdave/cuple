@@ -1,6 +1,6 @@
 import { fetchCuple } from "@cuple/client";
 import { Boundary, useAction, useGet } from "@cuple/react";
-import { success, zodValidationError } from "@cuple/server";
+import { invalidInput, success } from "@cuple/server";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { type FieldPath, useForm } from "react-hook-form";
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
@@ -26,7 +26,7 @@ const { client, close } = await serve((builder) => ({
     )
     .post(async ({ data }) => {
       if (contacts.some((c) => c.name === data.body.name))
-        return zodValidationError([
+        return invalidInput("body", [
           { code: "custom", path: ["name"], message: "That name is taken." },
         ]);
       contacts.push(data.body);
@@ -51,8 +51,8 @@ function ContactForm() {
     async (values: Values) => {
       const response = await fetchCuple(client.createContact.post, {
         body: values,
-      }).thenResolveAlso(["validation-error"]);
-      if (response.result === "validation-error")
+      }).thenResolveAlso(["invalid-body"]);
+      if (response.result === "invalid-body")
         for (const issue of response.issues)
           form.setError(issue.path.join(".") as FieldPath<Values>, {
             type: "server",

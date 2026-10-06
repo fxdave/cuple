@@ -29,7 +29,7 @@ export const loadOrderWithCustomer = combine(async (ctx, id: number) => {
   const customer = await ctx.get(
     client.getCustomer,
     { params: { id: order.customerId } },
-    { resolveAlso: ["not-found-error"] },
+    { resolveAlso: ["customer-not-found"] },
   );
   return {
     item: order.item,

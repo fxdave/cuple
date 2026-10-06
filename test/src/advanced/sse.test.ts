@@ -62,7 +62,7 @@ describe("SSE handlers", () => {
     }));
 
     await cs.run(async (client) => {
-      const response = await fetchCupleSSE(client.feed.get).thenResolveAll();
+      const response = await fetchCupleSSE(client.feed.get).thenResolveAnyResponse();
       assert.equal(response.result, "forbidden");
       assert.equal(response.statusCode, 403);
     });
@@ -200,7 +200,7 @@ describe("SSE handlers", () => {
       }
       assert.deepEqual(events, [{ count: 1 }, { count: 2 }]);
 
-      const normal = await fetchCuple(client.normal.get).thenResolveAll();
+      const normal = await fetchCuple(client.normal.get).thenResolveAnyResponse();
       assert.equal(normal.result, "success");
     });
   });

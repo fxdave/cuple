@@ -28,7 +28,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.post.post, {}).thenResolveAll();
+      const response = await fetchCuple(client.post.post, {}).thenResolveAnyResponse();
       assert.equal(response.statusCode, 200);
     });
   });
@@ -42,7 +42,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.post.post, {}).thenResolveAll();
+      const response = await fetchCuple(client.post.post, {}).thenResolveAnyResponse();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "post");
     });
@@ -58,7 +58,7 @@ describe("basic request response", () => {
     }));
 
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.patch.patch, {}).thenResolveAll();
+      const response = await fetchCuple(client.patch.patch, {}).thenResolveAnyResponse();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "patch");
     });
@@ -73,7 +73,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.put.put, {}).thenResolveAll();
+      const response = await fetchCuple(client.put.put, {}).thenResolveAnyResponse();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "put");
     });
@@ -88,7 +88,10 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.delete.delete, {}).thenResolveAll();
+      const response = await fetchCuple(
+        client.delete.delete,
+        {},
+      ).thenResolveAnyResponse();
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "delete");
     });

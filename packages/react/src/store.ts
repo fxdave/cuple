@@ -538,7 +538,7 @@ export class Store implements CupleStore {
         : await fetchCuple(
             entry.readable as ClientEndpointRef,
             withSignal(entry.args, controller.signal) as never,
-          ).thenResolveAll();
+          ).thenResolveAnyResponse();
       this.land(entry, { value });
     } catch (error) {
       this.land(entry, { error });

@@ -151,8 +151,8 @@ export default function App() {
 
 // #region header
 function Header() {
-  const me = useGet(client.me, undefined, { resolveAlso: ["unauthorized"] });
-  if (me.result === "unauthorized") return <p className="muted">Signed out</p>;
+  const me = useGet(client.me, undefined, { resolveAlso: ["not-signed-in"] });
+  if (me.result === "not-signed-in") return <p className="muted">Signed out</p>;
   return <p className="muted">Signed in as {me.account.name}</p>;
 }
 // #endregion
@@ -163,7 +163,7 @@ function NewNote() {
     async (text: string) => {
       const res = await fetchCuple(client.createNote.post, {
         body: { text },
-      }).thenResolveAlso(["validation-error"]);
+      }).thenResolveAlso(["invalid-body"]);
       if (res.result === "success") setText("");
       return res;
     },
@@ -191,7 +191,7 @@ function NewNote() {
           Add note
         </BusyButton>
       </form>
-      {create.value?.result === "validation-error" && (
+      {create.value?.result === "invalid-body" && (
         <p className="error">{create.value.issues[0]?.message}</p>
       )}
       {create.status === "failed" && (
@@ -294,11 +294,11 @@ function NoteDetail({ id, onClose }: { id: number; onClose: () => void }) {
   const note = useGet(
     client.getNote,
     { params: { id } },
-    { resolveAlso: ["notFound", "forbidden"] },
+    { resolveAlso: ["note-not-found", "not-your-note"] },
   );
 
   switch (note.result) {
-    case "notFound":
+    case "note-not-found":
       return (
         <p className="muted">
           This note was deleted.{" "}
@@ -307,7 +307,7 @@ function NoteDetail({ id, onClose }: { id: number; onClose: () => void }) {
           </button>
         </p>
       );
-    case "forbidden":
+    case "not-your-note":
       return <p className="muted">This note belongs to another account.</p>;
     case "success":
       return (

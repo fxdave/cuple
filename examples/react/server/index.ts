@@ -3,8 +3,8 @@ import {
   apiResponse,
   createBuilder,
   initRpc,
+  invalidInput,
   success,
-  zodValidationError,
 } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
@@ -65,13 +65,13 @@ const contactBody = z.strictObject({
   }),
 });
 
-/** A rule only the server can check, reported like any other validation error. */
+/** A rule only the server can check, reported like a schema error: `invalid-body`. */
 function emailTaken(owner: string, email: string, except?: number) {
   const taken = contacts.some(
     (c) => c.owner === owner && c.email === email && c.id !== except,
   );
   return taken
-    ? zodValidationError([
+    ? invalidInput("body", [
         {
           code: "custom",
           path: ["email"],
@@ -125,7 +125,7 @@ const authed = builder
     if (!account)
       return {
         next: false as const,
-        ...apiResponse("unauthorized", 401, { message: "Sign in first" }),
+        ...apiResponse("not-signed-in", 401, { message: "Sign in first" }),
       };
     return { next: true as const, account };
   })
@@ -154,9 +154,9 @@ export const routes = {
     .paramsSchema(z.strictObject({ id: z.coerce.number() }))
     .get(async ({ data }) => {
       const note = notes.find((n) => n.id === data.params.id);
-      if (!note) return apiResponse("notFound", 404, { message: "No such note" });
+      if (!note) return apiResponse("note-not-found", 404, { message: "No such note" });
       if (note.author !== data.account.id)
-        return apiResponse("forbidden", 403, { message: "Not your note" });
+        return apiResponse("not-your-note", 403, { message: "Not your note" });
       return success({ note });
     }),
 
@@ -188,7 +188,8 @@ export const routes = {
       const index = notes.findIndex(
         (n) => n.id === data.params.id && n.author === data.account.id,
       );
-      if (index === -1) return apiResponse("notFound", 404, { message: "No such note" });
+      if (index === -1)
+        return apiResponse("note-not-found", 404, { message: "No such note" });
       const [note] = notes.splice(index, 1);
       activityFeed.broadcast({
         action: "deleted",
@@ -213,7 +214,8 @@ export const routes = {
       const contact = contacts.find(
         (c) => c.id === data.params.id && c.owner === data.account.id,
       );
-      if (!contact) return apiResponse("notFound", 404, { message: "No such contact" });
+      if (!contact)
+        return apiResponse("contact-not-found", 404, { message: "No such contact" });
       return success({ contact });
     }),
 
@@ -242,7 +244,8 @@ export const routes = {
       const contact = contacts.find(
         (c) => c.id === data.params.id && c.owner === data.account.id,
       );
-      if (!contact) return apiResponse("notFound", 404, { message: "No such contact" });
+      if (!contact)
+        return apiResponse("contact-not-found", 404, { message: "No such contact" });
       const taken = emailTaken(data.account.id, data.body.email, contact.id);
       if (taken) return taken;
       Object.assign(contact, data.body);
@@ -278,7 +281,7 @@ export const routes = {
         (c) => c.id === data.params.id && c.owner === data.account.id,
       );
       if (index === -1)
-        return apiResponse("notFound", 404, { message: "No such contact" });
+        return apiResponse("contact-not-found", 404, { message: "No such contact" });
       contacts.splice(index, 1);
       return success({});
     }),

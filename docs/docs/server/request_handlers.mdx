@@ -23,8 +23,8 @@ builder.get(async () => {
     - The supported methods are: `get`, `post`, `put`, `patch`, `delete`
  - The `async () => { /* ... */ }` is the function where your controller logic leaves
     - The return type should contain these fields:
-        - `result`: a unique const indentifier for each possible responses.
-        - `statusCode`: the HTTP status code. For client-side typing it needs to be const as well.
+        - `result`: names what happened, e.g. `"post-not-found"` or `"email-taken"`. It identifies the response, so name the situation, not the status code (not `"not-found-error"`).
+        - `statusCode`: the HTTP status code, the category of the response. For client-side typing it needs to be const as well.
 
 ## Response factory methods
 
@@ -41,27 +41,19 @@ builder.get(async () => {
 })
 ```
 
-Cuple needs validationErrors internally, so you can access these as well:
+A failed schema returns `invalid-body`, `invalid-query`, `invalid-params` or `invalid-headers` (see [Schema validation](./schema_validation)). For a rule a schema can't check, return the same result with `invalidInput`, so the client handles both the same way:
 
 ```ts
-import { validationError } from '@cuple/server'
+import { invalidInput } from '@cuple/server'
 
-builder.get(async () => {
-    return validationError({
-        message: "We found some issues with your request"
-    })
-})
-```
-
-```ts
-import { zodValidationError } from '@cuple/server'
-
-builder.get(async () => {
-    return zodValidationError([{
-        code: "custom",
-        path: ["password2"],
-        message: "Passwords do not match.",
-    }]);
+builder.post(async ({ data }) => {
+    if (data.body.password1 !== data.body.password2)
+        return invalidInput("body", [{
+            code: "custom",
+            path: ["password2"],
+            message: "Passwords do not match.",
+        }]);
+    // ...
 })
 ```
 
@@ -72,17 +64,17 @@ And there's also a generic `apiResponse` method, so you don't have to keep track
 import { apiResponse } from '@cuple/server'
 
 builder.get(async () => {
-  return apiResponse("not-found-error", 404, {
-    message: "Resource not found",
+  return apiResponse("post-not-found", 404, {
+    message: "This post doesn't exist.",
   });
 })
 ```
 
 Example for custom factory method:
 ```ts
-export function notFoundError(others?: {message: string}) {
-  return apiResponse("not-found-error", 404, {
-    message: others?.message || "Resource not found",
+export function postNotFound(others?: { message: string }) {
+  return apiResponse("post-not-found", 404, {
+    message: others?.message || "This post doesn't exist.",
   });
 }
 ```
@@ -117,7 +109,10 @@ builder
 
 :::note[Why it works this way]
 
-- **A `result` next to the status code.** Status codes are too coarse to branch on: a `404` can mean "no such route" or "no such order". A `result` names the outcome, and TypeScript narrows by it.
-- **Handlers return instead of calling `res.send`.** Only a returned value is in the handler's type, and so in the client's. A response sent by hand is invisible to both.
+A response is a discriminated union, because errors need types too. When the server rejects bad input, the client should get that error with its real shape (the `issues`), not just a success type and an `unknown`. So every response is one member of a union like `{ result: "success", ... } | { result: "invalid-body", ... }`, and TypeScript narrows it.
+
+The `statusCode` is there because Cuple deliberately stays on HTTP. A Cuple backend should look like any industry-standard API, so every response carries a real status code. A discriminated union could narrow on `statusCode` alone, and you can do that. But different outcomes can share a status code: a `404` can mean "no such route" or "no such order". So `result` identifies the response, and `statusCode` is its category: generic code (a redirect on any `401`) branches on the status, and specific code (showing "this post was deleted") on the result.
+
+Handlers return their response instead of calling `res.send`, because only a returned value is in the handler's type, and so in the client's. A response sent by hand is invisible to both. Returning also reads better than a callback. `req` and `res` are still passed in, so that you can do anything Express allows. They're there to help, not to limit what you can do.
 
 :::

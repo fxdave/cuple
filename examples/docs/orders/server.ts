@@ -29,7 +29,7 @@ export const routes = {
     .get(async ({ data }) => {
       const order = orders.find((order) => order.id === data.params.id);
       if (!order)
-        return apiResponse("not-found-error", 404, { message: "No such order." });
+        return apiResponse("order-not-found", 404, { message: "No such order." });
       return success({ order });
     }),
 
@@ -38,7 +38,7 @@ export const routes = {
     .get(async ({ data }) => {
       const customer = customers.find((customer) => customer.id === data.params.id);
       if (!customer)
-        return apiResponse("not-found-error", 404, { message: "No such customer." });
+        return apiResponse("customer-not-found", 404, { message: "No such customer." });
       return success({ customer });
     }),
 };

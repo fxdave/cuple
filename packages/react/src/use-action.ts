@@ -79,13 +79,13 @@ export type Action<TArgs extends unknown[], T> = ActionState<T> & {
  * const save = useAction(
  *   (values: FormValues) =>
  *     fetchCuple(client.updateOrder.put, { params: { id }, body: values })
- *       .thenResolveAlso(["validation-error"]),
+ *       .thenResolveAlso(["invalid-body"]),
  *   { refresh: [client.getOrder.get, client.getOrders.get] },
  * );
  *
  * <form onSubmit={form.handleSubmit(save.run)}>
  * {save.value?.result === "success" && <p>Saved</p>}
- * {save.value?.result === "validation-error" && <Issues issues={save.value.issues} />}
+ * {save.value?.result === "invalid-body" && <Issues issues={save.value.issues} />}
  * ```
  *
  * The state is the latest run's. An earlier run that finishes later still

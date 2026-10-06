@@ -34,7 +34,7 @@ describe("Fetch options", () => {
           options: {
             signal: controller.signal,
           },
-        }).thenResolveAll();
+        }).thenResolveAnyResponse();
         controller.abort();
         await responsePromise;
       } catch (e) {
@@ -75,8 +75,8 @@ describe("Fetch options", () => {
           signal: controller.signal,
         },
       })
-        .thenResolveAll()
-        .thenWrapAbort();
+        .thenResolveAnyResponse()
+        .thenResolveAlso(["abort"]);
       controller.abort();
       const response = await responsePromise;
       assert.equal(response.result, "abort");

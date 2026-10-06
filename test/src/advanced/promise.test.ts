@@ -25,9 +25,9 @@ describe("CuplePromise", () => {
           name: "David",
         },
       })
-        .thenResolveOn(["success", "validation-error"])
+        .thenResolveOn(["success", "invalid-query"])
         .thenResolveOn(["success"])
-        .thenWrapAbort();
+        .thenResolveAlso(["abort"]);
 
       if (response.result === "abort") {
         return assert.ok(false);
@@ -37,7 +37,7 @@ describe("CuplePromise", () => {
       assert.ok(false);
     });
   });
-  it("thenResolveOn validation-error", async () => {
+  it("thenResolveOn invalid-query", async () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
@@ -56,7 +56,7 @@ describe("CuplePromise", () => {
         query: {
           name: "An",
         },
-      }).thenResolveAll();
+      }).thenResolveAnyResponse();
 
       try {
         await responsePromise.thenResolveOn(["success"]);
@@ -66,17 +66,17 @@ describe("CuplePromise", () => {
       }
 
       try {
-        await responsePromise.thenResolveOn(["validation-error"]);
+        await responsePromise.thenResolveOn(["invalid-query"]);
         assert.ok(true);
       } catch (e) {
         assert.ok(
           false,
-          'The response should be "validation-error" so unwraping it should work',
+          'The response should be "invalid-query" so unwraping it should work',
         );
       }
     });
   });
-  it("rejects validation-error by default", async () => {
+  it("rejects invalid-query by default", async () => {
     const cs = await createClientAndServer((builder) => ({
       exampleRoute: builder
         .querySchema(
@@ -125,11 +125,11 @@ describe("CuplePromise", () => {
         query: {
           name: "David",
         },
-      }).thenResolveAll();
+      }).thenResolveAnyResponse();
 
       try {
-        await responsePromise.thenResolveOn(["validation-error"]);
-        assert.ok(false, 'The response should not be "validation-error"');
+        await responsePromise.thenResolveOn(["invalid-query"]);
+        assert.ok(false, 'The response should not be "invalid-query"');
       } catch (e) {
         assert.ok(true);
       }

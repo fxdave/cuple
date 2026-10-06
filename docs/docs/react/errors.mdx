@@ -7,15 +7,15 @@ description: 'handled errors are typed values, unhandled ones go to <Boundary>'
 
 Every failure is either handled or unhandled.
 
- - **Handled** means your code listed it: `thenResolveAlso(["validation-error"])` on a request, `resolveAlso: ["not-found-error"]` on a read. It comes back as a typed value, and the component renders it like any data.
+ - **Handled** means your code listed it: `thenResolveAlso(["invalid-body"])` on a request, `resolveAlso: ["note-not-found"]` on a read. It comes back as a typed value, and the component renders it like any data.
  - **Unhandled** is everything else: a result nobody listed, a network failure nobody listed, a bug. It goes to the nearest `<Boundary>`, as a `CupleError` with a message that is always readable.
 
 ```tsx
 const save = useAction(async (values: ContactValues) => {
   const response = await fetchCuple(client.updateContact.put, { params: { id }, body: values })
-    .thenResolveAlso(["validation-error", "transport-error"]);
-  //   ^? success | validation-error | transport-error — all typed
-  if (response.result === "validation-error") showIssues(response.issues);
+    .thenResolveAlso(["invalid-body", "transport-error"]);
+  //   ^? success | invalid-body | transport-error — all typed
+  if (response.result === "invalid-body") showIssues(response.issues);
   if (response.result === "transport-error") showOffline();
   return response;
 });
@@ -28,9 +28,9 @@ Any result the endpoint can return can be listed, and so can `"transport-error"`
 
 | On | Write |
 | -- | ----- |
-| A request | `fetchCuple(...).thenResolveAlso(["validation-error", "transport-error"])` |
-| A read | `useGet(client.getNote, args, { resolveAlso: ["not-found-error"] })` |
-| A read inside `combine` | `get(client.getOrder, args, { resolveAlso: ["not-found-error"] })` |
+| A request | `fetchCuple(...).thenResolveAlso(["invalid-body", "transport-error"])` |
+| A read | `useGet(client.getNote, args, { resolveAlso: ["note-not-found"] })` |
+| A read inside `combine` | `get(client.getOrder, args, { resolveAlso: ["order-not-found"] })` |
 
 ```ts
 type TransportErrorResult = { result: "transport-error"; statusCode: number | null; message: string };
@@ -56,7 +56,7 @@ type TransportErrorResult = { result: "transport-error"; statusCode: number | nu
 | `kind` | `"response"`: the server answered with a result nobody listed. `"transport"`: no Cuple answer at all. `"bug"`: your code threw. |
 | `message` | Always readable. The server's message for `"response"` when it sent one; your own error's message for `"bug"` in development. Otherwise `errors.fallbackMessage` (default `"Something went wrong."`). |
 | `statusCode` | The HTTP status, when there was a response. |
-| `result` | For `"response"`: the result the server sent, e.g. `"forbidden-error"`. |
+| `result` | For `"response"`: the result the server sent, e.g. `"not-your-note"`. |
 | `cause` | What was actually thrown, for logging. |
 
 `errors.fallbackMessage` is set like any config, on the provider, a `<Boundary config>`, or one request:
@@ -108,6 +108,23 @@ A read that fails with something unlisted goes to the nearest `<Boundary>`. When
 For a failure that is a normal outcome (a deleted item), list it with `resolveAlso` and render it. See [Reading](./reading#expected-failures).
 
  - NOTE: `"notify"` needs `config.errors.notify`. Without it, the error goes to the boundary above, saying what's missing.
+
+## Signed out: one place for every 401
+
+When a session expires, every call behind sign-in starts answering `401`. Handle that once, around the signed-in part of the app, not at each call. The auth link names what happened:
+
+```ts file=../../../examples/docs/auth/server.ts#auth-link
+```
+
+The boundary around the signed-in area checks the status, not the result. Any `401` from inside, a read or an action, signs the user out:
+
+```tsx file=../../../examples/docs/auth/app.tsx#signed-in-area
+```
+
+ - It branches on `statusCode`, the category: it handles every `401`, whatever each route calls it. Code that handles one specific case branches on `result`.
+ - The reaction is rendered, so it can use your router: with React Router, render `<Navigate to="/login" />`. The client is created outside React, so `useNavigate` can't run there.
+ - An action whose `errors.onError` is `"notify"` shows a `401` as a notification instead. Return `"boundary"` for it in an `onError` function to send it here.
+ - A call that expects a `401` (a page that shows "sign in to see more") lists it with `resolveAlso` and renders it, like any other handled result.
 
 :::note[Why it works this way]
 

@@ -51,7 +51,7 @@ function NewTodo() {
     async (text: string) => {
       const response = await fetchCuple(client.createTodo.post, {
         body: { text },
-      }).thenResolveAlso(["validation-error"]);
+      }).thenResolveAlso(["invalid-body"]);
       if (response.result === "success") setText("");
       return response;
     },
@@ -59,7 +59,7 @@ function NewTodo() {
   );
 
   const issue =
-    create.value?.result === "validation-error"
+    create.value?.result === "invalid-body"
       ? create.value.issues.find((issue) => issue.path[0] === "text")
       : undefined;
 

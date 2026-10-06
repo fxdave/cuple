@@ -2,8 +2,8 @@ import {
   apiResponse,
   createBuilder,
   initRpc,
+  invalidInput,
   success,
-  zodValidationError,
 } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
@@ -65,7 +65,7 @@ export const routes = {
     )
     .post(async ({ data }) => {
       if (data.body.password1 !== data.body.password2) {
-        return zodValidationError([
+        return invalidInput("body", [
           {
             code: "custom",
             path: ["password2"],

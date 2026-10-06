@@ -30,7 +30,7 @@ type ServerIssue = { path: (string | number)[]; message: string };
  */
 type SaveResult =
   | { result: "success" }
-  | { result: "validation-error"; issues: ServerIssue[] }
+  | { result: "invalid-body"; issues: ServerIssue[] }
   | { result: "transport-error"; message: string };
 
 // #region contacts
@@ -145,7 +145,7 @@ function NewContact({ onDone }: { onDone: () => void }) {
       busyLabel="Adding"
       save={(values) =>
         fetchCuple(client.createContact.post, { body: values }).thenResolveAlso([
-          "validation-error",
+          "invalid-body",
           "transport-error",
         ])
       }
@@ -159,9 +159,9 @@ function EditContact({ id, onDone }: { id: number; onDone: () => void }) {
   const found = useGet(
     client.getContact,
     { params: { id } },
-    { resolveAlso: ["notFound"] },
+    { resolveAlso: ["contact-not-found"] },
   );
-  if (found.result === "notFound")
+  if (found.result === "contact-not-found")
     return <p className="muted">This contact was deleted.</p>;
 
   const { name, email, address } = found.contact;
@@ -176,7 +176,7 @@ function EditContact({ id, onDone }: { id: number; onDone: () => void }) {
         fetchCuple(client.updateContact.put, {
           params: { id },
           body: values,
-        }).thenResolveAlso(["validation-error", "transport-error"])
+        }).thenResolveAlso(["invalid-body", "transport-error"])
       }
       onSaved={onDone}
       onCancel={onDone}
@@ -199,7 +199,7 @@ function ContactForm(props: {
   const save = useAction(
     async (values: ContactValues) => {
       const response = await props.save(values);
-      if (response.result === "validation-error") showServerIssues(form, response.issues);
+      if (response.result === "invalid-body") showServerIssues(form, response.issues);
       else if (response.result === "transport-error")
         form.setError("root.server", {
           message: "Not saved: the connection dropped. Try again.",

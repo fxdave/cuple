@@ -3,10 +3,10 @@ import type z from "zod";
 import { ZodError, type ZodType } from "zod";
 import type { RawBodyParser } from "./body-parsers";
 import {
+  type InvalidInput,
+  invalidInput,
   type UnexpectedError,
   unexpectedError,
-  type ZodValidationError,
-  zodValidationError,
 } from "./responses";
 
 type ExpressRequest = Request;
@@ -269,7 +269,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       body: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | ZodValidationError;
+    tResponses: TParams["tResponses"] | InvalidInput<"body">;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -290,7 +290,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       query: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | ZodValidationError;
+    tResponses: TParams["tResponses"] | InvalidInput<"query">;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -311,7 +311,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       params: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | ZodValidationError;
+    tResponses: TParams["tResponses"] | InvalidInput<"params">;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -333,7 +333,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       headers: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | ZodValidationError;
+    tResponses: TParams["tResponses"] | InvalidInput<"headers">;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -522,7 +522,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     TParams["tInput"] & z.input<TParser>,
     TParams["tData"],
     | ({ [i in TPropertyName]: ValidInputOrError<z.input<TParser>> } & { next: true })
-    | (ZodValidationError & { next: false })
+    | (InvalidInput<`${TPropertyName}`> & { next: false })
     | (UnexpectedError & { next: false })
   > {
     return async ({ req, res, data }: MiddlewareProps<unknown>) => {
@@ -542,9 +542,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       } catch (e) {
         if (e instanceof ZodError) {
           return {
-            ...zodValidationError(e.issues),
+            ...invalidInput(propertyName as `${SchemaType}`, e.issues),
             next: false as const,
-          } as ZodValidationError & { next: false };
+          } as InvalidInput<`${TPropertyName}`> & { next: false };
         }
 
         const response = this.config.errorHandler({ req, res, err: e });
