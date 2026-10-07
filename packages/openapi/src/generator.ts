@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import type { ResponseVariant, RouteInfo } from "@cuple/inspect";
-import { inspectRoutesWithDefinitions } from "@cuple/inspect";
+import { inspectRoutes } from "@cuple/inspect";
 import {
   convertDefinitionsToOpenAPI,
   convertPropertiesToOpenAPI,
@@ -208,7 +208,7 @@ export function generateOpenAPI(
   variableName: string,
   options?: GenerateOpenAPIOptions,
 ): OpenAPIDocument {
-  const { routes, definitions } = inspectRoutesWithDefinitions(filePath, variableName, {
+  const { routes, definitions } = inspectRoutes(filePath, variableName, {
     tsconfigPath: options?.tsconfigPath,
   });
 

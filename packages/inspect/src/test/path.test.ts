@@ -6,7 +6,7 @@ const fixturePath = path.resolve(__dirname, "fixtures/routes.ts");
 const tsconfigPath = path.resolve(__dirname, "fixtures/tsconfig.json");
 
 describe("path extraction", () => {
-  const routes = inspectRoutes(fixturePath, "routes", { tsconfigPath });
+  const { routes } = inspectRoutes(fixturePath, "routes", { tsconfigPath });
 
   it("should extract simple path", () => {
     const route = routes.find((r) => r.name === "getHealth");

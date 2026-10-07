@@ -9,19 +9,11 @@ import {
 } from "./schema-converter";
 import type { InspectResult, ResponseVariant, RouteInfo, Schema } from "./types";
 
-export function inspectRoutes(
-  filePath: string,
-  variableName: string,
-  options?: { tsconfigPath?: string },
-): RouteInfo[] {
-  return inspectRoutesWithDefinitions(filePath, variableName, options).routes;
-}
-
 /**
- * {@link inspectRoutes} plus the named definitions its `{ type: "ref" }` nodes
- * point at, which a recursive type is described as.
+ * The routes of `variableName`, plus the named definitions their
+ * `{ type: "ref" }` nodes point at, which a recursive type is described as.
  */
-export function inspectRoutesWithDefinitions(
+export function inspectRoutes(
   filePath: string,
   variableName: string,
   options?: { tsconfigPath?: string },
@@ -54,20 +46,11 @@ export function inspectRoutesWithDefinitions(
     throw new Error(`Could not load source file: ${resolvedPath}`);
   }
 
-  return inspectRoutesFromProgramWithDefinitions(program, sourceFile, variableName);
+  return inspectRoutesFromProgram(program, sourceFile, variableName);
 }
 
+/** {@link inspectRoutes} against a program you already have. */
 export function inspectRoutesFromProgram(
-  program: ts.Program,
-  sourceFile: ts.SourceFile,
-  variableName: string,
-): RouteInfo[] {
-  return inspectRoutesFromProgramWithDefinitions(program, sourceFile, variableName)
-    .routes;
-}
-
-/** {@link inspectRoutesFromProgram} plus the named definitions. */
-export function inspectRoutesFromProgramWithDefinitions(
   program: ts.Program,
   sourceFile: ts.SourceFile,
   variableName: string,

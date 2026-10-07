@@ -1,13 +1,13 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { inspectRoutesWithDefinitions } from "../index";
+import { inspectRoutes } from "../index";
 import type { Schema } from "../types";
 
 const fixturePath = path.resolve(__dirname, "fixtures/routes.ts");
 const tsconfigPath = path.resolve(__dirname, "fixtures/tsconfig.json");
 
 describe("recursive response types", () => {
-  const { routes, definitions } = inspectRoutesWithDefinitions(fixturePath, "routes", {
+  const { routes, definitions } = inspectRoutes(fixturePath, "routes", {
     tsconfigPath,
   });
 

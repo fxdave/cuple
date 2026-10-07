@@ -6,7 +6,7 @@ const fixturePath = path.resolve(__dirname, "fixtures/routes.ts");
 const tsconfigPath = path.resolve(__dirname, "fixtures/tsconfig.json");
 
 describe("body schema extraction", () => {
-  const routes = inspectRoutes(fixturePath, "routes", { tsconfigPath });
+  const { routes } = inspectRoutes(fixturePath, "routes", { tsconfigPath });
 
   it("should return null when no body schema", () => {
     const route = routes.find((r) => r.name === "getHealth");

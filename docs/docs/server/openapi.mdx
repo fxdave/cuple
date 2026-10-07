@@ -116,20 +116,15 @@ is still written out in full.
 ```ts
 import { inspectRoutes } from "@cuple/inspect";
 
-for (const route of inspectRoutes("./src/routes.ts", "routes")) {
+const { routes, definitions } = inspectRoutes("./src/routes.ts", "routes");
+
+for (const route of routes) {
   console.log(route.method.toUpperCase(), route.path.raw);
 }
 ```
 
-A schema node is `{ type: "ref", name }` where a recursive type comes back.
-`inspectRoutesWithDefinitions` returns the schemas those names stand for
-alongside the routes:
-
-```ts
-import { inspectRoutesWithDefinitions } from "@cuple/inspect";
-
-const { routes, definitions } = inspectRoutesWithDefinitions("./src/routes.ts", "routes");
-```
+A schema node is `{ type: "ref", name }` where a recursive type comes back, and
+`definitions` holds the schemas those names stand for.
 
 :::note[Why it works this way]
 

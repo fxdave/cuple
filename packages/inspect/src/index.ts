@@ -1,9 +1,4 @@
-export {
-  inspectRoutes,
-  inspectRoutesFromProgram,
-  inspectRoutesFromProgramWithDefinitions,
-  inspectRoutesWithDefinitions,
-} from "./extractor";
+export { inspectRoutes, inspectRoutesFromProgram } from "./extractor";
 export type {
   InspectResult,
   PathInfo,

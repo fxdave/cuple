@@ -124,7 +124,7 @@ export function createMcpServer(
   variableName: string,
   options: McpOptions,
 ) {
-  const routes = inspectRoutes(filePath, variableName, {
+  const { routes } = inspectRoutes(filePath, variableName, {
     tsconfigPath: options.tsconfigPath,
   });
   const byName = new Map(routes.map((route) => [route.name, route]));
