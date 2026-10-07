@@ -2,6 +2,39 @@ import * as ts from "typescript";
 import type { PropertyInfo, Schema } from "./types";
 
 export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Schema {
+  return convert(type, checker, new Set());
+}
+
+/**
+ * `ancestors` holds the types currently being converted on this branch. A type
+ * that is its own ancestor would otherwise recurse forever: a JSON value, a tree
+ * of nodes, a Prisma `Json` column, two types that name each other. Those stop
+ * as `unknown`, since `Schema` has no way to point back at an enclosing type.
+ *
+ * It has to be the ancestors rather than every type seen. A type that merely
+ * appears twice side by side — `{ from: Address; to: Address }` — is not a cycle
+ * and must still be described in full both times.
+ */
+function convert(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+  ancestors: Set<ts.Type>,
+): Schema {
+  if (ancestors.has(type)) return { type: "unknown" };
+
+  ancestors.add(type);
+  try {
+    return describe(type, checker, ancestors);
+  } finally {
+    ancestors.delete(type);
+  }
+}
+
+function describe(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+  ancestors: Set<ts.Type>,
+): Schema {
   // Handle boolean first (TS represents boolean as union of true | false)
   if (type.flags & ts.TypeFlags.BooleanLiteral) {
     return { type: "boolean" };
@@ -53,12 +86,12 @@ export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Sch
     }
 
     if (filteredTypes.length === 1) {
-      return convertTypeToSchema(filteredTypes[0], checker);
+      return convert(filteredTypes[0], checker, ancestors);
     }
 
     return {
       type: "union",
-      variants: filteredTypes.map((t) => convertTypeToSchema(t, checker)),
+      variants: filteredTypes.map((t) => convert(t, checker, ancestors)),
     };
   }
 
@@ -68,7 +101,7 @@ export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Sch
     if (typeArgs && typeArgs.length > 0) {
       return {
         type: "array",
-        items: convertTypeToSchema(typeArgs[0], checker),
+        items: convert(typeArgs[0], checker, ancestors),
       };
     }
     return { type: "array", items: { type: "unknown" } };
@@ -78,7 +111,7 @@ export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Sch
   if (type.isIntersection()) {
     const mergedProperties: Record<string, PropertyInfo> = {};
     for (const intersectedType of type.types) {
-      const schema = convertTypeToSchema(intersectedType, checker);
+      const schema = convert(intersectedType, checker, ancestors);
       if (schema.type === "object") {
         Object.assign(mergedProperties, schema.properties);
       }
@@ -116,7 +149,7 @@ export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Sch
       }
 
       properties[propName] = {
-        schema: convertTypeToSchema(effectiveType, checker),
+        schema: convert(effectiveType, checker, ancestors),
         required: !isOptional,
       };
     }
