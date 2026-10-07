@@ -22,7 +22,7 @@ export const routes = {
     .paramsSchema(z.strictObject({ id: z.coerce.number() }))
     .get(async ({ data }) => {
       const post = await getPost(data.params.id);
-      if (!post) return apiResponse("post-not-found", 404, { message: "Post not found" });
+      if (!post) return notFound({ result: "post-not-found", message: "Post not found" });
       return success({ post });
     }),
 

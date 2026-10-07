@@ -23,7 +23,7 @@ builder.get(async () => {
     - The supported methods are: `get`, `post`, `put`, `patch`, `delete`
  - The `async () => { /* ... */ }` is the function where your controller logic leaves
     - The return type should contain these fields:
-        - `result`: names what happened, e.g. `"post-not-found"` or `"email-taken"`. It identifies the response, so name the situation, not the status code (not `"not-found-error"`).
+        - `result`: names what happened, e.g. `"post-not-found"` or `"email-taken"`. It identifies the response, so the client can tell two failures with the same status code apart.
         - `statusCode`: the HTTP status code, the category of the response. For client-side typing it needs to be const as well.
 
 ## Response factory methods
@@ -57,26 +57,32 @@ builder.post(async ({ data }) => {
 })
 ```
 
-And there's also a generic `apiResponse` method, so you don't have to keep track the shape of the return type:
+For common failures there are `notFound` (404), `unauthorized` (401), `forbidden` (403) and `conflict` (409). Each has a default `result` and `message`, and you can override both and add fields:
 
+```ts
+import { conflict, notFound } from '@cuple/server'
+
+builder.get(async () => {
+  return notFound() // { result: "not-found", statusCode: 404, message: "Not found." }
+})
+
+builder.post(async ({ data }) => {
+  return conflict({ result: "email-taken", message: "This email is in use.", email: data.body.email })
+})
+```
+
+The default `result` is fine while a route has one failure of that kind. When it can have more, name each one (`post-not-found`, `author-not-found`), so the client can tell them apart.
+
+For any other status code there's the generic `apiResponse`:
 
 ```ts
 import { apiResponse } from '@cuple/server'
 
-builder.get(async () => {
-  return apiResponse("post-not-found", 404, {
-    message: "This post doesn't exist.",
+builder.post(async () => {
+  return apiResponse("too-many-requests", 429, {
+    message: "Slow down a bit.",
   });
 })
-```
-
-Example for custom factory method:
-```ts
-export function postNotFound(others?: { message: string }) {
-  return apiResponse("post-not-found", 404, {
-    message: others?.message || "This post doesn't exist.",
-  });
-}
 ```
 
 ## Access Request and Response object

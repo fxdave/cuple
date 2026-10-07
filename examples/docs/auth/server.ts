@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { apiResponse, createBuilder, initRpc, success } from "@cuple/server";
+import { createBuilder, initRpc, success, unauthorized } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
 
@@ -20,7 +20,7 @@ const signedIn = builder
     if (!user)
       return {
         next: false as const,
-        ...apiResponse("session-expired", 401, { message: "Please sign in again." }),
+        ...unauthorized({ result: "session-expired", message: "Please sign in again." }),
       };
     return { next: true as const, user };
   })
