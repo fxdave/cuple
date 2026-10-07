@@ -53,8 +53,8 @@ Nothing is refreshed unless the action names it. List what a write changes. When
 ```tsx file=../../../examples/react/src/App.tsx#note-row
 ```
 
- - Every cached call of a listed endpoint is refetched, and so is every `combine` that read one of them through `get`.
- - Only calls something is reading are refetched. The rest are dropped, and fetched fresh when next read. So when you delete the note an open pane shows, and close the pane inside the action, the deleted note is never refetched and never 404s.
+ - Every cache entry of a listed endpoint (one per set of arguments) is refetched, and so is every `combine` that read one of them through `get`.
+ - Only entries something is reading are refetched. The rest are dropped, and fetched fresh when next read. So when you delete the note an open pane shows, and close the pane inside the action, the deleted note is never refetched and never 404s.
  - `refresh: [...]` refreshes every time the function finishes. `refresh: { success: [...] }` refreshes only for the listed results, as `NewTodo` above does; the keys are typed from what the function returns.
 
 ## Errors

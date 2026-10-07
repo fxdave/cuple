@@ -13,8 +13,8 @@ The store is the cache. Components reach it through `<CupleProvider>`; plain cod
 await store.refresh([client.getNotes, client.getNote]);
 ```
 
- - Calls something is reading are refetched, and keep their old data on screen until the new data lands.
- - Calls nobody reads are dropped, and fetched fresh when next read.
+ - Entries something is reading are refetched, and keep their old data on screen until the new data lands.
+ - Entries nobody reads are dropped, and fetched fresh when next read.
  - It resolves when the refetches have landed, and never rejects: a failure goes to whoever reads the data.
  - A network failure during a refresh keeps the old data on screen, and is retried when the browser comes back online.
 
@@ -32,7 +32,7 @@ Start a fetch before anything renders it:
 
 ## Switching accounts
 
-The cache doesn't know what your client's middleware sends, so tell it whose data a call is, with a key:
+The cache doesn't know what your client's middleware sends, so tell it whose data a cache entry is, with a key:
 
 ```ts file=../../../examples/react/src/client.ts#client
 ```
@@ -42,7 +42,7 @@ When the account changes, call `store.refreshKeys()`:
 ```ts file=../../../examples/react/src/client.ts#store
 ```
 
-It checks every cached call's key again:
+It checks every cache entry's key again:
 
  - Key unchanged: stays as it is. No request, no re-render.
  - Key changed: its readers read again under the new key, even memoized ones. Cached data for the new key shows at once; anything else loads.
