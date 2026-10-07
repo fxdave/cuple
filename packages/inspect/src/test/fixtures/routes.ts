@@ -186,6 +186,22 @@ const getTrip = builder.path("/trip").get(async () => {
   });
 });
 
+// Two different instantiations of one generic, nested. Identity-based cycle
+// detection must not mistake the inner one for the outer.
+type Value<T> = { value: T };
+
+// A generic that recurses with a *growing* argument: every level is a fresh
+// instantiation, so nothing ever repeats and only a depth bound ends it.
+type Deep<T> = { next: Deep<{ wrap: T }> };
+
+const getNestedGeneric = builder.path("/nested-generic").get(async () => {
+  return success({ v: null as unknown as Value<{ foo: Value<{ bar: string }> }> });
+});
+
+const getGrowingGeneric = builder.path("/growing-generic").get(async () => {
+  return success({ d: null as unknown as Deep<{ seed: string }> });
+});
+
 export const routes = {
   getHealth,
   getStatus,
@@ -204,4 +220,6 @@ export const routes = {
   getTree,
   getArticle,
   getTrip,
+  getNestedGeneric,
+  getGrowingGeneric,
 };

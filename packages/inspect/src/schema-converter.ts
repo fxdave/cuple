@@ -1,8 +1,22 @@
 import * as ts from "typescript";
 import type { PropertyInfo, Schema } from "./types";
 
+/**
+ * How deep the walk goes before it gives up and says `unknown`.
+ *
+ * The ancestor check below catches a type that is literally its own ancestor,
+ * but it cannot catch a generic that recurses with a *growing* argument —
+ * `type Deep<T> = { next: Deep<{ wrap: T }> }` — because every level is a fresh
+ * instantiation with its own identity, so nothing ever repeats. Only a bound
+ * terminates that.
+ *
+ * 32 is far past anything a readable API response reaches, so it costs real
+ * schemas nothing.
+ */
+const MAX_DEPTH = 32;
+
 export function convertTypeToSchema(type: ts.Type, checker: ts.TypeChecker): Schema {
-  return convert(type, checker, new Set());
+  return convert(type, checker, new Set(), 0);
 }
 
 /**
@@ -19,12 +33,14 @@ function convert(
   type: ts.Type,
   checker: ts.TypeChecker,
   ancestors: Set<ts.Type>,
+  depth: number,
 ): Schema {
   if (ancestors.has(type)) return { type: "unknown" };
+  if (depth >= MAX_DEPTH) return { type: "unknown" };
 
   ancestors.add(type);
   try {
-    return describe(type, checker, ancestors);
+    return describe(type, checker, ancestors, depth + 1);
   } finally {
     ancestors.delete(type);
   }
@@ -34,6 +50,7 @@ function describe(
   type: ts.Type,
   checker: ts.TypeChecker,
   ancestors: Set<ts.Type>,
+  depth: number,
 ): Schema {
   // Handle boolean first (TS represents boolean as union of true | false)
   if (type.flags & ts.TypeFlags.BooleanLiteral) {
@@ -86,12 +103,12 @@ function describe(
     }
 
     if (filteredTypes.length === 1) {
-      return convert(filteredTypes[0], checker, ancestors);
+      return convert(filteredTypes[0], checker, ancestors, depth);
     }
 
     return {
       type: "union",
-      variants: filteredTypes.map((t) => convert(t, checker, ancestors)),
+      variants: filteredTypes.map((t) => convert(t, checker, ancestors, depth)),
     };
   }
 
@@ -101,7 +118,7 @@ function describe(
     if (typeArgs && typeArgs.length > 0) {
       return {
         type: "array",
-        items: convert(typeArgs[0], checker, ancestors),
+        items: convert(typeArgs[0], checker, ancestors, depth),
       };
     }
     return { type: "array", items: { type: "unknown" } };
@@ -111,7 +128,7 @@ function describe(
   if (type.isIntersection()) {
     const mergedProperties: Record<string, PropertyInfo> = {};
     for (const intersectedType of type.types) {
-      const schema = convert(intersectedType, checker, ancestors);
+      const schema = convert(intersectedType, checker, ancestors, depth);
       if (schema.type === "object") {
         Object.assign(mergedProperties, schema.properties);
       }
@@ -149,7 +166,7 @@ function describe(
       }
 
       properties[propName] = {
-        schema: convert(effectiveType, checker, ancestors),
+        schema: convert(effectiveType, checker, ancestors, depth),
         required: !isOptional,
       };
     }

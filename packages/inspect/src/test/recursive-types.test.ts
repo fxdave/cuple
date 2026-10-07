@@ -52,6 +52,38 @@ describe("recursive response types", () => {
     expect(author.properties.latest.schema.type).not.toBe("object");
   });
 
+  it("keeps two different instantiations of one generic apart", () => {
+    // Value<{ foo: Value<{ bar: string }> }>: the inner Value is a different
+    // instantiation, so it must be described, not treated as a cycle.
+    const v = success("getNestedGeneric").properties.v.schema;
+    expect(v.type).toBe("object");
+    if (v.type !== "object") return;
+    const outer = v.properties.value.schema;
+    expect(outer.type).toBe("object");
+    if (outer.type !== "object") return;
+    const foo = outer.properties.foo.schema;
+    expect(foo.type).toBe("object");
+    if (foo.type !== "object") return;
+    const inner = foo.properties.value.schema;
+    expect(inner.type).toBe("object");
+    if (inner.type !== "object") return;
+    expect(inner.properties.bar.schema.type).toBe("string");
+  });
+
+  it("bounds a generic that recurses with a growing argument", () => {
+    // Deep<T> = { next: Deep<{ wrap: T }> } never repeats a type, so the
+    // ancestor check cannot fire; MAX_DEPTH is what ends it.
+    let schema = success("getGrowingGeneric").properties.d.schema;
+    let levels = 0;
+    while (schema.type === "object" && schema.properties.next) {
+      schema = schema.properties.next.schema;
+      levels++;
+      expect(levels, "should not descend without bound").toBeLessThan(64);
+    }
+    expect(levels).toBeGreaterThan(0);
+    expect(schema.type).toBe("unknown");
+  });
+
   it("still expands a type that merely repeats across siblings", () => {
     const props = success("getTrip").properties;
     for (const key of ["from", "to"]) {
