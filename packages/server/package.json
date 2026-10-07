@@ -6,8 +6,17 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist .tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo"
   },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/test",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/.claude",
+    "!src/**/*.bak"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fxdave/cuple.git"
