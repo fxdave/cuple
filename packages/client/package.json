@@ -1,6 +1,6 @@
 {
   "name": "@cuple/client",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "typescript-based RPC with REST compatibility",
   "scripts": {
     "build:browser": "tsc -p tsconfig.browser.json",
