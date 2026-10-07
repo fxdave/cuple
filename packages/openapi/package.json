@@ -1,6 +1,6 @@
 {
   "name": "@cuple/openapi",
-  "version": "2.0.1",
+  "version": "2.3.0",
   "description": "Generate OpenAPI 3.0 specifications from Cuple route definitions",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,7 +9,7 @@
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "dependencies": {
-    "@cuple/inspect": "^2.0.0"
+    "@cuple/inspect": "^2.3.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

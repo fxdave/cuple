@@ -30,7 +30,9 @@ async function connect(options: Partial<McpOptions> = {}) {
 const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((result.content as { text: string }[])[0].text);
 
-describe("MCP", () => {
+// Each connect builds a TypeScript program for the routes: seconds, more under
+// the full suite's load.
+describe("MCP", { timeout: 30_000 }, () => {
   it("lists a tool per route, with only the inputs the route takes", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
