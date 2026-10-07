@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import type { ResponseVariant, RouteInfo } from "@cuple/inspect";
-import { inspectRoutes } from "@cuple/inspect";
+import { inspectRoutesWithDefinitions } from "@cuple/inspect";
 import {
+  convertDefinitionsToOpenAPI,
   convertPropertiesToOpenAPI,
   convertSchemaToOpenAPI,
   type OpenAPISchemaObject,
@@ -43,10 +44,19 @@ export type OpenAPIOperation = {
   responses: Record<string, OpenAPIResponse>;
 };
 
+export type OpenAPIComponents = {
+  schemas: Record<string, OpenAPISchemaObject>;
+};
+
 export type OpenAPIDocument = {
   openapi: string;
   info: OpenAPIInfo;
   paths: Record<string, Record<string, OpenAPIOperation>>;
+  /**
+   * The recursive types, named once and pointed at by `$ref`. Absent when
+   * nothing in the API recurses.
+   */
+  components?: OpenAPIComponents;
 };
 
 export type GenerateOpenAPIOptions = {
@@ -198,7 +208,7 @@ export function generateOpenAPI(
   variableName: string,
   options?: GenerateOpenAPIOptions,
 ): OpenAPIDocument {
-  const routes = inspectRoutes(filePath, variableName, {
+  const { routes, definitions } = inspectRoutesWithDefinitions(filePath, variableName, {
     tsconfigPath: options?.tsconfigPath,
   });
 
@@ -220,6 +230,12 @@ export function generateOpenAPI(
       doc.paths[path] = {};
     }
     doc.paths[path][route.method] = buildOperation(route);
+  }
+
+  // Omitted entirely for an API with no recursive types, so their specs are
+  // unchanged.
+  if (Object.keys(definitions).length > 0) {
+    doc.components = { schemas: convertDefinitionsToOpenAPI(definitions) };
   }
 
   if (options?.outputFile) {

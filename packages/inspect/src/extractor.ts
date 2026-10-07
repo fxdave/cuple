@@ -2,14 +2,30 @@ import * as path from "node:path";
 import * as ts from "typescript";
 import { parsePath } from "./path-parser";
 import { extractResponseVariants } from "./response-extractor";
-import { convertTypeToSchema } from "./schema-converter";
-import type { ResponseVariant, RouteInfo, Schema } from "./types";
+import {
+  convertTypeToSchema,
+  createSchemaRegistry,
+  type SchemaRegistry,
+} from "./schema-converter";
+import type { InspectResult, ResponseVariant, RouteInfo, Schema } from "./types";
 
 export function inspectRoutes(
   filePath: string,
   variableName: string,
   options?: { tsconfigPath?: string },
 ): RouteInfo[] {
+  return inspectRoutesWithDefinitions(filePath, variableName, options).routes;
+}
+
+/**
+ * {@link inspectRoutes} plus the named definitions its `{ type: "ref" }` nodes
+ * point at, which a recursive type is described as.
+ */
+export function inspectRoutesWithDefinitions(
+  filePath: string,
+  variableName: string,
+  options?: { tsconfigPath?: string },
+): InspectResult {
   const resolvedPath = path.resolve(filePath);
   const configPath = options?.tsconfigPath
     ? path.resolve(options.tsconfigPath)
@@ -38,7 +54,7 @@ export function inspectRoutes(
     throw new Error(`Could not load source file: ${resolvedPath}`);
   }
 
-  return inspectRoutesFromProgram(program, sourceFile, variableName);
+  return inspectRoutesFromProgramWithDefinitions(program, sourceFile, variableName);
 }
 
 export function inspectRoutesFromProgram(
@@ -46,6 +62,16 @@ export function inspectRoutesFromProgram(
   sourceFile: ts.SourceFile,
   variableName: string,
 ): RouteInfo[] {
+  return inspectRoutesFromProgramWithDefinitions(program, sourceFile, variableName)
+    .routes;
+}
+
+/** {@link inspectRoutesFromProgram} plus the named definitions. */
+export function inspectRoutesFromProgramWithDefinitions(
+  program: ts.Program,
+  sourceFile: ts.SourceFile,
+  variableName: string,
+): InspectResult {
   const checker = program.getTypeChecker();
 
   const variableDecl = findVariable(sourceFile, variableName);
@@ -53,8 +79,19 @@ export function inspectRoutesFromProgram(
     throw new Error(`Variable "${variableName}" not found in source file`);
   }
 
+  // One registry for the whole inspection, so a recursive type shared by
+  // several routes is described once.
+  const registry = createSchemaRegistry();
   const variableType = checker.getTypeAtLocation(variableDecl);
-  return extractRoutesFromType(variableType, variableDecl, sourceFile, "", checker);
+  const routes = extractRoutesFromType(
+    variableType,
+    variableDecl,
+    sourceFile,
+    "",
+    checker,
+    registry,
+  );
+  return { routes, definitions: registry.definitions };
 }
 
 function findTsConfig(filePath: string): string {
@@ -97,6 +134,7 @@ function extractRoutesFromType(
   sourceFile: ts.SourceFile,
   prefix: string,
   checker: ts.TypeChecker,
+  registry: SchemaRegistry,
 ): RouteInfo[] {
   const routes: RouteInfo[] = [];
   const properties = type.getProperties();
@@ -110,7 +148,7 @@ function extractRoutesFromType(
     const methodProp = propType.getProperty("_method");
 
     if (methodProp) {
-      routes.push(extractRouteInfo(prop, propType, node, fullName, checker));
+      routes.push(extractRouteInfo(prop, propType, node, fullName, checker, registry));
     } else {
       // Nested object, recurse
       const nestedRoutes = extractRoutesFromType(
@@ -119,6 +157,7 @@ function extractRoutesFromType(
         sourceFile,
         fullName,
         checker,
+        registry,
       );
       routes.push(...nestedRoutes);
     }
@@ -133,6 +172,7 @@ function extractRouteInfo(
   node: ts.Node,
   name: string,
   checker: ts.TypeChecker,
+  registry: SchemaRegistry,
 ): RouteInfo {
   // Extract path from AST
   const pathValue = extractPathFromSymbol(symbol);
@@ -173,16 +213,16 @@ function extractRouteInfo(
     const inputFields = extractInputFields(inputType, checker);
 
     if (inputFields.body) {
-      bodySchema = convertTypeToSchema(inputFields.body, checker);
+      bodySchema = convertTypeToSchema(inputFields.body, checker, registry);
     }
     if (inputFields.query) {
-      querySchema = convertTypeToSchema(inputFields.query, checker);
+      querySchema = convertTypeToSchema(inputFields.query, checker, registry);
     }
     if (inputFields.params) {
-      paramsSchema = convertTypeToSchema(inputFields.params, checker);
+      paramsSchema = convertTypeToSchema(inputFields.params, checker, registry);
     }
     if (inputFields.headers) {
-      headersSchema = convertTypeToSchema(inputFields.headers, checker);
+      headersSchema = convertTypeToSchema(inputFields.headers, checker, registry);
     }
   }
 
@@ -191,7 +231,7 @@ function extractRouteInfo(
   let response: ResponseVariant[] = [];
   if (outputProp) {
     const outputType = checker.getTypeOfSymbolAtLocation(outputProp, node);
-    response = extractResponseVariants(outputType, checker);
+    response = extractResponseVariants(outputType, checker, registry);
   }
 
   return {

@@ -2,6 +2,141 @@
 
 exports[`generateOpenAPI > should match the full document snapshot 1`] = `
 {
+  "components": {
+    "schemas": {
+      "Article": {
+        "properties": {
+          "author": {
+            "properties": {
+              "latest": {
+                "oneOf": [
+                  {},
+                  {
+                    "$ref": "#/components/schemas/Article",
+                  },
+                ],
+              },
+              "name": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "name",
+              "latest",
+            ],
+            "type": "object",
+          },
+          "title": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "title",
+          "author",
+        ],
+        "type": "object",
+      },
+      "Deep": {
+        "properties": {
+          "next": {
+            "$ref": "#/components/schemas/Deep",
+          },
+        },
+        "required": [
+          "next",
+        ],
+        "type": "object",
+      },
+      "JsonValue": {
+        "oneOf": [
+          {},
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue",
+            },
+            "type": "array",
+          },
+          {},
+        ],
+      },
+      "Shape": {
+        "properties": {
+          "next": {
+            "oneOf": [
+              {},
+              {
+                "$ref": "#/components/schemas/Shape",
+              },
+            ],
+          },
+          "tag": {
+            "enum": [
+              "a",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "tag",
+          "next",
+        ],
+        "type": "object",
+      },
+      "Shape_2": {
+        "properties": {
+          "prev": {
+            "oneOf": [
+              {},
+              {
+                "$ref": "#/components/schemas/Shape_2",
+              },
+            ],
+          },
+          "tag": {
+            "enum": [
+              "b",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "tag",
+          "prev",
+        ],
+        "type": "object",
+      },
+      "TreeNode": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/TreeNode",
+            },
+            "type": "array",
+          },
+          "label": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "label",
+          "children",
+        ],
+        "type": "object",
+      },
+    },
+  },
   "info": {
     "title": "API",
     "version": "1.0.0",
@@ -1993,7 +2128,9 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                             "latest": {
                               "oneOf": [
                                 {},
-                                {},
+                                {
+                                  "$ref": "#/components/schemas/Article",
+                                },
                               ],
                             },
                             "name": {
@@ -2086,7 +2223,9 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                           "type": "boolean",
                         },
                         {
-                          "items": {},
+                          "items": {
+                            "$ref": "#/components/schemas/JsonValue",
+                          },
                           "type": "array",
                         },
                         {},
@@ -2149,253 +2288,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     "d": {
                       "properties": {
                         "next": {
-                          "properties": {
-                            "next": {
-                              "properties": {
-                                "next": {
-                                  "properties": {
-                                    "next": {
-                                      "properties": {
-                                        "next": {
-                                          "properties": {
-                                            "next": {
-                                              "properties": {
-                                                "next": {
-                                                  "properties": {
-                                                    "next": {
-                                                      "properties": {
-                                                        "next": {
-                                                          "properties": {
-                                                            "next": {
-                                                              "properties": {
-                                                                "next": {
-                                                                  "properties": {
-                                                                    "next": {
-                                                                      "properties": {
-                                                                        "next": {
-                                                                          "properties": {
-                                                                            "next": {
-                                                                              "properties": {
-                                                                                "next": {
-                                                                                  "properties": {
-                                                                                    "next": {
-                                                                                      "properties": {
-                                                                                        "next": {
-                                                                                          "properties": {
-                                                                                            "next": {
-                                                                                              "properties": {
-                                                                                                "next": {
-                                                                                                  "properties": {
-                                                                                                    "next": {
-                                                                                                      "properties": {
-                                                                                                        "next": {
-                                                                                                          "properties": {
-                                                                                                            "next": {
-                                                                                                              "properties": {
-                                                                                                                "next": {
-                                                                                                                  "properties": {
-                                                                                                                    "next": {
-                                                                                                                      "properties": {
-                                                                                                                        "next": {
-                                                                                                                          "properties": {
-                                                                                                                            "next": {
-                                                                                                                              "properties": {
-                                                                                                                                "next": {
-                                                                                                                                  "properties": {
-                                                                                                                                    "next": {
-                                                                                                                                      "properties": {
-                                                                                                                                        "next": {
-                                                                                                                                          "properties": {
-                                                                                                                                            "next": {
-                                                                                                                                              "properties": {
-                                                                                                                                                "next": {
-                                                                                                                                                  "properties": {
-                                                                                                                                                    "next": {},
-                                                                                                                                                  },
-                                                                                                                                                  "required": [
-                                                                                                                                                    "next",
-                                                                                                                                                  ],
-                                                                                                                                                  "type": "object",
-                                                                                                                                                },
-                                                                                                                                              },
-                                                                                                                                              "required": [
-                                                                                                                                                "next",
-                                                                                                                                              ],
-                                                                                                                                              "type": "object",
-                                                                                                                                            },
-                                                                                                                                          },
-                                                                                                                                          "required": [
-                                                                                                                                            "next",
-                                                                                                                                          ],
-                                                                                                                                          "type": "object",
-                                                                                                                                        },
-                                                                                                                                      },
-                                                                                                                                      "required": [
-                                                                                                                                        "next",
-                                                                                                                                      ],
-                                                                                                                                      "type": "object",
-                                                                                                                                    },
-                                                                                                                                  },
-                                                                                                                                  "required": [
-                                                                                                                                    "next",
-                                                                                                                                  ],
-                                                                                                                                  "type": "object",
-                                                                                                                                },
-                                                                                                                              },
-                                                                                                                              "required": [
-                                                                                                                                "next",
-                                                                                                                              ],
-                                                                                                                              "type": "object",
-                                                                                                                            },
-                                                                                                                          },
-                                                                                                                          "required": [
-                                                                                                                            "next",
-                                                                                                                          ],
-                                                                                                                          "type": "object",
-                                                                                                                        },
-                                                                                                                      },
-                                                                                                                      "required": [
-                                                                                                                        "next",
-                                                                                                                      ],
-                                                                                                                      "type": "object",
-                                                                                                                    },
-                                                                                                                  },
-                                                                                                                  "required": [
-                                                                                                                    "next",
-                                                                                                                  ],
-                                                                                                                  "type": "object",
-                                                                                                                },
-                                                                                                              },
-                                                                                                              "required": [
-                                                                                                                "next",
-                                                                                                              ],
-                                                                                                              "type": "object",
-                                                                                                            },
-                                                                                                          },
-                                                                                                          "required": [
-                                                                                                            "next",
-                                                                                                          ],
-                                                                                                          "type": "object",
-                                                                                                        },
-                                                                                                      },
-                                                                                                      "required": [
-                                                                                                        "next",
-                                                                                                      ],
-                                                                                                      "type": "object",
-                                                                                                    },
-                                                                                                  },
-                                                                                                  "required": [
-                                                                                                    "next",
-                                                                                                  ],
-                                                                                                  "type": "object",
-                                                                                                },
-                                                                                              },
-                                                                                              "required": [
-                                                                                                "next",
-                                                                                              ],
-                                                                                              "type": "object",
-                                                                                            },
-                                                                                          },
-                                                                                          "required": [
-                                                                                            "next",
-                                                                                          ],
-                                                                                          "type": "object",
-                                                                                        },
-                                                                                      },
-                                                                                      "required": [
-                                                                                        "next",
-                                                                                      ],
-                                                                                      "type": "object",
-                                                                                    },
-                                                                                  },
-                                                                                  "required": [
-                                                                                    "next",
-                                                                                  ],
-                                                                                  "type": "object",
-                                                                                },
-                                                                              },
-                                                                              "required": [
-                                                                                "next",
-                                                                              ],
-                                                                              "type": "object",
-                                                                            },
-                                                                          },
-                                                                          "required": [
-                                                                            "next",
-                                                                          ],
-                                                                          "type": "object",
-                                                                        },
-                                                                      },
-                                                                      "required": [
-                                                                        "next",
-                                                                      ],
-                                                                      "type": "object",
-                                                                    },
-                                                                  },
-                                                                  "required": [
-                                                                    "next",
-                                                                  ],
-                                                                  "type": "object",
-                                                                },
-                                                              },
-                                                              "required": [
-                                                                "next",
-                                                              ],
-                                                              "type": "object",
-                                                            },
-                                                          },
-                                                          "required": [
-                                                            "next",
-                                                          ],
-                                                          "type": "object",
-                                                        },
-                                                      },
-                                                      "required": [
-                                                        "next",
-                                                      ],
-                                                      "type": "object",
-                                                    },
-                                                  },
-                                                  "required": [
-                                                    "next",
-                                                  ],
-                                                  "type": "object",
-                                                },
-                                              },
-                                              "required": [
-                                                "next",
-                                              ],
-                                              "type": "object",
-                                            },
-                                          },
-                                          "required": [
-                                            "next",
-                                          ],
-                                          "type": "object",
-                                        },
-                                      },
-                                      "required": [
-                                        "next",
-                                      ],
-                                      "type": "object",
-                                    },
-                                  },
-                                  "required": [
-                                    "next",
-                                  ],
-                                  "type": "object",
-                                },
-                              },
-                              "required": [
-                                "next",
-                              ],
-                              "type": "object",
-                            },
-                          },
-                          "required": [
-                            "next",
-                          ],
-                          "type": "object",
+                          "$ref": "#/components/schemas/Deep",
                         },
                       },
                       "required": [
@@ -2594,6 +2487,107 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
         },
       },
     },
+    "/shapes": {
+      "get": {
+        "operationId": "getShapes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "alpha": {
+                      "properties": {
+                        "next": {
+                          "oneOf": [
+                            {},
+                            {
+                              "$ref": "#/components/schemas/Shape",
+                            },
+                          ],
+                        },
+                        "tag": {
+                          "enum": [
+                            "a",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "tag",
+                        "next",
+                      ],
+                      "type": "object",
+                    },
+                    "beta": {
+                      "properties": {
+                        "prev": {
+                          "oneOf": [
+                            {},
+                            {
+                              "$ref": "#/components/schemas/Shape_2",
+                            },
+                          ],
+                        },
+                        "tag": {
+                          "enum": [
+                            "b",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "tag",
+                        "prev",
+                      ],
+                      "type": "object",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "alpha",
+                    "beta",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
     "/status": {
       "get": {
         "description": "Returns the current system status",
@@ -2670,7 +2664,9 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                     "root": {
                       "properties": {
                         "children": {
-                          "items": {},
+                          "items": {
+                            "$ref": "#/components/schemas/TreeNode",
+                          },
                           "type": "array",
                         },
                         "label": {

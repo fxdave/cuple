@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { convertTypeToSchema } from "./schema-converter";
+import { convertTypeToSchema, type SchemaRegistry } from "./schema-converter";
 import type { PropertyInfo, ResponseVariant } from "./types";
 
 const EXCLUDED_PROPS = new Set(["result", "statusCode", "next"]);
@@ -7,18 +7,19 @@ const EXCLUDED_PROPS = new Set(["result", "statusCode", "next"]);
 export function extractResponseVariants(
   outputType: ts.Type,
   checker: ts.TypeChecker,
+  registry: SchemaRegistry,
 ): ResponseVariant[] {
   const variants: ResponseVariant[] = [];
 
   if (outputType.isUnion()) {
     for (const memberType of outputType.types) {
-      const variant = extractSingleVariant(memberType, checker);
+      const variant = extractSingleVariant(memberType, checker, registry);
       if (variant) {
         variants.push(variant);
       }
     }
   } else {
-    const variant = extractSingleVariant(outputType, checker);
+    const variant = extractSingleVariant(outputType, checker, registry);
     if (variant) {
       variants.push(variant);
     }
@@ -31,6 +32,7 @@ export function extractResponseVariants(
 function extractSingleVariant(
   type: ts.Type,
   checker: ts.TypeChecker,
+  registry: SchemaRegistry,
 ): ResponseVariant | null {
   // Skip if this has next: true (middleware pass-through, not a response)
   const nextProp = type.getProperty("next");
@@ -75,7 +77,7 @@ function extractSingleVariant(
     const isOptional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
 
     properties[propName] = {
-      schema: convertTypeToSchema(propType, checker),
+      schema: convertTypeToSchema(propType, checker, registry),
       required: !isOptional,
     };
   }

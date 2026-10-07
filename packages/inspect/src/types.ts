@@ -7,9 +7,18 @@ export type Schema =
   | { type: "array"; items: Schema }
   | { type: "object"; properties: Record<string, PropertyInfo> }
   | { type: "union"; variants: Schema[] }
+  /**
+   * A named definition, held in {@link InspectResult.definitions}. Emitted
+   * where the walk closes a cycle, so a recursive type is described once and
+   * pointed at instead of being cut off.
+   */
+  | { type: "ref"; name: string }
   | { type: "unknown" };
 
 export type PropertyInfo = { schema: Schema; required: boolean };
+
+/** The named schemas every `{ type: "ref" }` in a result resolves against. */
+export type SchemaDefinitions = Record<string, Schema>;
 
 // Path representation - parsed from Express-style paths
 export type PathInfo = { raw: string; segments: PathSegment[] };
@@ -36,4 +45,10 @@ export type RouteInfo = {
   paramsSchema: Schema | null;
   headersSchema: Schema | null;
   response: ResponseVariant[];
+};
+
+/** Routes plus the named definitions their `ref` nodes point at. */
+export type InspectResult = {
+  routes: RouteInfo[];
+  definitions: SchemaDefinitions;
 };

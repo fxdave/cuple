@@ -62,8 +62,8 @@ describe("combined route inspection", () => {
     // Total routes: getHealth, getStatus, posts.getComment, posts.createPost,
     // posts.listPosts, posts.getPost, posts.deletePost, getProfile, protectedRoute,
     // updatePost, rpcOnly, getBlob, getTree, getArticle, getTrip,
-    // getNestedGeneric, getGrowingGeneric
-    expect(routes.length).toBe(17);
+    // getNestedGeneric, getGrowingGeneric, getShapes
+    expect(routes.length).toBe(18);
   });
 
   it("should keep routes without path, with a null path", () => {
