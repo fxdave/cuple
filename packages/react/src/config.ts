@@ -124,6 +124,7 @@ export type ResolvedConfig = {
   loading: { blocking: boolean; everyMs?: number; debounceMs?: number };
 };
 
+// #region defaults
 export const defaultConfig: ResolvedConfig = {
   cache: {
     enabled: true,
@@ -135,6 +136,7 @@ export const defaultConfig: ResolvedConfig = {
   errors: { onError: "boundary", fallbackMessage: "Something went wrong." },
   loading: { blocking: false },
 };
+// #endregion
 
 /** `over` on top of `base`, one setting at a time. Unset (`undefined`) settings don't override. */
 export function mergeConfig(base: ResolvedConfig, over?: CupleConfig): ResolvedConfig {

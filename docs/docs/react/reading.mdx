@@ -107,8 +107,10 @@ It polls only while something reads it. When several readers poll the same data 
 
 :::note[Why it works this way]
 
-- **Loading and errors belong to the layout.** With `isLoading` and `error` in every component, each one draws its own spinner, and a page with five reads pops in five times. Components read data as if it's there, and a `<Boundary>` decides what the user sees meanwhile, for everything inside it.
-- **The call is the cache key.** Hand-written keys (`["order", id]`) drift from the request: forget a parameter, and two different requests share one entry. Here the endpoint, the client's key and the arguments are the key, so they can't disagree.
-- **A read can run again at any time.** Refreshes, polls and retries re-run it without asking. Only a request that's safe to repeat can be a read; a write repeated by a refresh would create a second record.
+`useGet` gives you the data and throws anything else, to keep the simple case simple: a product list just renders a list, and if it fails, the boundary shows it. A failure you want to handle is listed with `resolveAlso`, and comes back typed without manual annotation.
+
+The cache key is built from what you pass: the endpoint, the client's `key` and the arguments. Hand-written keys were too complicated.
+
+Only GET routes can be read. A read can run again at any time (refreshes, polls, retries), and a write repeated by a refresh would create a second record.
 
 :::

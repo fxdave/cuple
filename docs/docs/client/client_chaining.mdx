@@ -42,8 +42,14 @@ await fetchCuple(client.getProfile.get); // TYPE ERROR
 
 :::note[Why it works this way]
 
-- **Required headers are part of the type.** A forgotten auth header is otherwise a `401` found in production. When the route's schema requires it, a call without it doesn't compile.
-- **`middleware` runs per request.** Tokens expire. Reading the token when the request is sent means a long-lived client never sends a stale one.
-- **`key` is separate from `middleware`.** A cache can't see what middleware injects, and the token changes while the user doesn't. Naming the identity keeps cached data apart per account, without discarding it on every token refresh.
+This replaces HTTP interceptors (as in axios). An interceptor adds the auth header out of sight of the types, so a request that misses it is a `401` found at runtime. Here the route's schema makes the header part of the call's type: a call without it doesn't compile, and `with()` gives you a client whose type says the header is already supplied.
+
+`with()` returns a new client instead of changing the one you have, so one base client can have variants side by side: public, signed in, admin.
+
+`middleware` runs per request because tokens expire. Reading the token when the request is sent means a long-lived client never sends a stale one.
+
+`key` is separate from `middleware` because a cache needs it synchronously, and `middleware` is async. It also names who the data belongs to, not the token: a refreshed token is the same user.
+
+`finalware` can replace the response, but the types don't follow. Fixing that would be welcome, but it isn't critical: nothing relies on it.
 
 :::

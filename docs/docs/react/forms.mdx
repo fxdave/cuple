@@ -42,10 +42,3 @@ An issue's path is the field's name, nested ones included: `["address", "zip"]` 
 ```
 
 Deleting the contact whose form is open closes the form inside the action, so the deleted contact is never refetched.
-
-:::note[Why it works this way]
-
-- **The server validates.** Rules like "email already in use" can only be checked there, and a client-side copy of the others drifts. Every rule comes back as an `invalid-body` with a path, so the form has one way to show all of them.
-- **No form adapter.** `run` resolves when the save and its refresh are done, which is exactly what `handleSubmit` waits for. react-hook-form's `isSubmitting` covers the whole save without glue code.
-
-:::

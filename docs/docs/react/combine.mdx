@@ -59,7 +59,8 @@ The combined read loads the first `count` pages. The component holds `count`, an
 
 :::note[Why it works this way]
 
-- **A function, not a query language.** Dependent reads are `await`, parallel ones are `Promise.all`, conditions are `if`. Nothing to learn beyond TypeScript.
-- **No state inside.** A combined read is a pure function of its args. What changes over time, like how many pages to show, is React state passed in as args, so it's visible in the component and resets when it should.
+Combining reads is a plain async function, so there's nothing new to learn.
+
+During the design, a combined read was going to keep state of its own, such as how many pages were loaded. But a combined read lives in the cache, so whenever the cache dropped it, that state would be lost. So state lives in React (`useState`, the URL) and is passed in as arguments. The cache should only make things faster, never change what you see.
 
 :::

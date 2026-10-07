@@ -28,9 +28,3 @@ Provide it once, at the root, with a `<Boundary>` around what loads:
 That's all. Read data with [`useGet`](./reading), and change it with [`useAction`](./actions).
 
 To run this todo app: `cd examples/docs && npm run dev:todos`.
-
-:::note[Why it works this way]
-
-- **A store you create, not a hidden global.** Sign-in, an SSE handler and a router loader aren't components, but they need to refresh or clear data. They use the same store the hooks use, and each test can start from a fresh one.
-
-:::

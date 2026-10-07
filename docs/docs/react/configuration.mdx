@@ -17,6 +17,20 @@ Every behavior is set through one `config` object, grouped by concern. The same 
 
 Each setting cascades on its own: the request's wins over the Boundary's, over the provider's, over the built-in default. Setting `cache.freshMs` on a Boundary never resets `cache.storeStaleMs` from the provider.
 
+## Defaults
+
+```ts file=../../../packages/react/src/config.ts#defaults
+```
+
+ - `enabled: true`: responses are cached, so a screen you come back to shows its data at once.
+ - `freshMs: 0`: cached data counts as stale as soon as it lands, so coming back to it shows it at once and also refetches it in the background. The cache makes the screen fast, and what you see still ends up current.
+ - `storeStaleMs: 5 minutes`: data nobody reads stays in memory for 5 minutes, then it's dropped. Going back and forth between screens is instant, without keeping everything for good.
+ - `maxStoredCalls: 3`: of one endpoint, at most the 3 most recent calls nobody reads are kept. A search shouldn't keep every keystroke in memory, and a limit is a safer default than none.
+ - `keepOnKeyChange: false`: when the client's `key` changes (another account signs in), the previous key's data is deleted at once. It can be large, and must not show to the next user.
+ - `onError: "boundary"`: an error in an action that nobody handled replaces the nearest `<Boundary>`'s content with its `error` view. It should be visible, not only a line in the console.
+ - `fallbackMessage: "Something went wrong."`: the message an error gets when there's nothing more readable (a network failure, a bug in production). Set your own, in your app's language.
+ - `blocking: false`: nothing makes `useIsFetching({ blocking: true })` true unless it asks to. Only the few steps the user must wait for should block the page.
+
 ## cache
 
 | Setting | Default | What it does |
@@ -53,10 +67,3 @@ With `{ freshMs: 30_000, storeStaleMs: 60_000 }`, data that lands at 0s and lose
  - `useAction`: `errors`, `loading.blocking`.
  - `<Boundary error>`: `errors.fallbackMessage`; with `"notify"`, `errors.notify`.
  - Plain code on the store (`store.preload`, `store.refreshKeys`): the provider's config.
-
-:::note[Why it works this way]
-
-- **The same config in three places.** A setting often needs to change for one region (a report that should drop its data when it's closed) or one request. With one shape at every level, moving a setting from a request to a region is a copy-paste, not a different API.
-- **Each setting cascades on its own.** A region that only changes `storeStaleMs` shouldn't reset the app's `freshMs`. Merging per setting keeps overrides small.
-
-:::

@@ -37,7 +37,8 @@ A cursor walk survives deletions: when a note is deleted, a refresh recomputes t
 
 :::note[Why it works this way]
 
-- **No pagination hook.** Pages are what `combine` already does: several calls, one value, refreshed together. The only state is how many pages to show, and that's React state. To keep it across navigation, put `count` in the URL.
-- **A combined read owns its pages.** Without that, the pages would follow their own cache settings, and a long-open list would quietly refetch every page on the next "load more".
+An early `@cuple/react` had a `usePages` hook, but it was a specific solution for the simplest case, and `combine` already does what pages need: several reads, one value, refreshed together. So pagination is a recipe with `combine`, not a hook of its own.
+
+A combined read owns the pages it fetched. Without that, each page would follow its own cache settings, so the cache could drop earlier pages while the list is open, even with `storeStaleMs: Infinity` on the list. The next "load more" would then quietly refetch all of them.
 
 :::
