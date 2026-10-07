@@ -20,10 +20,7 @@ describe("raw handlers", () => {
       const text = await response.text();
       assert.equal(text, "text-response");
 
-      const normalRequest = await fetchCuple(
-        client.testNormal.get,
-        {},
-      ).thenResolveAnyResponse();
+      const normalRequest = await fetchCuple(client.testNormal.get, {});
       assert.equal(normalRequest.result, "success");
     });
   });

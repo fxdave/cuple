@@ -33,7 +33,7 @@ When a failure is a normal outcome, list it with `resolveAlso`. It becomes a typ
 
  - `"transport-error"` can be listed too, for a read that should render something when the server can't be reached. See [Errors](./errors).
  - NOTE: `resolveOn: [...]` is the complete list instead: `"success"` is not implied.
- - These are the same idea as `fetchCuple(...).thenResolveAlso([...])` / `.thenResolveOn([...])`: an option on a hook, a method on a request.
+ - These are the same idea as `fetchCuple(...).thenKeep([...])`: an option on a hook, a method on a request. The difference is the default: a read is success-only, a request resolves every result like `fetch`.
 
 ## When the arguments change
 

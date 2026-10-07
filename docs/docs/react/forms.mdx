@@ -15,7 +15,7 @@ A contacts CRUD with [react-hook-form](https://react-hook-form.com/). The server
 In this example:
 
  - `form.handleSubmit(save.run)`: `run` resolves when the save and its refresh are done, and never rejects, so react-hook-form's `isSubmitting` covers the whole save.
- - `thenResolveAlso(["invalid-body", "transport-error"])` keeps what the form can explain as values: the server's validation errors go on the fields, a dropped connection on the form, and the user's input stays.
+ - `thenKeep(["success", "invalid-body", "transport-error"])` keeps what the form can explain as values: the server's validation errors go on the fields, a dropped connection on the form, and the user's input stays.
  - Anything else (a 500, a bug) is unhandled; `errors.onError: "notify"` shows it without replacing the form.
  - `refresh: { success: [...] }`: only a successful save changed anything worth refetching.
 

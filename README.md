@@ -63,13 +63,12 @@ initRpc(app, { path: "/rpc", routes });
 ```ts
 const client = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
 
-// Resolves with success; any other result throws.
-const { post } = await fetchCuple(client.getPost.get, { params: { id: 1 } });
-
-// Handle a failure by listing it. The result is typed: success | post-not-found.
-const res = await fetchCuple(client.getPost.get, { params: { id: 1 } })
-  .thenResolveAlso(["post-not-found"]);
+// Like fetch, every response resolves, typed as every result the route can send.
+const res = await fetchCuple(client.getPost.get, { params: { id: 1 } });
 if (res.result === "post-not-found") console.log(res.message);
+
+// Keep only success; any other result throws.
+const { post } = await fetchCuple(client.getPost.get, { params: { id: 1 } }).thenKeepSuccess();
 ```
 
 **React**

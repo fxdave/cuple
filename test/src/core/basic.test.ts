@@ -13,7 +13,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.get.get, {}).thenResolveOn(["success"]);
+      const response = await fetchCuple(client.get.get, {}).thenKeep(["success"]);
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "something");
     });
@@ -28,7 +28,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.post.post, {}).thenResolveAnyResponse();
+      const response = await fetchCuple(client.post.post, {});
       assert.equal(response.statusCode, 200);
     });
   });
@@ -42,7 +42,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.post.post, {}).thenResolveAnyResponse();
+      const response = await fetchCuple(client.post.post, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "post");
     });
@@ -58,7 +58,7 @@ describe("basic request response", () => {
     }));
 
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.patch.patch, {}).thenResolveAnyResponse();
+      const response = await fetchCuple(client.patch.patch, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "patch");
     });
@@ -73,7 +73,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(client.put.put, {}).thenResolveAnyResponse();
+      const response = await fetchCuple(client.put.put, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "put");
     });
@@ -88,10 +88,7 @@ describe("basic request response", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(
-        client.delete.delete,
-        {},
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(client.delete.delete, {});
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.foo, "delete");
     });

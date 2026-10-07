@@ -109,7 +109,7 @@ function ContactRow(props: {
     async () => {
       await fetchCuple(client.deleteContact.delete, {
         params: { id: props.contact.id },
-      });
+      }).thenKeepSuccess();
       props.onDeleted(props.contact.id); // close its form if it's open
     },
     { refresh: refreshes.contacts, config: { errors: { onError: "notify" } } },
@@ -144,7 +144,8 @@ function NewContact({ onDone }: { onDone: () => void }) {
       submitLabel="Add contact"
       busyLabel="Adding"
       save={(values) =>
-        fetchCuple(client.createContact.post, { body: values }).thenResolveAlso([
+        fetchCuple(client.createContact.post, { body: values }).thenKeep([
+          "success",
           "invalid-body",
           "transport-error",
         ])
@@ -176,7 +177,7 @@ function EditContact({ id, onDone }: { id: number; onDone: () => void }) {
         fetchCuple(client.updateContact.put, {
           params: { id },
           body: values,
-        }).thenResolveAlso(["invalid-body", "transport-error"])
+        }).thenKeep(["success", "invalid-body", "transport-error"])
       }
       onSaved={onDone}
       onCancel={onDone}

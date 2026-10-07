@@ -62,7 +62,7 @@ const { products } = useGet(client.getProducts); // = client.getProducts.get: a 
   if (order.result === "order-not-found") return <p>This order was deleted.</p>;
   ```
 
-  `resolveOn: [...]` is the complete list instead: success is not implied. These are the same idea as `fetchCuple(...).thenResolveAlso([...])` / `.thenResolveOn([...])`: spelled as an option on a hook, and as a method on a request.
+  `resolveOn: [...]` is the complete list instead: success is not implied. These are the same idea as `fetchCuple(...).thenKeep([...])`: spelled as an option on a hook, and as a method on a request. A request resolves every result unless you narrow it; a read is success-only.
 - **Result names** (`"order-not-found"`, `"orderNotFound"`) are whatever your server returns; pick one convention.
 - **Shared.** Every reader of the same call shares one request and one cached result.
 - **New args suspend again.** Old data belongs to other args. To keep it on screen while the new args load, pass `useDeferredValue(args)`.
@@ -127,7 +127,7 @@ const list = useGet(notePages, { count });
 const save = useAction(
   (values: FormValues) =>
     fetchCuple(client.updateOrder.put, { params: { id }, body: values })
-      .thenResolveAlso(["invalid-body", "transport-error"]),
+      .thenKeep(["success", "invalid-body", "transport-error"]),
   { refresh: [client.getOrder, client.getOrders] },
 );
 
@@ -145,13 +145,13 @@ const save = useAction(
 | --------- | ------- |
 | `idle`    | Nothing has happened yet. |
 | `pending` | Running, including the refresh it asked for. The screen keeps the old data until the new data lands. |
-| `done`    | Your function finished. `value` is what it returned, including failures you listed with `thenResolveAlso`, so check `value.result`. |
+| `done`    | Your function finished. `value` is what it returned, including failures you kept with `thenKeep`, so check `value.result`. |
 | `failed`  | Your function threw something nobody handled, and `errors.onError` sent it to `"notify"` or `null`. `error` is the `CupleError`. |
 
 ### Errors
 
-- **Handled = listed.** Results you list with `thenResolveAlso` (and `"transport-error"`, for no answer at all) are typed values in `value`.
-- **Unhandled = everything else** (an unlisted result, an unlisted network failure, a bug), normalized to a `CupleError` (`kind`, an always-readable `message`, `statusCode`, `result`, `cause`). `config.errors.onError`, on the action, a `<Boundary>`, or the provider, decides where it goes (`null`: handled, only the action's `error` holds it):
+- **Handled = kept.** Results your function resolves with (and `"transport-error"`, for no answer at all, when listed) are typed values in `value`. A plain `fetchCuple` resolves every server result, so narrow it with `thenKeep`.
+- **Unhandled = everything else** (a result it didn't keep, an unlisted network failure, a bug), normalized to a `CupleError` (`kind`, an always-readable `message`, `statusCode`, `result`, `cause`). `config.errors.onError`, on the action, a `<Boundary>`, or the provider, decides where it goes (`null`: handled, only the action's `error` holds it):
   - `"boundary"`: the nearest `<Boundary>`. The default.
   - `"notify"`: `config.errors.notify` shows it; the page stays, status `failed`.
   - Or a function choosing per error: `(error) => (error.kind === "transport" ? "notify" : "boundary")`.

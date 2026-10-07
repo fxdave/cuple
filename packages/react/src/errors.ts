@@ -10,8 +10,8 @@ import { CupleTransportError, CupleUnexpectedResponseError } from "@cuple/client
  * - `"bug"`: your code threw. `message` is the error's own in development, and
  *   the fallback in production, so internals never reach users.
  *
- * Errors you handle never get here: list them (`resolveAlso`,
- * `thenResolveAlso`), and they are typed values instead.
+ * Errors you handle never get here: list them (`resolveAlso`, `thenKeep`),
+ * and they are typed values instead.
  */
 export type CupleError = {
   kind: "response" | "transport" | "bug";
