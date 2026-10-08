@@ -43,10 +43,23 @@ export type SchemaRegistry = {
   /** Definition name per type symbol; present as soon as the body is started. */
   names: Map<ts.Symbol, string>;
   used: Set<string>;
+  /** {@link Shared} subtrees, so a type reached many times is converted once. */
+  cache: Map<ts.Type, Shared>;
+};
+
+/**
+ * A converted subtree that came out the same wherever it appeared, so it can be
+ * handed out again instead of walked again. The same object is reused, not a
+ * copy: a schema is a value, nothing in this package mutates one.
+ */
+type Shared = {
+  schema: Schema;
+  /** Frames it needs below it, so it is only reused where that depth is left. */
+  height: number;
 };
 
 export function createSchemaRegistry(): SchemaRegistry {
-  return { definitions: {}, names: new Map(), used: new Set() };
+  return { definitions: {}, names: new Map(), used: new Set(), cache: new Map() };
 }
 
 /** What the current branch has entered, so re-entry can be recognised. */
@@ -66,7 +79,31 @@ type Walk = {
   /** Aliases whose every occurrence on this branch is the definition itself. */
   collapsing: Set<ts.Symbol>;
   depth: number;
+  /** What the branch below the innermost open frame has consulted. */
+  frame: Frame;
+  /** Open instantiations of a generic alias. */
+  generics: number;
 };
+
+/**
+ * One open conversion, recording whether its result is a property of the type
+ * alone — the condition for caching it.
+ */
+type Frame = {
+  /**
+   * Whether anything below this frame consulted where it was: an ancestor it
+   * re-entered, an outer instantiation of its own generic alias, or the depth
+   * bound cutting it off. Such a result describes the type *in that position*,
+   * and reusing it somewhere else would be wrong.
+   */
+  contextual: boolean;
+  /** Frames entered below this one, counting itself. */
+  height: number;
+};
+
+function frame(): Frame {
+  return { contextual: false, height: 1 };
+}
 
 export function convertTypeToSchema(
   type: ts.Type,
@@ -78,6 +115,8 @@ export function convertTypeToSchema(
     aliases: new Map(),
     collapsing: new Set(),
     depth: 0,
+    frame: frame(),
+    generics: 0,
   });
 }
 
@@ -87,23 +126,52 @@ function convert(
   registry: SchemaRegistry,
   walk: Walk,
 ): Schema {
-  if (walk.ancestors.has(type)) return close(type, checker, registry);
+  const parent = walk.frame;
+  if (walk.ancestors.has(type)) {
+    parent.contextual = true;
+    return close(type, checker, registry);
+  }
 
   const alias = type.aliasSymbol;
   if (alias) {
     // Inside its own definition, every occurrence is the definition.
-    if (walk.collapsing.has(alias)) return close(type, checker, registry);
+    if (walk.collapsing.has(alias)) {
+      parent.contextual = true;
+      return close(type, checker, registry);
+    }
 
     const outer = walk.aliases.get(alias);
-    if (outer && (outer.length >= MAX_ALIAS_NESTING || growsFrom(type, outer, checker))) {
-      return close(type, checker, registry);
+    if (outer) {
+      // Whether this instantiation expands is decided against the outer ones,
+      // which live above this branch.
+      parent.contextual = true;
+      if (outer.length >= MAX_ALIAS_NESTING || growsFrom(type, outer, checker)) {
+        return close(type, checker, registry);
+      }
     }
   }
 
   // The bound is only a backstop, so it cuts the branch rather than naming a
   // type that may not be recursive at all.
-  if (walk.depth >= MAX_DEPTH) return { type: "unknown" };
+  if (walk.depth >= MAX_DEPTH) {
+    parent.contextual = true;
+    return { type: "unknown" };
+  }
 
+  // A generic alias above decides what its instantiations below do, so neither
+  // side of the cache is sound while one is open.
+  const shareable = walk.generics === 0 && walk.collapsing.size === 0;
+  if (shareable) {
+    const shared = registry.cache.get(type);
+    if (shared && walk.depth + shared.height <= MAX_DEPTH) {
+      // Reusing it still spends its frames, so the caller carries its height.
+      if (shared.height >= parent.height) parent.height = shared.height + 1;
+      return shared.schema;
+    }
+  }
+
+  const own = frame();
+  walk.frame = own;
   walk.ancestors.add(type);
   let nesting: ts.Type[] | undefined;
   if (alias) {
@@ -114,16 +182,26 @@ function convert(
     }
     nesting.push(type);
   }
+  const generic = (type.aliasTypeArguments?.length ?? 0) > 0;
+  if (generic) walk.generics++;
   walk.depth++;
   try {
-    return describe(type, checker, registry, walk);
+    const schema = describe(type, checker, registry, walk);
+    if (shareable && !own.contextual) {
+      registry.cache.set(type, { schema, height: own.height });
+    }
+    return schema;
   } finally {
     walk.depth--;
+    if (generic) walk.generics--;
     if (alias && nesting) {
       nesting.pop();
       if (nesting.length === 0) walk.aliases.delete(alias);
     }
     walk.ancestors.delete(type);
+    walk.frame = parent;
+    if (own.contextual) parent.contextual = true;
+    if (own.height >= parent.height) parent.height = own.height + 1;
   }
 }
 
@@ -177,6 +255,8 @@ function define(
     aliases: new Map(),
     collapsing,
     depth: 0,
+    frame: frame(),
+    generics: 0,
   });
   return name;
 }
