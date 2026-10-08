@@ -6,6 +6,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "test": "vitest run --config ../../vitest.config.js",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "files": [
