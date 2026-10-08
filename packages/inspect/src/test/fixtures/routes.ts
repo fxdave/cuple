@@ -155,6 +155,65 @@ const register = builder
     return success({ id: 1 });
   });
 
+// --- Recursive response types ---
+// Real apps return these: JSON blobs, trees of renderable content, a Prisma
+// `Json` column. The converter has to stop somewhere instead of following the
+// cycle forever.
+type JsonValue =
+  | null
+  | string
+  | number
+  | boolean
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+type TreeNode = {
+  label: string;
+  children: TreeNode[];
+};
+
+// Mutually recursive, which a single-type guard would miss.
+type Author = { name: string; latest: Article | null };
+type Article = { title: string; author: Author };
+
+// Repeated but NOT recursive: both must still be described in full.
+type Address = { city: string; zip: string };
+
+const getBlob = builder.path("/blob").get(async () => {
+  return success({ blob: null as JsonValue });
+});
+
+const getTree = builder.path("/tree").get(async () => {
+  return success({ root: null as unknown as TreeNode });
+});
+
+const getArticle = builder.path("/article").get(async () => {
+  return success({ article: null as unknown as Article });
+});
+
+const getTrip = builder.path("/trip").get(async () => {
+  return success({
+    from: null as unknown as Address,
+    to: null as unknown as Address,
+  });
+});
+
+// Two different instantiations of one generic, nested. Identity-based cycle
+// detection must not mistake the inner one for the outer.
+type Value<T> = { value: T };
+
+// A generic that recurses with a *growing* argument: every level is a fresh
+// instantiation, so nothing ever repeats and only a depth bound ends it.
+type Deep<T> = { next: Deep<{ wrap: T }> };
+
+const getNestedGeneric = builder.path("/nested-generic").get(async () => {
+  return success({ v: null as unknown as Value<{ foo: Value<{ bar: string }> }> });
+});
+
+const getGrowingGeneric = builder.path("/growing-generic").get(async () => {
+  return success({ d: null as unknown as Deep<{ seed: string }> });
+});
+
 export const routes = {
   getHealth,
   getStatus,
@@ -170,4 +229,10 @@ export const routes = {
   updatePost,
   rpcOnly,
   register,
+  getBlob,
+  getTree,
+  getArticle,
+  getTrip,
+  getNestedGeneric,
+  getGrowingGeneric,
 };

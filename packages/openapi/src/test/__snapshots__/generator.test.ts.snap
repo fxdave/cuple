@@ -1977,6 +1977,730 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
         },
       },
     },
+    "/api/register": {
+      "post": {
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "email": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "email",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "number",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "id",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "not-found",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "not-found",
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                    },
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "email-taken",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "email",
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "email-taken",
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "issues": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "oneOf": [
+                              {
+                                "enum": [
+                                  "custom",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_type",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "unrecognized_keys",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "too_big",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "too_small",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_format",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "not_multiple_of",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_union",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_key",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_element",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_value",
+                                ],
+                                "type": "string",
+                              },
+                            ],
+                          },
+                          "message": {
+                            "type": "string",
+                          },
+                          "path": {
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "string",
+                                },
+                                {
+                                  "type": "number",
+                                },
+                              ],
+                            },
+                            "type": "array",
+                          },
+                        },
+                        "required": [
+                          "code",
+                          "message",
+                          "path",
+                        ],
+                        "type": "object",
+                      },
+                      "type": "array",
+                    },
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "invalid-body",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "issues",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "invalid-body",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/article": {
+      "get": {
+        "operationId": "getArticle",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "article": {
+                      "properties": {
+                        "author": {
+                          "properties": {
+                            "latest": {
+                              "oneOf": [
+                                {},
+                                {},
+                              ],
+                            },
+                            "name": {
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "name",
+                            "latest",
+                          ],
+                          "type": "object",
+                        },
+                        "title": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "title",
+                        "author",
+                      ],
+                      "type": "object",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "article",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/blob": {
+      "get": {
+        "operationId": "getBlob",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "blob": {
+                      "oneOf": [
+                        {},
+                        {
+                          "type": "string",
+                        },
+                        {
+                          "type": "number",
+                        },
+                        {
+                          "type": "boolean",
+                        },
+                        {
+                          "type": "boolean",
+                        },
+                        {
+                          "items": {},
+                          "type": "array",
+                        },
+                        {},
+                      ],
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "blob",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/growing-generic": {
+      "get": {
+        "operationId": "getGrowingGeneric",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "d": {
+                      "properties": {
+                        "next": {
+                          "properties": {
+                            "next": {
+                              "properties": {
+                                "next": {
+                                  "properties": {
+                                    "next": {
+                                      "properties": {
+                                        "next": {
+                                          "properties": {
+                                            "next": {
+                                              "properties": {
+                                                "next": {
+                                                  "properties": {
+                                                    "next": {
+                                                      "properties": {
+                                                        "next": {
+                                                          "properties": {
+                                                            "next": {
+                                                              "properties": {
+                                                                "next": {
+                                                                  "properties": {
+                                                                    "next": {
+                                                                      "properties": {
+                                                                        "next": {
+                                                                          "properties": {
+                                                                            "next": {
+                                                                              "properties": {
+                                                                                "next": {
+                                                                                  "properties": {
+                                                                                    "next": {
+                                                                                      "properties": {
+                                                                                        "next": {
+                                                                                          "properties": {
+                                                                                            "next": {
+                                                                                              "properties": {
+                                                                                                "next": {
+                                                                                                  "properties": {
+                                                                                                    "next": {
+                                                                                                      "properties": {
+                                                                                                        "next": {
+                                                                                                          "properties": {
+                                                                                                            "next": {
+                                                                                                              "properties": {
+                                                                                                                "next": {
+                                                                                                                  "properties": {
+                                                                                                                    "next": {
+                                                                                                                      "properties": {
+                                                                                                                        "next": {
+                                                                                                                          "properties": {
+                                                                                                                            "next": {
+                                                                                                                              "properties": {
+                                                                                                                                "next": {
+                                                                                                                                  "properties": {
+                                                                                                                                    "next": {
+                                                                                                                                      "properties": {
+                                                                                                                                        "next": {
+                                                                                                                                          "properties": {
+                                                                                                                                            "next": {
+                                                                                                                                              "properties": {
+                                                                                                                                                "next": {
+                                                                                                                                                  "properties": {
+                                                                                                                                                    "next": {},
+                                                                                                                                                  },
+                                                                                                                                                  "required": [
+                                                                                                                                                    "next",
+                                                                                                                                                  ],
+                                                                                                                                                  "type": "object",
+                                                                                                                                                },
+                                                                                                                                              },
+                                                                                                                                              "required": [
+                                                                                                                                                "next",
+                                                                                                                                              ],
+                                                                                                                                              "type": "object",
+                                                                                                                                            },
+                                                                                                                                          },
+                                                                                                                                          "required": [
+                                                                                                                                            "next",
+                                                                                                                                          ],
+                                                                                                                                          "type": "object",
+                                                                                                                                        },
+                                                                                                                                      },
+                                                                                                                                      "required": [
+                                                                                                                                        "next",
+                                                                                                                                      ],
+                                                                                                                                      "type": "object",
+                                                                                                                                    },
+                                                                                                                                  },
+                                                                                                                                  "required": [
+                                                                                                                                    "next",
+                                                                                                                                  ],
+                                                                                                                                  "type": "object",
+                                                                                                                                },
+                                                                                                                              },
+                                                                                                                              "required": [
+                                                                                                                                "next",
+                                                                                                                              ],
+                                                                                                                              "type": "object",
+                                                                                                                            },
+                                                                                                                          },
+                                                                                                                          "required": [
+                                                                                                                            "next",
+                                                                                                                          ],
+                                                                                                                          "type": "object",
+                                                                                                                        },
+                                                                                                                      },
+                                                                                                                      "required": [
+                                                                                                                        "next",
+                                                                                                                      ],
+                                                                                                                      "type": "object",
+                                                                                                                    },
+                                                                                                                  },
+                                                                                                                  "required": [
+                                                                                                                    "next",
+                                                                                                                  ],
+                                                                                                                  "type": "object",
+                                                                                                                },
+                                                                                                              },
+                                                                                                              "required": [
+                                                                                                                "next",
+                                                                                                              ],
+                                                                                                              "type": "object",
+                                                                                                            },
+                                                                                                          },
+                                                                                                          "required": [
+                                                                                                            "next",
+                                                                                                          ],
+                                                                                                          "type": "object",
+                                                                                                        },
+                                                                                                      },
+                                                                                                      "required": [
+                                                                                                        "next",
+                                                                                                      ],
+                                                                                                      "type": "object",
+                                                                                                    },
+                                                                                                  },
+                                                                                                  "required": [
+                                                                                                    "next",
+                                                                                                  ],
+                                                                                                  "type": "object",
+                                                                                                },
+                                                                                              },
+                                                                                              "required": [
+                                                                                                "next",
+                                                                                              ],
+                                                                                              "type": "object",
+                                                                                            },
+                                                                                          },
+                                                                                          "required": [
+                                                                                            "next",
+                                                                                          ],
+                                                                                          "type": "object",
+                                                                                        },
+                                                                                      },
+                                                                                      "required": [
+                                                                                        "next",
+                                                                                      ],
+                                                                                      "type": "object",
+                                                                                    },
+                                                                                  },
+                                                                                  "required": [
+                                                                                    "next",
+                                                                                  ],
+                                                                                  "type": "object",
+                                                                                },
+                                                                              },
+                                                                              "required": [
+                                                                                "next",
+                                                                              ],
+                                                                              "type": "object",
+                                                                            },
+                                                                          },
+                                                                          "required": [
+                                                                            "next",
+                                                                          ],
+                                                                          "type": "object",
+                                                                        },
+                                                                      },
+                                                                      "required": [
+                                                                        "next",
+                                                                      ],
+                                                                      "type": "object",
+                                                                    },
+                                                                  },
+                                                                  "required": [
+                                                                    "next",
+                                                                  ],
+                                                                  "type": "object",
+                                                                },
+                                                              },
+                                                              "required": [
+                                                                "next",
+                                                              ],
+                                                              "type": "object",
+                                                            },
+                                                          },
+                                                          "required": [
+                                                            "next",
+                                                          ],
+                                                          "type": "object",
+                                                        },
+                                                      },
+                                                      "required": [
+                                                        "next",
+                                                      ],
+                                                      "type": "object",
+                                                    },
+                                                  },
+                                                  "required": [
+                                                    "next",
+                                                  ],
+                                                  "type": "object",
+                                                },
+                                              },
+                                              "required": [
+                                                "next",
+                                              ],
+                                              "type": "object",
+                                            },
+                                          },
+                                          "required": [
+                                            "next",
+                                          ],
+                                          "type": "object",
+                                        },
+                                      },
+                                      "required": [
+                                        "next",
+                                      ],
+                                      "type": "object",
+                                    },
+                                  },
+                                  "required": [
+                                    "next",
+                                  ],
+                                  "type": "object",
+                                },
+                              },
+                              "required": [
+                                "next",
+                              ],
+                              "type": "object",
+                            },
+                          },
+                          "required": [
+                            "next",
+                          ],
+                          "type": "object",
+                        },
+                      },
+                      "required": [
+                        "next",
+                      ],
+                      "type": "object",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "d",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
     "/health": {
       "get": {
         "operationId": "getHealth",
@@ -1998,6 +2722,95 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                   },
                   "required": [
                     "status",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/nested-generic": {
+      "get": {
+        "operationId": "getNestedGeneric",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                    "v": {
+                      "properties": {
+                        "value": {
+                          "properties": {
+                            "foo": {
+                              "properties": {
+                                "value": {
+                                  "properties": {
+                                    "bar": {
+                                      "type": "string",
+                                    },
+                                  },
+                                  "required": [
+                                    "bar",
+                                  ],
+                                  "type": "object",
+                                },
+                              },
+                              "required": [
+                                "value",
+                              ],
+                              "type": "object",
+                            },
+                          },
+                          "required": [
+                            "foo",
+                          ],
+                          "type": "object",
+                        },
+                      },
+                      "required": [
+                        "value",
+                      ],
+                      "type": "object",
+                    },
+                  },
+                  "required": [
+                    "v",
                     "result",
                   ],
                   "type": "object",
@@ -2056,6 +2869,161 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                   },
                   "required": [
                     "uptime",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/tree": {
+      "get": {
+        "operationId": "getTree",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                    "root": {
+                      "properties": {
+                        "children": {
+                          "items": {},
+                          "type": "array",
+                        },
+                        "label": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "label",
+                        "children",
+                      ],
+                      "type": "object",
+                    },
+                  },
+                  "required": [
+                    "root",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
+    "/trip": {
+      "get": {
+        "operationId": "getTrip",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "from": {
+                      "properties": {
+                        "city": {
+                          "type": "string",
+                        },
+                        "zip": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "city",
+                        "zip",
+                      ],
+                      "type": "object",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                    "to": {
+                      "properties": {
+                        "city": {
+                          "type": "string",
+                        },
+                        "zip": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "city",
+                        "zip",
+                      ],
+                      "type": "object",
+                    },
+                  },
+                  "required": [
+                    "from",
+                    "to",
                     "result",
                   ],
                   "type": "object",
