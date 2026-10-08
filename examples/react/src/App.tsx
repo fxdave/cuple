@@ -163,7 +163,7 @@ function NewNote() {
     async (text: string) => {
       const res = await fetchCuple(client.createNote.post, {
         body: { text },
-      }).thenResolveAlso(["invalid-body"]);
+      }).thenKeep(["success", "invalid-body"]);
       if (res.result === "success") setText("");
       return res;
     },
@@ -256,7 +256,7 @@ function NoteRow(props: {
     () =>
       fetchCuple(client.deleteNote.delete, {
         params: { id: props.note.id },
-      }),
+      }).thenKeepSuccess(),
     // A failed row action shouldn't take the page with it.
     { refresh: refreshes.notes, config: { errors: { onError: "notify" } } },
   );

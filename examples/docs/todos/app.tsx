@@ -51,7 +51,7 @@ function NewTodo() {
     async (text: string) => {
       const response = await fetchCuple(client.createTodo.post, {
         body: { text },
-      }).thenResolveAlso(["invalid-body"]);
+      }).thenKeep(["success", "invalid-body"]);
       if (response.result === "success") setText("");
       return response;
     },
@@ -88,7 +88,7 @@ function TodoItem({ todo }: { todo: Todo }) {
     () =>
       fetchCuple(client.toggleTodo.patch, {
         params: { id: todo.id },
-      }),
+      }).thenKeepSuccess(),
     { refresh: [client.getTodos] },
   );
 
@@ -108,9 +108,12 @@ function TodoItem({ todo }: { todo: Todo }) {
 
 // #region clear-completed
 function ClearCompleted() {
-  const clear = useAction(() => fetchCuple(client.clearCompleted.post), {
-    refresh: [client.getTodos],
-  });
+  const clear = useAction(
+    () => fetchCuple(client.clearCompleted.post).thenKeepSuccess(),
+    {
+      refresh: [client.getTodos],
+    },
+  );
 
   return (
     <button

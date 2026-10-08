@@ -1,4 +1,4 @@
-import { apiResponse, createBuilder, initRpc, success } from "@cuple/server";
+import { createBuilder, initRpc, notFound, success } from "@cuple/server";
 import express from "express";
 import { z } from "zod";
 
@@ -32,7 +32,7 @@ export const routes = {
     .get(async ({ data }) => {
       const order = orders.find((order) => order.id === data.params.id);
       if (!order)
-        return apiResponse("order-not-found", 404, { message: "No such order." });
+        return notFound({ result: "order-not-found", message: "No such order." });
       return success({ order });
     }),
 
@@ -41,7 +41,7 @@ export const routes = {
     .get(async ({ data }) => {
       const customer = customers.find((customer) => customer.id === data.params.id);
       if (!customer)
-        return apiResponse("customer-not-found", 404, { message: "No such customer." });
+        return notFound({ result: "customer-not-found", message: "No such customer." });
       return success({ customer });
     }),
 

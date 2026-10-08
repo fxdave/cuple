@@ -1977,6 +1977,259 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
         },
       },
     },
+    "/api/register": {
+      "post": {
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "email": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "email",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "number",
+                    },
+                    "result": {
+                      "enum": [
+                        "success",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "id",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "success",
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "not-found",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "not-found",
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                    },
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "email-taken",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "email",
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "email-taken",
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "issues": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "oneOf": [
+                              {
+                                "enum": [
+                                  "custom",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_type",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "unrecognized_keys",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "too_big",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "too_small",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_format",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "not_multiple_of",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_union",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_key",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_element",
+                                ],
+                                "type": "string",
+                              },
+                              {
+                                "enum": [
+                                  "invalid_value",
+                                ],
+                                "type": "string",
+                              },
+                            ],
+                          },
+                          "message": {
+                            "type": "string",
+                          },
+                          "path": {
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "string",
+                                },
+                                {
+                                  "type": "number",
+                                },
+                              ],
+                            },
+                            "type": "array",
+                          },
+                        },
+                        "required": [
+                          "code",
+                          "message",
+                          "path",
+                        ],
+                        "type": "object",
+                      },
+                      "type": "array",
+                    },
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "invalid-body",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "issues",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "invalid-body",
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "result": {
+                      "enum": [
+                        "unexpected-error",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                    "result",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "unexpected-error",
+          },
+        },
+      },
+    },
     "/article": {
       "get": {
         "operationId": "getArticle",

@@ -30,12 +30,14 @@ In this example:
 ## Client
 
 ```ts
-const stream = await fetchCupleSSE(client.activity.get, {});
+const stream = await fetchCupleSSE(client.activity.get, {}).thenKeepSuccess();
 
 for await (const event of stream) {
   console.log(event.by, event.action);
 }
 ```
+
+Like `fetchCuple`, it resolves with any result the server sent: a rejection by a middleware is a JSON result, not a stream. `thenKeepSuccess()` keeps only the stream.
 
 In React, use [useStream](../react/streams).
 

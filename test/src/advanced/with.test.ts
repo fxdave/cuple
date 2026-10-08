@@ -28,9 +28,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         }),
       });
 
-      const response = await fetchCuple(
-        newClient.exampleRoute.get,
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(newClient.exampleRoute.get);
       assert.equal(response.message, "Hi David!");
     });
   });
@@ -62,7 +60,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         query: {
           name: "Foo",
         },
-      }).thenResolveAnyResponse();
+      });
       assert.equal(response.message, "Hi Foo!");
     });
   });
@@ -94,7 +92,7 @@ describe("client.with(..) (aka Client chaining)", () => {
         query: {
           name: "Foo",
         },
-      }).thenResolveAnyResponse();
+      });
       assert.equal(response.message, "Hi Foo!");
     });
   });

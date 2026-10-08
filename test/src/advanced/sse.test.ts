@@ -16,7 +16,7 @@ describe("SSE handlers", () => {
     }));
 
     await cs.run(async (client) => {
-      const stream = await fetchCupleSSE(client.feed.get);
+      const stream = await fetchCupleSSE(client.feed.get).thenKeepSuccess();
       const events: { n: number }[] = [];
       for await (const event of stream) {
         events.push(event);
@@ -38,7 +38,7 @@ describe("SSE handlers", () => {
     }));
 
     await cs.run(async (client) => {
-      const stream = await fetchCupleSSE(client.feed.get);
+      const stream = await fetchCupleSSE(client.feed.get).thenKeepSuccess();
       const events: { greeting: string }[] = [];
       for await (const event of stream) {
         events.push(event);
@@ -62,7 +62,7 @@ describe("SSE handlers", () => {
     }));
 
     await cs.run(async (client) => {
-      const response = await fetchCupleSSE(client.feed.get).thenResolveAnyResponse();
+      const response = await fetchCupleSSE(client.feed.get);
       assert.equal(response.result, "forbidden");
       assert.equal(response.statusCode, 403);
     });
@@ -193,14 +193,14 @@ describe("SSE handlers", () => {
     }));
 
     await cs.run(async (client) => {
-      const stream = await fetchCupleSSE(client.counter.get);
+      const stream = await fetchCupleSSE(client.counter.get).thenKeepSuccess();
       const events: { count: number }[] = [];
       for await (const event of stream) {
         events.push(event);
       }
       assert.deepEqual(events, [{ count: 1 }, { count: 2 }]);
 
-      const normal = await fetchCuple(client.normal.get).thenResolveAnyResponse();
+      const normal = await fetchCuple(client.normal.get);
       assert.equal(normal.result, "success");
     });
   });

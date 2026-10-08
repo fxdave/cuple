@@ -76,8 +76,9 @@ export type CupleConfig = {
     /**
      * Actions: where an error nobody handled goes — `"boundary"`, `"notify"`,
      * `null` (handled), or a function choosing per error. Errors you handle are
-     * the results you list with `thenResolveAlso` — typed values that never
-     * get here. Default: `"boundary"`.
+     * the results your function resolves with (`fetchCuple` resolves every
+     * server result; narrow it with `thenKeep`) — typed values that never get
+     * here. Default: `"boundary"`.
      */
     onError?: OnError;
     /**

@@ -11,13 +11,18 @@ const client = createClient<typeof routes>({
 });
 
 it("answers 401 once the session is gone", async () => {
-  const { token } = await fetchCuple(client.signIn.post, { body: { name: "Ada" } });
+  const { token } = await fetchCuple(client.signIn.post, {
+    body: { name: "Ada" },
+  }).thenKeepSuccess();
   const headers = { authorization: token };
-  const { greeting } = await fetchCuple(client.getGreeting.get, { headers });
+  const { greeting } = await fetchCuple(client.getGreeting.get, {
+    headers,
+  }).thenKeepSuccess();
   expect(greeting).toBe("Hello, Ada!");
 
   await fetchCuple(client.expireSession.post, { headers });
-  const expired = await fetchCuple(client.getGreeting.get, { headers }).thenResolveAlso([
+  const expired = await fetchCuple(client.getGreeting.get, { headers }).thenKeep([
+    "success",
     "session-expired",
   ]);
   expect(expired).toMatchObject({ result: "session-expired", statusCode: 401 });

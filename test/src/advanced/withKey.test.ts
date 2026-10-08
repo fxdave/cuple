@@ -28,9 +28,7 @@ describe("client.with({ middleware, key })", () => {
         middleware: async () => ({ query: { name: "David" } }),
       });
 
-      const response = await fetchCuple(
-        newClient.exampleRoute.get,
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(newClient.exampleRoute.get);
       assert.equal(response.message, "Hi David!");
     });
   });
@@ -44,9 +42,7 @@ describe("client.with({ middleware, key })", () => {
     await cs.run(async (client) => {
       const newClient = client.with({ middleware: () => ({ query: { name: "Sync" } }) });
 
-      const response = await fetchCuple(
-        newClient.exampleRoute.get,
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(newClient.exampleRoute.get);
       assert.equal(response.message, "Hi Sync!");
     });
   });
@@ -58,7 +54,7 @@ describe("client.with({ middleware, key })", () => {
     await cs.run(async (client) => {
       const keyed = client.with({ key: "user-1" });
 
-      const response = await fetchCuple(keyed.exampleRoute.get).thenResolveAnyResponse();
+      const response = await fetchCuple(keyed.exampleRoute.get);
       assert.equal(response.message, "ok");
       assert.equal(cupleRequestKey(keyed.exampleRoute.get, {})[1], "user-1");
     });

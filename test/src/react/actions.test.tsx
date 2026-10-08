@@ -66,7 +66,9 @@ function useRename(id: number) {
     fetchCuple(client.renameOrder.patch, {
       params: { id },
       body: { title },
-    }).thenResolveAlso(["invalid-body", "conflict-error"]),
+    })
+      .thenKeepSuccess()
+      .thenKeepAlso(["invalid-body", "conflict-error"]),
   );
 }
 
@@ -155,7 +157,9 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
           : fetchCuple(client.renameOrder.patch, {
               params: { id: 1 },
               body: { title },
-            }).thenResolveAlso(["invalid-body", "transport-error"]),
+            })
+              .thenKeepSuccess()
+              .thenKeepAlso(["invalid-body", "transport-error"]),
       { config: props.config },
     );
     return (
@@ -310,7 +314,9 @@ describe("useAction errors: handled = listed, unhandled = <Boundary>", () => {
     const { result } = renderHook(
       () =>
         useAction(() =>
-          fetchCuple(offline.getStats.get).thenResolveAlso(["transport-error"]),
+          fetchCuple(offline.getStats.get)
+            .thenKeepSuccess()
+            .thenKeepAlso(["transport-error"]),
         ),
       { wrapper },
     );
@@ -471,7 +477,9 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenResolveAlso(["invalid-body"]),
+          })
+            .thenKeepSuccess()
+            .thenKeepAlso(["invalid-body"]),
         { refresh: [client.getOrder.get] },
       );
       return (
@@ -496,7 +504,9 @@ describe("useAction refresh", () => {
           fetchCuple(client.renameOrder.patch, {
             params: { id: 1 },
             body: { title },
-          }).thenResolveAlso(["invalid-body"]),
+          })
+            .thenKeepSuccess()
+            .thenKeepAlso(["invalid-body"]),
         { refresh: { success: [client.getOrder.get] } },
       );
       return (
@@ -558,7 +568,9 @@ describe("refresh types", () => {
             fetchCuple(client.renameOrder.patch, {
               params: { id: 1 },
               body: { title: "x" },
-            }).thenResolveAlso(["invalid-body"]),
+            })
+              .thenKeepSuccess()
+              .thenKeepAlso(["invalid-body"]),
           // @ts-expect-error "conflict-error" is not listed, so it can't be returned
           { refresh: { "conflict-error": [client.getOrder.get] } },
         ),

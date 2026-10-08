@@ -10,7 +10,7 @@ import type { Readable, ReadOptions, ReadRest, ReadValue, ResolveOptions } from 
  *
  * ```tsx
  * const { products } = useGet(client.getProducts.get);
- * const order = useGet(client.getOrder.get, { params: { id } }, { resolveAlso: ["not-found-error"] });
+ * const order = useGet(client.getOrder.get, { params: { id } }, { resolveAlso: ["order-not-found"] });
  * ```
  *
  * - GET only: a read runs on every render, refresh and poll, so a write

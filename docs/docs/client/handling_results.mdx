@@ -1,30 +1,44 @@
 ---
 sidebar_position: 3
-description: 'fetchCuple, thenResolveAlso, transport errors'
+description: 'fetchCuple, thenKeep, thenReject, transport errors'
 ---
 
 # Handling results
 
-`fetchCuple` resolves with `success`. Anything else rejects:
+Like `fetch`, `fetchCuple` resolves with whatever the server answered, typed as every result the route can send. Check `result`:
 
 ```ts
 import { fetchCuple } from "@cuple/client";
 
-const { user } = await fetchCuple(client.getUser.get, { params: { id } });
+const res = await fetchCuple(client.getUser.get, { params: { id } });
+//    ^? success | user-not-found | invalid-params | unexpected-error
+
+if (res.result === "user-not-found") return showNotFound();
+if (res.result === "success") showUser(res.user);
 ```
+
+It rejects only when there was no answer:
 
 | Outcome | Rejects with |
 | ------- | ------------ |
-| Any other result: a `404`, an `invalid-body` | `CupleUnexpectedResponseError`, with the `response` |
 | No answer: offline, DNS, CORS, a proxy's HTML error page | `CupleTransportError` |
 | `signal` aborted | `DOMException` (`AbortError`) |
 
-## Handling a failure: list it
+## Just the data
 
-When your code has something to do with a failure, list it. It resolves as a typed value instead of rejecting:
+When your code only has something to do with `success`, keep only that. Anything else rejects as `CupleUnexpectedResponseError`, with the `response`, and goes where unhandled errors go:
 
 ```ts
-const res = await fetchCuple(client.createUser.post, { body }).thenResolveAlso([
+const { user } = await fetchCuple(client.getUser.get, { params: { id } }).thenKeepSuccess();
+```
+
+## Narrowing: keep or reject
+
+List what your code handles, or what it doesn't. A result that isn't kept rejects as `CupleUnexpectedResponseError`:
+
+```ts
+const res = await fetchCuple(client.createUser.post, { body }).thenKeep([
+  "success",
   "invalid-body",
 ]);
 //    ^? success | invalid-body
@@ -32,21 +46,32 @@ const res = await fetchCuple(client.createUser.post, { body }).thenResolveAlso([
 if (res.result === "invalid-body") showIssues(res.issues);
 ```
 
- - Anything you didn't list still rejects, and goes where unhandled errors go.
- - `"transport-error"` can be listed like any result, for code that has something to do when the server can't be reached (a form that keeps the user's input). It resolves as `{ result: "transport-error", statusCode, message }`. `statusCode` is set when something answered, but not in Cuple's format (a gateway page).
- - `"abort"` can be listed too, for a request you cancel on purpose. It resolves as `{ result: "abort", statusCode: null, message }`.
-
-## Other lists
+```ts
+const res = await fetchCuple(client.getUser.get, { params: { id } }).thenReject([
+  "unexpected-error",
+]);
+//    ^? success | user-not-found | invalid-params
+```
 
 | Method | Resolves with |
 | ------ | ------------- |
-| `.thenResolveAlso([...])` | `success`, plus the listed results |
-| `.thenResolveOn([...])` | exactly the listed results; `"success"` is not implied |
-| `.thenResolveAnyResponse()` | every result the server sent, for code that forwards responses as they are (a proxy, an MCP tool). A network failure or an abort still rejects. |
-| `.thenResolveAll()` | everything: every result the server sent, plus `transport-error` and `abort`. Only a bug in your own code rejects. |
+| (default) | every result the server sent |
+| `.thenKeepSuccess()` | `success` |
+| `.thenKeep([...])` | exactly the listed results; `"success"` is not implied |
+| `.thenKeepAlso([...])` | what it resolved with so far, plus the listed results |
+| `.thenReject([...])` | every result the server sent, except the listed ones |
+| `.thenRejectAlso([...])` | what it resolved with so far, minus the listed results |
+| `.thenKeepAll()` | everything: every result the server sent, plus `transport-error` and `abort`. Only a bug in your own code rejects. |
+
+`thenKeep` and `thenReject` are complete lists: they start over from the response. The `Also` methods add to what came before, so they chain: `.thenKeepSuccess().thenKeepAlso(["invalid-body"])`.
+
+## No answer as a value
+
+ - `"transport-error"` can be listed like any result, for code that has something to do when the server can't be reached (a form that keeps the user's input). It resolves as `{ result: "transport-error", statusCode, message }`. `statusCode` is set when something answered, but not in Cuple's format (a gateway page).
+ - `"abort"` can be listed too, for a request you cancel on purpose. It resolves as `{ result: "abort", statusCode: null, message }`.
 
 ```ts
-const res = await fetchCuple(client.search.get, { query, options: { signal } }).thenResolveAlso([
+const res = await fetchCuple(client.search.get, { query, options: { signal } }).thenKeepAlso([
   "abort",
 ]);
 if (res.result === "abort") return; // a newer search replaced this one
@@ -54,16 +79,16 @@ if (res.result === "abort") return; // a newer search replaced this one
 
 ## In React
 
-`@cuple/react` follows the same rule: `useGet` gives you `success`, and `{ resolveAlso: [...] }` lists what the component renders instead. Inside `useAction`, use `thenResolveAlso`. Whatever nobody listed goes to the nearest `<Boundary>`. See [Errors](../react/errors).
+`useGet` gives you `success`, and `{ resolveAlso: [...] }` lists what the component renders instead. `useAction` gets whatever your function resolves with: narrow `fetchCuple` with `thenKeep`, and whatever it doesn't keep goes to the nearest `<Boundary>`. See [Errors](../react/errors).
 
 :::note[Why it works this way]
 
-The first client, `client.route.get()`, worked like `fetch`: every result resolved, and only a network error threw. Its return type was very complex, and anything built on it had to repeat that type, so `fetchCuple` takes the route as an argument instead.
+`fetchCuple` works like `fetch`: a response is a value, whatever its status, so nothing is thrown at you by surprise. You narrow it when you know what your code handles.
 
-`fetchCuple` resolves only `success` to match `useGet`. In a component you want the data, and dealing with an error is an enhancement. On its own, resolving everything and unwrapping `success` on request would read slightly better, but one rule across the client and React is worth more.
+`useGet` stays success-only: a component suspends until it has data to render, and dealing with an error is an enhancement.
 
-A failure you list is typed in the return value, with its real shape. A `try/catch` gives you `unknown`. `"transport-error"` and `"abort"` can be listed like any server result, so handling offline or a cancelled request is the same code as handling any other failure.
+A result you keep is typed in the return value, with its real shape. A `try/catch` gives you `unknown`. `"transport-error"` and `"abort"` can be listed like any server result, so handling offline or a cancelled request is the same code as handling any other failure.
 
-The lists are chained methods (`.thenResolveAlso([...])`), not an option of `fetchCuple`, because of a typing limit.
+The lists are chained methods (`.thenKeep([...])`), not an option of `fetchCuple`, because of a typing limit.
 
 :::

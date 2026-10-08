@@ -58,9 +58,12 @@ function SignedOut(props: { onSignedOut: () => void }) {
 
 function Greeting() {
   const { greeting } = useGet(authedClient.getGreeting);
-  const expire = useAction(() => fetchCuple(authedClient.expireSession.post), {
-    refresh: [authedClient.getGreeting],
-  });
+  const expire = useAction(
+    () => fetchCuple(authedClient.expireSession.post).thenKeepSuccess(),
+    {
+      refresh: [authedClient.getGreeting],
+    },
+  );
   return (
     <p>
       {greeting}{" "}
@@ -74,7 +77,8 @@ function Greeting() {
 function SignIn(props: { onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const signIn = useAction(async () => {
-    const res = await fetchCuple(client.signIn.post, { body: { name } }).thenResolveAlso([
+    const res = await fetchCuple(client.signIn.post, { body: { name } }).thenKeep([
+      "success",
       "invalid-body",
     ]);
     if (res.result === "success") {

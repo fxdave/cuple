@@ -51,7 +51,9 @@ function ContactForm() {
     async (values: Values) => {
       const response = await fetchCuple(client.createContact.post, {
         body: values,
-      }).thenResolveAlso(["invalid-body"]);
+      })
+        .thenKeepSuccess()
+        .thenKeepAlso(["invalid-body"]);
       if (response.result === "invalid-body")
         for (const issue of response.issues)
           form.setError(issue.path.join(".") as FieldPath<Values>, {

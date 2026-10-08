@@ -11,9 +11,9 @@ import type { Readable } from "./types";
  * - `idle`: nothing has happened yet
  * - `pending`: running, including the refresh it asked for
  * - `done`: your function finished. `value` is what it returned — including
- *   the failures you listed with `thenResolveAlso`, so `done` does not mean
- *   "succeeded"; check `value.result`. Listed failures are handled: they're
- *   yours to show, typed.
+ *   failures: `fetchCuple` resolves every server result unless you narrow it
+ *   with `thenKeep([...])`, so `done` does not mean "succeeded"; check
+ *   `value.result`. Resolved failures are handled: they're yours to show, typed.
  * - `failed`: an error nobody handled. It already went where
  *   `config.errors.onError` says: the nearest `<Boundary>` (this component
  *   is then off screen), `errors.notify`, or nowhere (`null`: this component
@@ -79,7 +79,7 @@ export type Action<TArgs extends unknown[], T> = ActionState<T> & {
  * const save = useAction(
  *   (values: FormValues) =>
  *     fetchCuple(client.updateOrder.put, { params: { id }, body: values })
- *       .thenResolveAlso(["invalid-body"]),
+ *       .thenKeep(["success", "invalid-body"]),
  *   { refresh: [client.getOrder.get, client.getOrders.get] },
  * );
  *

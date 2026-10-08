@@ -110,15 +110,13 @@ describe("mockCuple", () => {
     vi.stubGlobal("fetch", mock.fetch);
     const res = await fetchCuple(client.getTodo.get, {
       params: { id: 1 },
-    }).thenResolveAnyResponse();
+    });
     expect(res).toMatchObject({ result: "invalid-params", statusCode: 422 });
   });
 
   it("fails a request with no handler, naming the endpoint", async () => {
     vi.stubGlobal("fetch", mockCuple<typeof routes>({}).fetch);
-    await expect(
-      fetchCuple(client.getTodos.get).thenResolveAnyResponse(),
-    ).rejects.toThrow(/getTodos\.get/);
+    await expect(fetchCuple(client.getTodos.get)).rejects.toThrow(/getTodos\.get/);
   });
 
   it("types handlers against the routes", () => {

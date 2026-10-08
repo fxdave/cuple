@@ -19,7 +19,7 @@ An action is your own async function. `useAction` runs it and gives you its stat
 
 In this example:
 
- - `fetchCuple` resolves with `success` and throws anything else. `thenResolveAlso(["invalid-body"])` lists the one failure this form handles, so it comes back as a typed value instead. Both the schema's error and the custom one are `invalid-body`, with `path: ["text"]`.
+ - `fetchCuple` resolves with every result the server sent. `thenKeep(["success", "invalid-body"])` keeps success and the one failure this form handles, as typed values; anything else throws. Both the schema's error and the custom one are `invalid-body`, with `path: ["text"]`.
  - `create.value` is what the function returned, typed, so the form can show the issue next to the input.
  - `refresh: { success: [...] }` names what the action changes, and when: the todos are refetched only when one was created. Nothing else is.
 
@@ -29,7 +29,7 @@ In this example:
 | --------- | ------- |
 | `idle`    | Nothing has happened yet. |
 | `pending` | Running, including the refresh it asked for. The screen keeps the old data until the new data lands. |
-| `done`    | Your function finished. `value` is what it returned, including failures you listed, so check `value.result`. |
+| `done`    | Your function finished. `value` is what it returned, including failures you kept, so check `value.result`. |
 | `failed`  | Your function threw something nobody handled, and `errors.onError` sent it to `"notify"` or `null`. `error` is the `CupleError`. |
 
 `run` never rejects. It resolves with the resulting state, so it can go straight into a form library's submit handler.
@@ -39,7 +39,7 @@ In this example:
 ```tsx file=../../../examples/docs/todos/app.tsx#todo-item
 ```
 
- - Nothing to handle here but success, so the plain `fetchCuple` is enough: a failure throws, and goes where unhandled errors go.
+ - Nothing to handle here but success, so `thenKeepSuccess()` is enough: a failure throws, and goes where unhandled errors go.
  - Call `useAction` in the item's component, so each todo has its own `isPending`.
  - `aria-busy` and the `pending` class only say what is busy. The stylesheet dims the row and puts a spinner in the button, so the markup stays short and the button keeps its size.
 
@@ -59,7 +59,7 @@ Nothing is refreshed unless the action names it. List what a write changes. When
 
 ## Errors
 
-Errors you handle are results you list with `thenResolveAlso`, `"transport-error"` included: typed values in `value`. Anything else your function throws (a result it didn't list, a network failure it didn't list, a bug) is unhandled, and `config.errors.onError` decides where it goes: per action, per `<Boundary>`, or app-wide on the provider:
+Errors you handle are results your function resolves with, `"transport-error"` included: typed values in `value`. Narrow `fetchCuple` with `thenKeep` to the ones you handle: a plain `fetchCuple` resolves every server result, so a 500 would be `done`, not an error. Anything else your function throws (a result it didn't keep, a network failure it didn't list, a bug) is unhandled, and `config.errors.onError` decides where it goes: per action, per `<Boundary>`, or app-wide on the provider:
 
 - `"boundary"`: the nearest `<Boundary>`, as a `CupleError`. The default.
 - `"notify"`: `config.errors.notify` shows it; the page stays, and the status becomes `failed`.

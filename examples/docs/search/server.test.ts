@@ -13,6 +13,6 @@ const client = createClient<typeof routes>({
 it("finds products by part of their name, ignoring case", async () => {
   const { products } = await fetchCuple(client.searchProducts.get, {
     query: { q: "MONITOR" },
-  });
+  }).thenKeepSuccess();
   expect(products.map((product) => product.name)).toEqual(["Monitor", "Monitor arm"]);
 });

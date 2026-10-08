@@ -72,4 +72,21 @@ describe("response extraction", () => {
     expect(successVariant!.properties).not.toHaveProperty("statusCode");
     expect(successVariant!.properties).not.toHaveProperty("next");
   });
+
+  it("should extract status factory responses with their result, status code and fields", () => {
+    const route = routes.find((r) => r.name === "register");
+    expect(route).toBeDefined();
+
+    const conflictVariant = route!.response.find((r) => r.result === "email-taken");
+    expect(conflictVariant).toBeDefined();
+    expect(conflictVariant!.statusCode).toBe(409);
+    expect(conflictVariant!.properties.message.schema.type).toBe("string");
+    expect(conflictVariant!.properties.email.schema.type).toBe("string");
+    expect(conflictVariant!.properties).not.toHaveProperty("result");
+
+    const notFoundVariant = route!.response.find((r) => r.result === "not-found");
+    expect(notFoundVariant).toBeDefined();
+    expect(notFoundVariant!.statusCode).toBe(404);
+    expect(notFoundVariant!.properties.message.schema.type).toBe("string");
+  });
 });
