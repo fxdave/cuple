@@ -10,6 +10,7 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.tsbuildinfo",
     "src",
     "!src/**/test",
     "!src/**/*.test.ts",
