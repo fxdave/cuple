@@ -1,6 +1,6 @@
 {
   "name": "@cuple/inspect",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Extract structured metadata from Cuple route definitions using TypeScript compiler API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +11,7 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.tsbuildinfo",
     "src",
     "!src/**/test",
     "!src/**/*.test.ts",
