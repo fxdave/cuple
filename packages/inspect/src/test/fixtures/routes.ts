@@ -214,6 +214,22 @@ const getGrowingGeneric = builder.path("/growing-generic").get(async () => {
   return success({ d: null as unknown as Deep<{ seed: string }> });
 });
 
+// Two unrelated recursive types that happen to share a name, so the names a
+// definition is filed under have to be made unique.
+function alphaShape() {
+  type Shape = { tag: "a"; next: Shape | null };
+  return null as unknown as Shape;
+}
+
+function betaShape() {
+  type Shape = { tag: "b"; prev: Shape | null };
+  return null as unknown as Shape;
+}
+
+const getShapes = builder.path("/shapes").get(async () => {
+  return success({ alpha: alphaShape(), beta: betaShape() });
+});
+
 export const routes = {
   getHealth,
   getStatus,
@@ -235,4 +251,5 @@ export const routes = {
   getTrip,
   getNestedGeneric,
   getGrowingGeneric,
+  getShapes,
 };

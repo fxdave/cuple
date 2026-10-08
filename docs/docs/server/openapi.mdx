@@ -70,6 +70,44 @@ In this example:
 | `.bodySchema(...)` | `application/json` request body |
 | return values | responses by status code |
 | `.meta({ description })` | description |
+| a recursive type | `components.schemas` entry + `$ref` |
+
+## Recursive types
+
+A type that contains itself — a tree of nodes, a JSON value, a Prisma `Json`
+column — can't be written out inline, because there's no end to it. It becomes a
+named entry under `components.schemas`, and the place where the type comes back
+becomes a `$ref` to it:
+
+```ts
+type Element =
+  | { type: "text"; contentHtml: string }
+  | { type: "section"; children: Element[] };
+```
+
+```json
+{
+  "components": {
+    "schemas": {
+      "Element": {
+        "oneOf": [
+          { "type": "object", "properties": { "type": { "type": "string", "enum": ["text"] }, "contentHtml": { "type": "string" } } },
+          { "type": "object", "properties": { "type": { "type": "string", "enum": ["section"] },
+            "children": { "type": "array", "items": { "$ref": "#/components/schemas/Element" } } } }
+        ]
+      }
+    }
+  }
+}
+```
+
+A generic that recurses into itself (`type Deep<T> = { next: Deep<{ wrap: T }> }`)
+becomes one self-referencing definition too, since every level has the same
+shape. Nesting two different instantiations of one generic is not recursion, and
+is still written out in full.
+
+ - NOTE: `components` is absent from the document when nothing in the API recurses.
+ - NOTE: an anonymous recursive type has no name to be filed under, so it stays an empty schema.
 
 ## Inspecting routes
 
@@ -78,10 +116,15 @@ In this example:
 ```ts
 import { inspectRoutes } from "@cuple/inspect";
 
-for (const route of inspectRoutes("./src/routes.ts", "routes")) {
+const { routes, definitions } = inspectRoutes("./src/routes.ts", "routes");
+
+for (const route of routes) {
   console.log(route.method.toUpperCase(), route.path.raw);
 }
 ```
+
+A schema node is `{ type: "ref", name }` where a recursive type comes back, and
+`definitions` holds the schemas those names stand for.
 
 :::note[Why it works this way]
 

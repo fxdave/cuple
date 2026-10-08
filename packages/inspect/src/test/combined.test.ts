@@ -6,7 +6,7 @@ const fixturePath = path.resolve(__dirname, "fixtures/routes.ts");
 const tsconfigPath = path.resolve(__dirname, "fixtures/tsconfig.json");
 
 describe("combined route inspection", () => {
-  const routes = inspectRoutes(fixturePath, "routes", { tsconfigPath });
+  const { routes } = inspectRoutes(fixturePath, "routes", { tsconfigPath });
 
   it("should extract all fields from a combined route", () => {
     const route = routes.find((r) => r.name === "updatePost");
@@ -62,8 +62,8 @@ describe("combined route inspection", () => {
     // Total routes: getHealth, getStatus, posts.getComment, posts.createPost,
     // posts.listPosts, posts.getPost, posts.deletePost, getProfile, protectedRoute,
     // updatePost, rpcOnly, register, getBlob, getTree, getArticle, getTrip,
-    // getNestedGeneric, getGrowingGeneric
-    expect(routes.length).toBe(18);
+    // getNestedGeneric, getGrowingGeneric, getShapes
+    expect(routes.length).toBe(19);
   });
 
   it("should keep routes without path, with a null path", () => {

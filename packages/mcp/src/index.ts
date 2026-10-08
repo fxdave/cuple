@@ -1,5 +1,10 @@
 import { createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
-import { inspectRoutes, type RouteInfo, type Schema } from "@cuple/inspect";
+import {
+  inspectRoutes,
+  type PropertyInfo,
+  type RouteInfo,
+  type Schema,
+} from "@cuple/inspect";
 import { convertSchemaToOpenAPI } from "@cuple/openapi";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -28,6 +33,39 @@ export type McpOptions = {
  */
 const INPUTS = ["params", "query", "body", "headers"] as const;
 
+/**
+ * A tool's `inputSchema` is JSON Schema, which has `$defs`/`$ref`, but an agent
+ * reaches it through a client that usually rewrites it into a provider's
+ * function-calling schema, and those disagree about `$ref` — some resolve it,
+ * some ignore it, some reject the tool. A pointer the client drops is worse than
+ * no constraint at all, whereas `{}` is a schema every client accepts and the
+ * call still goes through the RPC endpoint, which type-checks the arguments
+ * properly anyway.
+ *
+ * So the names stay in the OpenAPI document, and a tool says nothing about the
+ * shape it could not describe. It costs little: inputs come from zod schemas,
+ * and a recursive one (`z.lazy`) does not survive extraction to begin with.
+ */
+function withoutRefs(schema: Schema): Schema {
+  switch (schema.type) {
+    case "ref":
+      return { type: "unknown" };
+    case "array":
+      return { type: "array", items: withoutRefs(schema.items) };
+    case "union":
+      return { type: "union", variants: schema.variants.map(withoutRefs) };
+    case "object": {
+      const properties: Record<string, PropertyInfo> = {};
+      for (const [key, info] of Object.entries(schema.properties)) {
+        properties[key] = { schema: withoutRefs(info.schema), required: info.required };
+      }
+      return { type: "object", properties };
+    }
+    default:
+      return schema;
+  }
+}
+
 /** One tool per route: its name, `.meta({ description })` and inputs. */
 export function routeToTool(route: RouteInfo): Tool {
   const properties: Record<string, object> = {};
@@ -36,7 +74,7 @@ export function routeToTool(route: RouteInfo): Tool {
   for (const input of INPUTS) {
     const schema = route[`${input}Schema`];
     if (schema === null) continue;
-    properties[input] = convertSchemaToOpenAPI(schema);
+    properties[input] = convertSchemaToOpenAPI(withoutRefs(schema));
     if (isRequired(schema)) required.push(input);
   }
 
@@ -86,7 +124,7 @@ export function createMcpServer(
   variableName: string,
   options: McpOptions,
 ) {
-  const routes = inspectRoutes(filePath, variableName, {
+  const { routes } = inspectRoutes(filePath, variableName, {
     tsconfigPath: options.tsconfigPath,
   });
   const byName = new Map(routes.map((route) => [route.name, route]));

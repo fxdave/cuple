@@ -167,6 +167,58 @@ describe("generateOpenAPI", { timeout: 10000 }, () => {
     expect(doc).toMatchSnapshot();
   });
 
+  describe("components.schemas", () => {
+    it("names every recursive type", () => {
+      expect(Object.keys(doc.components!.schemas).sort()).toEqual([
+        "Article",
+        "Deep",
+        "JsonValue",
+        "Shape",
+        "Shape_2",
+        "TreeNode",
+      ]);
+    });
+
+    it("points the cycle at the definition rather than dropping it", () => {
+      const tree =
+        doc.paths["/tree"].get.responses["200"].content!["application/json"].schema;
+      expect(tree.properties!.root).toEqual({
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          children: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TreeNode" },
+          },
+        },
+        required: ["label", "children"],
+      });
+    });
+
+    it("resolves every $ref it emits", () => {
+      const names = new Set(Object.keys(doc.components!.schemas));
+      const refs: string[] = [];
+      function scan(node: unknown): void {
+        if (node === null || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (const item of node) scan(item);
+          return;
+        }
+        for (const [key, value] of Object.entries(node)) {
+          if (key === "$ref") refs.push(value as string);
+          else scan(value);
+        }
+      }
+      scan(doc);
+
+      expect(refs.length).toBeGreaterThan(0);
+      for (const ref of refs) {
+        expect(ref.startsWith("#/components/schemas/"), ref).toBe(true);
+        expect(names, ref).toContain(ref.slice("#/components/schemas/".length));
+      }
+    });
+  });
+
   describe("PUT /api/posts/{postId} (updatePost)", () => {
     it("should have requestBody", () => {
       const op = doc.paths["/api/posts/{postId}"]?.put;

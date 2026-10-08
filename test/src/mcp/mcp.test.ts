@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from "node:http";
 import path from "node:path";
-import { createMcpServer, type McpOptions } from "@cuple/mcp";
+import type { RouteInfo } from "@cuple/inspect";
+import { createMcpServer, type McpOptions, routeToTool } from "@cuple/mcp";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -121,5 +122,40 @@ describe("MCP", { timeout: 30_000 }, () => {
     await expect(mcp.callTool({ name: "nope", arguments: {} })).rejects.toThrow(
       /Unknown tool/,
     );
+  });
+
+  // A ref points into an OpenAPI document's `components.schemas`, which a tool
+  // schema has no equivalent of, and clients rewrite tool schemas for their
+  // provider — so a recursive input says nothing rather than carrying a pointer
+  // the client may drop.
+  it("leaves a recursive input unconstrained instead of emitting a $ref", () => {
+    const route: RouteInfo = {
+      name: "saveTree",
+      description: undefined,
+      path: null,
+      method: "post",
+      bodySchema: {
+        type: "object",
+        properties: {
+          root: { schema: { type: "ref", name: "TreeNode" }, required: true },
+          tags: {
+            schema: { type: "array", items: { type: "ref", name: "Tag" } },
+            required: false,
+          },
+        },
+      },
+      querySchema: null,
+      paramsSchema: null,
+      headersSchema: null,
+      response: [],
+    };
+
+    const tool = routeToTool(route);
+    expect(tool.inputSchema.properties!.body).toEqual({
+      type: "object",
+      properties: { root: {}, tags: { type: "array", items: {} } },
+      required: ["root"],
+    });
+    expect(JSON.stringify(tool)).not.toContain("$ref");
   });
 });

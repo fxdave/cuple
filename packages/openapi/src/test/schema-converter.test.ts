@@ -1,6 +1,10 @@
 import type { PropertyInfo, Schema } from "@cuple/inspect";
 import { describe, expect, it } from "vitest";
-import { convertPropertiesToOpenAPI, convertSchemaToOpenAPI } from "../schema-converter";
+import {
+  convertDefinitionsToOpenAPI,
+  convertPropertiesToOpenAPI,
+  convertSchemaToOpenAPI,
+} from "../schema-converter";
 
 describe("convertSchemaToOpenAPI", () => {
   it("should convert string schema", () => {
@@ -133,5 +137,59 @@ describe("convertPropertiesToOpenAPI", () => {
       bio: { type: "string" },
     });
     expect(result.required).toEqual(["name", "email"]);
+  });
+});
+
+describe("convertDefinitionsToOpenAPI", () => {
+  it("renders a ref as a pointer into components.schemas", () => {
+    expect(convertSchemaToOpenAPI({ type: "ref", name: "TreeNode" })).toEqual({
+      $ref: "#/components/schemas/TreeNode",
+    });
+  });
+
+  it("renders a ref nested in an array and a union", () => {
+    expect(
+      convertSchemaToOpenAPI({
+        type: "union",
+        variants: [
+          { type: "string" },
+          { type: "array", items: { type: "ref", name: "JsonValue" } },
+        ],
+      }),
+    ).toEqual({
+      oneOf: [
+        { type: "string" },
+        { type: "array", items: { $ref: "#/components/schemas/JsonValue" } },
+      ],
+    });
+  });
+
+  it("converts a self-referencing definition without recursing forever", () => {
+    expect(
+      convertDefinitionsToOpenAPI({
+        TreeNode: {
+          type: "object",
+          properties: {
+            label: { schema: { type: "string" }, required: true },
+            children: {
+              schema: { type: "array", items: { type: "ref", name: "TreeNode" } },
+              required: true,
+            },
+          },
+        },
+      }),
+    ).toEqual({
+      TreeNode: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          children: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TreeNode" },
+          },
+        },
+        required: ["label", "children"],
+      },
+    });
   });
 });

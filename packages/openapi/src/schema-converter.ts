@@ -1,4 +1,4 @@
-import type { PropertyInfo, Schema } from "@cuple/inspect";
+import type { PropertyInfo, Schema, SchemaDefinitions } from "@cuple/inspect";
 
 export type OpenAPISchemaObject = {
   type?: string;
@@ -7,7 +7,25 @@ export type OpenAPISchemaObject = {
   properties?: Record<string, OpenAPISchemaObject>;
   required?: string[];
   oneOf?: OpenAPISchemaObject[];
+  $ref?: string;
 };
+
+/** Where {@link convertSchemaToOpenAPI} points a `ref` node. */
+export const COMPONENTS_PREFIX = "#/components/schemas/";
+
+function refTo(name: string): string {
+  return `${COMPONENTS_PREFIX}${name}`;
+}
+
+export function convertDefinitionsToOpenAPI(
+  definitions: SchemaDefinitions,
+): Record<string, OpenAPISchemaObject> {
+  const schemas: Record<string, OpenAPISchemaObject> = {};
+  for (const [name, schema] of Object.entries(definitions)) {
+    schemas[name] = convertSchemaToOpenAPI(schema);
+  }
+  return schemas;
+}
 
 export function convertSchemaToOpenAPI(schema: Schema): OpenAPISchemaObject {
   switch (schema.type) {
@@ -19,6 +37,8 @@ export function convertSchemaToOpenAPI(schema: Schema): OpenAPISchemaObject {
       return { type: "boolean" };
     case "unknown":
       return {};
+    case "ref":
+      return { $ref: refTo(schema.name) };
     case "literal": {
       const t =
         typeof schema.value === "string"
