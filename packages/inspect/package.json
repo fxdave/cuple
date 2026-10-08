@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/fxdave/cuple#readme",
   "peerDependencies": {
-    "@cuple/server": "^2.4.1",
+    "@cuple/server": "^2.4.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
