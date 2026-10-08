@@ -37,25 +37,22 @@ describe("chaining", () => {
         headers: {
           authorization: "bar",
         },
-      }).thenResolveAnyResponse();
+      });
       assert.equal(badResponse1.statusCode, 401);
 
       const badResponse2 = await fetchCuple(client.get.get, {
         headers: {} as any,
-      }).thenResolveAnyResponse();
+      });
       assert.equal(badResponse2.statusCode, 422);
 
-      const badResponse3 = await fetchCuple(
-        client.get.get,
-        {} as any,
-      ).thenResolveAnyResponse();
+      const badResponse3 = await fetchCuple(client.get.get, {} as any);
       assert.equal(badResponse3.statusCode, 422);
 
       const response = await fetchCuple(client.get.get, {
         headers: {
           authorization: "foo",
         },
-      }).thenResolveAnyResponse();
+      });
       if (response.statusCode !== 200) assert.ok(false);
       assert.equal(response.message, "hi");
     });
@@ -95,7 +92,7 @@ describe("chaining", () => {
           id: 32,
           name: "David",
         },
-      }).thenResolveAnyResponse();
+      });
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.gotId, 32);
       assert.equal(response.gotName, "David");
@@ -156,7 +153,7 @@ describe("chaining", () => {
           name: "David",
           age: 100,
         },
-      }).thenResolveAnyResponse();
+      });
       if (response.result !== "success") assert.ok(false);
       assert.equal(response.gotId, 32);
       assert.equal(response.gotName, "David");
@@ -209,7 +206,7 @@ describe("chaining", () => {
             id: 32,
             name: "David",
           },
-        }).thenResolveAnyResponse();
+        });
         if (response.result !== "success") assert.ok(false, JSON.stringify(response));
         assert.equal(response.gotId, 32);
         assert.equal(response.gotName, "David");

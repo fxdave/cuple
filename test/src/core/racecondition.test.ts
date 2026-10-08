@@ -16,8 +16,8 @@ describe("racecondition test", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const req1 = fetchCuple(client.foo.get, {}).thenResolveAnyResponse();
-      const req2 = fetchCuple(client.foo.get, {}).thenResolveAnyResponse();
+      const req1 = fetchCuple(client.foo.get, {});
+      const req2 = fetchCuple(client.foo.get, {});
 
       const [response1, response2] = await Promise.all([req1, req2]);
 
@@ -50,7 +50,7 @@ describe("racecondition test", () => {
             body: {
               timeout,
             },
-          }).thenResolveAnyResponse();
+          });
 
           if (res.result !== "success") assert.ok(false);
           assert.equal(res.foo, `hi ${timeout}`);
@@ -69,8 +69,8 @@ describe("racecondition test", () => {
     }));
     await cs.run(async (client) => {
       const path = client.foo.get;
-      const req1 = fetchCuple(path, {}).thenResolveAnyResponse();
-      const req2 = fetchCuple(path, {}).thenResolveAnyResponse();
+      const req1 = fetchCuple(path, {});
+      const req2 = fetchCuple(path, {});
 
       const [response1, response2] = await Promise.all([req1, req2]);
 

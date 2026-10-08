@@ -67,7 +67,7 @@ function Tab({ children }: { children: ReactNode }) {
 
 describe("config cascades: request > Boundary > Provider > built-in", () => {
   function Failing({ config }: { config?: Config }) {
-    const action = useAction(() => fetchCuple(client.forbidden.post), {
+    const action = useAction(() => fetchCuple(client.forbidden.post).thenKeepSuccess(), {
       config,
     });
     return (

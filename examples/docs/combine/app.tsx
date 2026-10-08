@@ -49,7 +49,7 @@ function Order({ id }: { id: number }) {
 export const searchProducts = combine(async (_ctx, q: string) => {
   const { products } = await fetchCuple(client.searchProducts.post, {
     body: { q },
-  });
+  }).thenKeepSuccess();
   return products;
 });
 

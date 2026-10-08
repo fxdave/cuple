@@ -1,4 +1,4 @@
-import { apiResponse, createBuilder, success } from "@cuple/server";
+import { apiResponse, conflict, createBuilder, notFound, success } from "@cuple/server";
 import express from "express";
 import z from "zod";
 
@@ -143,6 +143,18 @@ const rpcOnly = builder.post(async () => {
   return success({ ok: true });
 });
 
+// --- Route with status factories ---
+const register = builder
+  .path("/api/register")
+  .bodySchema(z.object({ email: z.string() }))
+  .post(async ({ data }) => {
+    if (data.body.email === "taken@example.com") {
+      return conflict({ result: "email-taken", email: data.body.email });
+    }
+    if (data.body.email === "") return notFound();
+    return success({ id: 1 });
+  });
+
 // --- Recursive response types ---
 // Real apps return these: JSON blobs, trees of renderable content, a Prisma
 // `Json` column. The converter has to stop somewhere instead of following the
@@ -232,6 +244,7 @@ export const routes = {
   protectedRoute,
   updatePost,
   rpcOnly,
+  register,
   getBlob,
   getTree,
   getArticle,

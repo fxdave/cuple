@@ -147,10 +147,7 @@ export function createMcpServer(
     const args = request.params.arguments ?? {};
     const input = Object.fromEntries(INPUTS.map((key) => [key, args[key]]));
     try {
-      const response = await fetchCuple(
-        endpointOf(client, route),
-        input,
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(endpointOf(client, route), input);
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
         isError: response.result !== "success",

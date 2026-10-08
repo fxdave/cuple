@@ -33,14 +33,15 @@ export const client = createClient<typeof routes>({
 import { fetchCuple } from "@cuple/client";
 
 async function getPost(id: number) {
-  // Resolves with success; any other result throws.
-  const { post } = await fetchCuple(client.getPost.get, { params: { id } });
+  // Keeps success; any other result throws.
+  const { post } = await fetchCuple(client.getPost.get, { params: { id } }).thenKeepSuccess();
   return post;
 }
 
 async function findPost(id: number) {
-  // A failure you handle is listed, and typed.
-  const res = await fetchCuple(client.getPost.get, { params: { id } }).thenResolveAlso([
+  // Like fetch, every response resolves, typed. Keep the ones you handle.
+  const res = await fetchCuple(client.getPost.get, { params: { id } }).thenKeep([
+    "success",
     "post-not-found",
   ]);
   return res.result === "post-not-found" ? null : res.post;

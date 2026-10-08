@@ -61,9 +61,9 @@ describe("combined route inspection", () => {
   it("should extract all routes from the fixture", () => {
     // Total routes: getHealth, getStatus, posts.getComment, posts.createPost,
     // posts.listPosts, posts.getPost, posts.deletePost, getProfile, protectedRoute,
-    // updatePost, rpcOnly, getBlob, getTree, getArticle, getTrip,
+    // updatePost, rpcOnly, register, getBlob, getTree, getArticle, getTrip,
     // getNestedGeneric, getGrowingGeneric, getShapes
-    expect(routes.length).toBe(18);
+    expect(routes.length).toBe(19);
   });
 
   it("should keep routes without path, with a null path", () => {

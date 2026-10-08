@@ -13,10 +13,7 @@ describe("500 Internal Server Error handling", () => {
       }),
     }));
     await cs.run(async (client) => {
-      const response = await fetchCuple(
-        client.getMathError.get,
-        {},
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(client.getMathError.get, {});
       assert.equal(response.result, "unexpected-error");
       assert.equal(response.statusCode, 500);
     });
@@ -48,10 +45,7 @@ describe("500 Internal Server Error handling", () => {
       },
     );
     await cs.run(async (client) => {
-      const response = await fetchCuple(
-        client.getMathError.get,
-        {},
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(client.getMathError.get, {});
       assert.equal(response.result, "unexpected-error");
       assert.equal((response as any).foo, 42);
     });
@@ -79,10 +73,7 @@ describe("500 Internal Server Error handling", () => {
       },
     );
     await cs.run(async (client) => {
-      const response = await fetchCuple(
-        client.getMathError.get,
-        {},
-      ).thenResolveAnyResponse();
+      const response = await fetchCuple(client.getMathError.get, {});
       assert.equal(response.result, "unexpected-error");
       assert.equal((response as any).foo, undefined);
     });

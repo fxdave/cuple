@@ -7,13 +7,13 @@ description: 'handled errors are typed values, unhandled ones go to <Boundary>'
 
 Every failure is either handled or unhandled.
 
- - **Handled** means your code listed it: `thenResolveAlso(["invalid-body"])` on a request, `resolveAlso: ["note-not-found"]` on a read. It comes back as a typed value, and the component renders it like any data.
+ - **Handled** means your code kept it: `thenKeep(["success", "invalid-body"])` on a request, `resolveAlso: ["note-not-found"]` on a read. It comes back as a typed value, and the component renders it like any data.
  - **Unhandled** is everything else: a result nobody listed, a network failure nobody listed, a bug. It goes to the nearest `<Boundary>`, as a `CupleError` with a message that is always readable.
 
 ```tsx
 const save = useAction(async (values: ContactValues) => {
   const response = await fetchCuple(client.updateContact.put, { params: { id }, body: values })
-    .thenResolveAlso(["invalid-body", "transport-error"]);
+    .thenKeep(["success", "invalid-body", "transport-error"]);
   //   ^? success | invalid-body | transport-error — all typed
   if (response.result === "invalid-body") showIssues(response.issues);
   if (response.result === "transport-error") showOffline();
@@ -28,7 +28,7 @@ Any result the endpoint can return can be listed, and so can `"transport-error"`
 
 | On | Write |
 | -- | ----- |
-| A request | `fetchCuple(...).thenResolveAlso(["invalid-body", "transport-error"])` |
+| A request | `fetchCuple(...).thenKeep(["success", "invalid-body", "transport-error"])` |
 | A read | `useGet(client.getNote, args, { resolveAlso: ["note-not-found"] })` |
 | A read inside `combine` | `get(client.getOrder, args, { resolveAlso: ["order-not-found"] })` |
 
