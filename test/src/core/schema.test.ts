@@ -1,6 +1,6 @@
 import { fetchCuple } from "@cuple/client";
 import { invalidInput, json, success } from "@cuple/server";
-import { assert, describe, it } from "vitest";
+import { assert, describe, expectTypeOf, it } from "vitest";
 import z from "zod";
 import createClientAndServer from "../utils/createClientAndServer";
 
@@ -149,6 +149,30 @@ describe("schema validation", () => {
     });
   });
 
+  it("should type issue paths from the schema", async () => {
+    const cs = await createClientAndServer((builder) => ({
+      foo: builder
+        .bodySchema(
+          z.strictObject({
+            name: z.string(),
+            address: z.strictObject({ zip: z.string() }).nullable(),
+            tags: z.array(z.string()).optional(),
+          }),
+        )
+        .post(async () => success({})),
+    }));
+    await cs.run(async (client) => {
+      const response = await fetchCuple(client.foo.post, {
+        body: { name: "", address: { zip: 1 as never } },
+      });
+      if (response.result !== "invalid-body") return assert.fail(response.result);
+      assert.deepEqual(response.issues[0].path, ["address", "zip"]);
+      expectTypeOf(response.issues[0].path).toEqualTypeOf<
+        [] | ["name"] | ["address"] | ["address", "zip"] | ["tags"] | ["tags", number]
+      >();
+    });
+  });
+
   it("should allow non-objects with rawBody json parser", async () => {
     const cs = await createClientAndServer((builder) => ({
       foo: builder
@@ -293,6 +317,7 @@ describe("schema validation", () => {
 
       if (response.result === "invalid-body") {
         assert.equal(response.issues[0].path[0], "name");
+        expectTypeOf(response.issues[0].path).toEqualTypeOf<[] | ["name"]>();
       } else {
         assert.ok(false);
       }

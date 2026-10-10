@@ -5,6 +5,7 @@ export {
   conflict,
   forbidden,
   type InputPart,
+  type InputPath,
   type InvalidInput,
   invalidInput,
   notFound,

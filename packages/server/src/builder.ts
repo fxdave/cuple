@@ -3,6 +3,7 @@ import type z from "zod";
 import { ZodError, type ZodType } from "zod";
 import type { RawBodyParser } from "./body-parsers";
 import {
+  type InputPath,
   type InvalidInput,
   invalidInput,
   type UnexpectedError,
@@ -269,7 +270,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       body: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | InvalidInput<"body">;
+    tResponses: TParams["tResponses"] | InvalidInput<"body", InputPath<z.input<TParser>>>;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -290,7 +291,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       query: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | InvalidInput<"query">;
+    tResponses:
+      | TParams["tResponses"]
+      | InvalidInput<"query", InputPath<z.input<TParser>>>;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -311,7 +314,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       params: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | InvalidInput<"params">;
+    tResponses:
+      | TParams["tResponses"]
+      | InvalidInput<"params", InputPath<z.input<TParser>>>;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -333,7 +338,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
       headers: z.output<TParser>;
     };
     // The consequent TResponses can be TResult only when { next: FALSE }
-    tResponses: TParams["tResponses"] | InvalidInput<"headers">;
+    tResponses:
+      | TParams["tResponses"]
+      | InvalidInput<"headers", InputPath<z.input<TParser>>>;
     tMethod: TParams["tMethod"];
     tDependencyData: TParams["tDependencyData"];
   }> {
@@ -522,7 +529,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     TParams["tInput"] & z.input<TParser>,
     TParams["tData"],
     | ({ [i in TPropertyName]: ValidInputOrError<z.input<TParser>> } & { next: true })
-    | (InvalidInput<`${TPropertyName}`> & { next: false })
+    | (InvalidInput<`${TPropertyName}`, InputPath<z.input<TParser>>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
     return async ({ req, res, data }: MiddlewareProps<unknown>) => {
@@ -544,7 +551,9 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
           return {
             ...invalidInput(propertyName as `${SchemaType}`, e.issues),
             next: false as const,
-          } as InvalidInput<`${TPropertyName}`> & { next: false };
+          } as InvalidInput<`${TPropertyName}`, InputPath<z.input<TParser>>> & {
+            next: false;
+          };
         }
 
         const response = this.config.errorHandler({ req, res, err: e });

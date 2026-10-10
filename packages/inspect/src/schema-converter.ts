@@ -340,6 +340,28 @@ function containsType(
   return false;
 }
 
+/** Tuples as one array, whose items are any of their elements. */
+function describeTuples(
+  tuples: ts.Type[],
+  checker: ts.TypeChecker,
+  registry: SchemaRegistry,
+  walk: Walk,
+): Schema {
+  const items = new Map<string, Schema>();
+  for (const tuple of tuples) {
+    for (const element of checker.getTypeArguments(tuple as ts.TypeReference)) {
+      const schema = convert(element, checker, registry, walk);
+      for (const variant of schema.type === "union" ? schema.variants : [schema]) {
+        items.set(JSON.stringify(variant), variant);
+      }
+    }
+  }
+  const variants = [...items.values()];
+  if (variants.length === 0) return { type: "array", items: { type: "unknown" } };
+  if (variants.length === 1) return { type: "array", items: variants[0] };
+  return { type: "array", items: { type: "union", variants } };
+}
+
 function describe(
   type: ts.Type,
   checker: ts.TypeChecker,
@@ -392,6 +414,10 @@ function describe(
       return { type: "boolean" };
     }
 
+    if (filteredTypes.length > 0 && filteredTypes.every((t) => checker.isTupleType(t))) {
+      return describeTuples(filteredTypes, checker, registry, walk);
+    }
+
     if (filteredTypes.length === 0) {
       return { type: "unknown" };
     }
@@ -404,6 +430,10 @@ function describe(
       type: "union",
       variants: filteredTypes.map((t) => convert(t, checker, registry, walk)),
     };
+  }
+
+  if (checker.isTupleType(type)) {
+    return describeTuples([type], checker, registry, walk);
   }
 
   // Handle array types

@@ -58,6 +58,18 @@ describe("response extraction", () => {
     expect(validationVariant!.statusCode).toBe(422);
   });
 
+  it("should describe an issue's path as a list of the body's fields", () => {
+    const route = routes.find((r) => r.name === "register");
+    const variant = route!.response.find((r) => r.result === "invalid-body");
+    const issues = variant!.properties.issues.schema;
+    if (issues.type !== "array" || issues.items.type !== "object")
+      throw new Error("no issues");
+    expect(issues.items.properties.path.schema).toEqual({
+      type: "array",
+      items: { type: "literal", value: "email" },
+    });
+  });
+
   it("should extract response properties (excluding result, statusCode, next)", () => {
     const route = routes.find((r) => r.name === "getProfile");
     expect(route).toBeDefined();

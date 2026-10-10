@@ -66,7 +66,7 @@ Successfully parsed result will be added to `data.params`.
 ## On error
 
 A failed schema answers with status `422`, and the result names the part that failed: `invalid-body`, `invalid-query`, `invalid-params` or `invalid-headers`.
-An issue's `path` is relative to that part. An example response for a body:
+An issue's `path` is relative to that part, and typed from its schema: for `{ email: string }` it is `[] | ["email"]`, so a field renamed on the server fails to compile on the client. An example response for a body:
 ```ts
 {
     result: 'invalid-body',

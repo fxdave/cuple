@@ -298,10 +298,28 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                             "items": {
                               "oneOf": [
                                 {
+                                  "enum": [
+                                    "status",
+                                  ],
                                   "type": "string",
                                 },
                                 {
-                                  "type": "number",
+                                  "enum": [
+                                    "search",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "page",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "limit",
+                                  ],
+                                  "type": "string",
                                 },
                               ],
                             },
@@ -525,6 +543,45 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                             "items": {
                               "oneOf": [
                                 {
+                                  "enum": [
+                                    "metadata",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "category",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "priority",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "title",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "content",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "published",
+                                  ],
+                                  "type": "string",
+                                },
+                                {
+                                  "enum": [
+                                    "tags",
+                                  ],
                                   "type": "string",
                                 },
                                 {
@@ -715,14 +772,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                           },
                           "path": {
                             "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string",
-                                },
-                                {
-                                  "type": "number",
-                                },
+                              "enum": [
+                                "id",
                               ],
+                              "type": "string",
                             },
                             "type": "array",
                           },
@@ -907,14 +960,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                           },
                           "path": {
                             "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string",
-                                },
-                                {
-                                  "type": "number",
-                                },
+                              "enum": [
+                                "id",
                               ],
+                              "type": "string",
                             },
                             "type": "array",
                           },
@@ -1153,14 +1202,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               "path": {
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string",
-                                    },
-                                    {
-                                      "type": "number",
-                                    },
+                                  "enum": [
+                                    "postId",
                                   ],
+                                  "type": "string",
                                 },
                                 "type": "array",
                               },
@@ -1271,14 +1316,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                               },
                               "path": {
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string",
-                                    },
-                                    {
-                                      "type": "number",
-                                    },
+                                  "enum": [
+                                    "x-request-id",
                                   ],
+                                  "type": "string",
                                 },
                                 "type": "array",
                               },
@@ -1297,7 +1338,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                         },
                         "result": {
                           "enum": [
-                            "invalid-body",
+                            "invalid-headers",
                           ],
                           "type": "string",
                         },
@@ -1391,10 +1432,16 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                                 "items": {
                                   "oneOf": [
                                     {
+                                      "enum": [
+                                        "title",
+                                      ],
                                       "type": "string",
                                     },
                                     {
-                                      "type": "number",
+                                      "enum": [
+                                        "content",
+                                      ],
+                                      "type": "string",
                                     },
                                   ],
                                 },
@@ -1415,7 +1462,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                         },
                         "result": {
                           "enum": [
-                            "invalid-headers",
+                            "invalid-body",
                           ],
                           "type": "string",
                         },
@@ -1431,7 +1478,7 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                 },
               },
             },
-            "description": "invalid-params | invalid-body | invalid-headers",
+            "description": "invalid-params | invalid-headers | invalid-body",
           },
           "500": {
             "content": {
@@ -1597,10 +1644,16 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                             "items": {
                               "oneOf": [
                                 {
+                                  "enum": [
+                                    "postId",
+                                  ],
                                   "type": "string",
                                 },
                                 {
-                                  "type": "number",
+                                  "enum": [
+                                    "commentId",
+                                  ],
+                                  "type": "string",
                                 },
                               ],
                             },
@@ -1842,14 +1895,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                           },
                           "path": {
                             "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string",
-                                },
-                                {
-                                  "type": "number",
-                                },
+                              "enum": [
+                                "userId",
                               ],
+                              "type": "string",
                             },
                             "type": "array",
                           },
@@ -2044,10 +2093,16 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                             "items": {
                               "oneOf": [
                                 {
+                                  "enum": [
+                                    "authorization",
+                                  ],
                                   "type": "string",
                                 },
                                 {
-                                  "type": "number",
+                                  "enum": [
+                                    "x-request-id",
+                                  ],
+                                  "type": "string",
                                 },
                               ],
                             },
@@ -2295,14 +2350,10 @@ exports[`generateOpenAPI > should match the full document snapshot 1`] = `
                           },
                           "path": {
                             "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string",
-                                },
-                                {
-                                  "type": "number",
-                                },
+                              "enum": [
+                                "email",
                               ],
+                              "type": "string",
                             },
                             "type": "array",
                           },

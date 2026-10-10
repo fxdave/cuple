@@ -37,14 +37,21 @@ export type InputPart = "body" | "query" | "params" | "headers";
  * it from a handler for a rule a schema can't check (an email already in use),
  * so the client handles both the same way.
  */
-export const invalidInput = <TPart extends InputPart>(
+export const invalidInput = <
+  TPart extends InputPart,
+  const TIssues extends readonly (Pick<z.core.$ZodIssue, "code" | "message"> & {
+    path: readonly PropertyKey[];
+  })[],
+>(
   part: TPart,
-  issues: (Pick<z.core.$ZodIssue, "code" | "message"> & { path: PropertyKey[] })[],
-): InvalidInput<TPart> =>
+  issues: TIssues,
+): InvalidInput<TPart, JsonPath<TIssues[number]["path"]>> =>
   apiResponse(`invalid-${part}`, 422, {
     message: "We found some incorrect field(s) during validating the form.",
-    issues: issues as InvalidInput<TPart>["issues"],
+    issues: issues as never,
   });
+
+type JsonPath<TPath> = { -readonly [K in keyof TPath]: Exclude<TPath[K], symbol> };
 
 export const unexpectedError = () =>
   apiResponse("unexpected-error", 500, {
@@ -114,7 +121,10 @@ export const conflict = statusFactory(
 // Response types
 export type Success<T> = ApiResponse<"success", 200, T>;
 export type UnexpectedError = ApiResponse<"unexpected-error", 500, { message: string }>;
-export type InvalidInput<TPart extends InputPart> = ApiResponse<
+export type InvalidInput<
+  TPart extends InputPart,
+  TPath extends (string | number)[] = (string | number)[],
+> = ApiResponse<
   `invalid-${TPart}`,
   422,
   {
@@ -122,7 +132,24 @@ export type InvalidInput<TPart extends InputPart> = ApiResponse<
     issues: {
       code: z.core.$ZodIssue["code"];
       message: z.core.$ZodIssue["message"];
-      path: (string | number)[];
+      path: TPath;
     }[];
   }
 >;
+
+type Leaf = string | number | boolean | bigint | symbol | null | undefined | Date;
+
+/** The paths into a value of type `T`: `InputPath<{ a: { b: string[] } }>` is `[] | ["a"] | ["a", "b"] | ["a", "b", number]`. */
+export type InputPath<T> = [] | FieldPath<T, []>;
+
+type FieldPath<T, TDepth extends unknown[]> = 0 extends 1 & T
+  ? (string | number)[]
+  : TDepth["length"] extends 10
+    ? (string | number)[]
+    : T extends Leaf
+      ? never
+      : T extends readonly (infer TItem)[]
+        ? [number] | [number, ...FieldPath<TItem, [...TDepth, 0]>]
+        : {
+            [K in keyof T & string]-?: [K] | [K, ...FieldPath<T[K], [...TDepth, 0]>];
+          }[keyof T & string];
