@@ -168,7 +168,7 @@ describe("cache.freshMs: coming back to cached data", () => {
     await toggleTab();
     // Instant: the cached value, no fallback.
     expect(screen.getByText("count 1")).toBeDefined();
-    expect(calls.of("getStats")).toBe(before + 1);
+    await waitFor(() => expect(calls.of("getStats")).toBe(before + 1));
     held.open();
     expect(await screen.findByText("count 2")).toBeDefined();
   });

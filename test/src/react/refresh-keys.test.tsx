@@ -123,12 +123,13 @@ describe("store.refreshKeys", () => {
     const held = gate();
     hold = held.opened;
     // A refresh is in flight for ada, and a second one is queued behind it.
+    const adaBefore = calls.of("whoami:ada") + 1;
     let refreshing!: Promise<void>;
     await act(async () => {
       refreshing = store.refresh([client.whoami]);
       void store.refresh([client.whoami]);
     });
-    const adaBefore = calls.of("whoami:ada");
+    await waitFor(() => expect(calls.of("whoami:ada")).toBe(adaBefore));
     const linusBefore = calls.of("whoami:linus");
     current = "linus";
     hold = Promise.resolve();
