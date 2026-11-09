@@ -67,12 +67,41 @@ const server = createMcpServer("./src/routes.ts", "routes", { url: "http://local
 await server.connect(transport); // any transport from @modelcontextprotocol/sdk
 ```
 
+## Over HTTP
+
+A remote MCP server, such as a Claude connector, runs in production, where the TypeScript source usually isn't. Generate the tools at build time instead:
+
+```bash
+cuple-mcp tools src/mcpRoutes.ts mcpRoutes > dist/mcp-tools.json
+```
+
+And serve them with `createMcpHttpHandler`, a stateless [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) endpoint:
+
+```ts
+import { createMcpHttpHandler } from "@cuple/mcp";
+import tools from "./mcp-tools.json";
+
+app.post(
+  "/mcp",
+  express.json(),
+  createMcpHttpHandler(tools, {
+    url: "http://localhost:8080/rpc",
+    forwardHeaders: ["authorization"],
+  }),
+);
+```
+
+`forwardHeaders` takes the client's own headers and sends them with every call, and removes them from the tools. So the user configures a token once in their MCP client, and the agent never sees it.
+
+ - TIP: Export a separate routes object for the tools, with its own `initRpc` path. Then you choose exactly which routes an agent gets, and can describe each for an agent rather than a frontend.
+ - `generateMcpTools` and `createMcpServerFromTools` do the same in code, for another transport.
+
 :::note[Why it works this way]
 
 MCP is here so AI agents can easily call Cuple endpoints. They're good with HTTP but don't know Cuple's `/rpc` protocol, and the tools do that part for them. It's early and not well tested yet.
 
 Tools call your running server, so an agent gets the same validation, middlewares and auth as your app, and can reach nothing a normal client can't. The route's types are its instructions: an agent learns that `listPosts` needs `authorization` the same way it learns it needs `params`, with no extra setup to keep in sync.
 
-Running as a separate process that reads the source is only where it started. An `initRpc` option that also serves MCP from the app would be simpler. Choosing which routes become tools isn't done yet either.
+Running as a separate process that reads the source is only where it started. An `initRpc` option that also serves MCP from the app would be simpler. To choose which routes become tools, give the tools their own routes object.
 
 :::

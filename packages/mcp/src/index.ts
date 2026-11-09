@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
 import {
   inspectRoutes,
@@ -8,6 +9,7 @@ import {
 import { convertSchemaToOpenAPI } from "@cuple/openapi";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -24,6 +26,16 @@ export type McpOptions = {
   /** How the server introduces itself to the agent. Default: `"cuple"`. */
   name?: string;
   version?: string;
+};
+
+/**
+ * A route as a tool, plus what it takes to call it: the output of
+ * {@link generateMcpTools}, plain JSON, so it can be written at build time and
+ * served where the TypeScript sources are not.
+ */
+export type McpTool = {
+  method: string;
+  tool: Tool;
 };
 
 /**
@@ -112,6 +124,16 @@ export async function serveMcp(
   return server;
 }
 
+/** One {@link McpTool} per route, for {@link createMcpServerFromTools}. */
+export function generateMcpTools(
+  filePath: string,
+  variableName: string,
+  options?: { tsconfigPath?: string },
+): McpTool[] {
+  const { routes } = inspectRoutes(filePath, variableName, options);
+  return routes.map((route) => ({ method: route.method, tool: routeToTool(route) }));
+}
+
 /**
  * The MCP server {@link serveMcp} runs, not yet connected: for another
  * transport, or a test.
@@ -124,10 +146,20 @@ export function createMcpServer(
   variableName: string,
   options: McpOptions,
 ) {
-  const { routes } = inspectRoutes(filePath, variableName, {
+  const tools = generateMcpTools(filePath, variableName, {
     tsconfigPath: options.tsconfigPath,
   });
-  const byName = new Map(routes.map((route) => [route.name, route]));
+  return createMcpServerFromTools(tools, options);
+}
+
+export type McpServerOptions = Omit<McpOptions, "tsconfigPath"> & {
+  /** Sent on every call, over whatever headers the agent passed. */
+  headers?: Record<string, string>;
+};
+
+/** {@link createMcpServer} for tools generated beforehand. */
+export function createMcpServerFromTools(tools: McpTool[], options: McpServerOptions) {
+  const byName = new Map(tools.map((entry) => [entry.tool.name, entry]));
   const client = createClient<RecursiveApi>({ path: options.url });
 
   const server = new Server(
@@ -136,18 +168,26 @@ export function createMcpServer(
   );
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: routes.map(routeToTool),
+    tools: tools.map((entry) => entry.tool),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const route = byName.get(request.params.name);
-    if (!route)
+    const entry = byName.get(request.params.name);
+    if (!entry)
       throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
 
     const args = request.params.arguments ?? {};
-    const input = Object.fromEntries(INPUTS.map((key) => [key, args[key]]));
+    const input: Record<string, unknown> = Object.fromEntries(
+      INPUTS.map((key) => [key, args[key]]),
+    );
+    if (options.headers) {
+      input.headers = { ...(args.headers as object | undefined), ...options.headers };
+    }
     try {
-      const response = await fetchCuple(endpointOf(client, route), input);
+      const response = await fetchCuple(
+        endpointOf(client, entry.tool.name, entry.method),
+        input,
+      );
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
         isError: response.result !== "success",
@@ -163,11 +203,95 @@ export function createMcpServer(
   return server;
 }
 
+/**
+ * The tool without the given headers: the server supplies them, so the agent
+ * neither sees nor sends them. `headers` goes when nothing is left of it.
+ */
+export function withoutHeaders(tool: Tool, names: string[]): Tool {
+  const schema = tool.inputSchema;
+  const headers = schema.properties?.headers as
+    | { properties?: Record<string, object>; required?: string[] }
+    | undefined;
+  if (!headers?.properties) return tool;
+
+  const properties = Object.fromEntries(
+    Object.entries(headers.properties).filter(([key]) => !names.includes(key)),
+  );
+  const required = (headers.required ?? []).filter((key) => !names.includes(key));
+  const { headers: _, ...rest } = schema.properties!;
+  const keep = Object.keys(properties).length > 0;
+
+  return {
+    ...tool,
+    inputSchema: {
+      ...schema,
+      properties: keep
+        ? { ...rest, headers: { ...headers, properties, required } }
+        : rest,
+      required: (schema.required ?? []).filter(
+        (key) => key !== "headers" || required.length > 0,
+      ),
+    },
+  };
+}
+
+export type McpHttpOptions = McpServerOptions & {
+  /**
+   * Request headers passed on to every call, e.g. `["authorization"]`, so the
+   * client's credentials reach the routes without the agent handling them.
+   * They are removed from the tools' inputs.
+   */
+  forwardHeaders?: string[];
+};
+
+/**
+ * A stateless Streamable HTTP MCP endpoint, for `app.post(path, handler)`.
+ * Pass the parsed JSON body as `req.body` when a body parser runs first.
+ */
+export function createMcpHttpHandler(tools: McpTool[], options: McpHttpOptions) {
+  const forward = (options.forwardHeaders ?? []).map((name) => name.toLowerCase());
+  const shown = forward.length
+    ? tools.map((entry) => ({ ...entry, tool: withoutHeaders(entry.tool, forward) }))
+    : tools;
+
+  return async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
+    const headers: Record<string, string> = { ...options.headers };
+    for (const name of forward) {
+      const value = req.headers[name];
+      if (typeof value === "string") headers[name] = value;
+    }
+    // Stateless mode needs a fresh server and transport per request.
+    const server = createMcpServerFromTools(shown, { ...options, headers });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    res.on("close", () => {
+      void transport.close();
+      void server.close();
+    });
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (e) {
+      console.error("[cuple/mcp] request failed", e);
+      if (!res.headersSent) {
+        res.writeHead(500, { "content-type": "application/json" }).end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: { code: ErrorCode.InternalError, message: "Internal server error" },
+            id: null,
+          }),
+        );
+      }
+    }
+  };
+}
+
 /** `posts.getPost` + `get` is `client.posts.getPost.get`. */
-function endpointOf(client: object, route: RouteInfo) {
+function endpointOf(client: object, name: string, method: string) {
   // The client is a Proxy, so every path exists.
   let endpoint: any = client;
-  for (const segment of [...route.name.split("."), route.method]) {
+  for (const segment of [...name.split("."), method]) {
     endpoint = endpoint[segment];
   }
   return endpoint;

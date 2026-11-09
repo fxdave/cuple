@@ -1,9 +1,12 @@
 {
   "name": "@cuple/mcp",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Expose Cuple routes as MCP tools",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "cuple-mcp": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist *.tsbuildinfo"
