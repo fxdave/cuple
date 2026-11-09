@@ -1,10 +1,11 @@
 import type { Server as HttpServer } from "node:http";
 import path from "node:path";
-import { createMcpHttpHandler, generateMcpTools, withoutHeaders } from "@cuple/mcp";
+import { createMcpHttpHandler, generateMcpTools } from "@cuple/mcp";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withoutHeaders } from "../../../packages/mcp/src/tools";
 import { app } from "./routes.fixture";
 
 const routesFile = path.resolve(__dirname, "routes.fixture.ts");
@@ -13,19 +14,21 @@ const tsconfigPath = path.resolve(__dirname, "../../tsconfig.json");
 let rpc: HttpServer;
 let mcpHttp: HttpServer;
 let mcpUrl: URL;
+let rpcUrl: string;
 
 beforeAll(async () => {
   rpc = app.listen(0);
   await new Promise((resolve) => rpc.once("listening", resolve));
-  const url = `http://localhost:${(rpc.address() as { port: number }).port}/rpc`;
+  rpcUrl = `http://localhost:${(rpc.address() as { port: number }).port}/rpc`;
+  const url = rpcUrl;
 
   // Through JSON, as a build step would write it.
   const tools = JSON.parse(
     JSON.stringify(generateMcpTools(routesFile, "routes", { tsconfigPath })),
   );
+  // No body parser: the handler reads the request itself.
   const mcpApp = express();
-  mcpApp.use(express.json());
-  mcpApp.post(
+  mcpApp.all(
     "/mcp",
     createMcpHttpHandler(tools, { url, forwardHeaders: ["Authorization"] }),
   );
@@ -73,6 +76,33 @@ describe("MCP over HTTP", { timeout: 30_000 }, () => {
     const created = await call(await connect({ authorization: "Bearer t-123" }));
     expect(created.isError).toBe(false);
     expect(text(created)).toMatchObject({ result: "success", title: "Hi" });
+  });
+
+  it("answers only POST", async () => {
+    const res = await fetch(mcpUrl);
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("POST");
+  });
+
+  it("works behind a body parser too", async () => {
+    const parsed = express();
+    parsed.use(express.json());
+    parsed.post(
+      "/mcp",
+      createMcpHttpHandler(generateMcpTools(routesFile, "routes", { tsconfigPath }), {
+        url: rpcUrl,
+      }),
+    );
+    const server = parsed.listen(0);
+    await new Promise((resolve) => server.once("listening", resolve));
+    const port = (server.address() as { port: number }).port;
+    const mcp = new Client({ name: "test", version: "1.0.0" });
+    await mcp.connect(
+      new StreamableHTTPClientTransport(new URL(`http://localhost:${port}/mcp`)),
+    );
+    const { tools } = await mcp.listTools();
+    server.close();
+    expect(tools.map((tool) => tool.name)).toContain("posts.getPost");
   });
 
   it("an agent-supplied header does not override a forwarded one", async () => {

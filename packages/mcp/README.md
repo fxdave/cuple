@@ -25,22 +25,21 @@ Every route is a tool, with its `params`, `query`, `body` and `headers` as input
 
 ## Over HTTP
 
-A remote MCP server, e.g. for Claude connectors, serves tools generated at build time, so production needs no TypeScript sources:
+For a remote MCP server, such as a connector users add to their AI app. Write the tools at build time, so production needs no TypeScript sources:
 
 ```bash
-cuple-mcp tools src/mcpRoutes.ts mcpRoutes > dist/mcp-tools.json
+cuple-mcp tools src/routes.ts routes > src/mcp-tools.json
 ```
 
 ```ts
 import { createMcpHttpHandler } from "@cuple/mcp";
 import tools from "./mcp-tools.json";
 
-app.post(
+app.all(
   "/mcp",
-  express.json(),
   createMcpHttpHandler(tools, {
     url: "http://localhost:8080/rpc",
-    // The client's token goes to every call; the agent never sees it.
+    // The user's token goes to every call; the agent never sees it.
     forwardHeaders: ["authorization"],
   }),
 );

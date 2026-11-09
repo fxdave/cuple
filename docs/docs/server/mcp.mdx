@@ -69,10 +69,10 @@ await server.connect(transport); // any transport from @modelcontextprotocol/sdk
 
 ## Over HTTP
 
-A remote MCP server, such as a Claude connector, runs in production, where the TypeScript source usually isn't. Generate the tools at build time instead:
+A remote MCP server, such as a connector users add to their AI app, runs in production, where the TypeScript source usually isn't. So write the tools at build time:
 
 ```bash
-cuple-mcp tools src/mcpRoutes.ts mcpRoutes > dist/mcp-tools.json
+cuple-mcp tools src/routes.ts routes > src/mcp-tools.json
 ```
 
 And serve them with `createMcpHttpHandler`, a stateless [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) endpoint:
@@ -81,9 +81,8 @@ And serve them with `createMcpHttpHandler`, a stateless [Streamable HTTP](https:
 import { createMcpHttpHandler } from "@cuple/mcp";
 import tools from "./mcp-tools.json";
 
-app.post(
+app.all(
   "/mcp",
-  express.json(),
   createMcpHttpHandler(tools, {
     url: "http://localhost:8080/rpc",
     forwardHeaders: ["authorization"],
@@ -91,10 +90,15 @@ app.post(
 );
 ```
 
-`forwardHeaders` takes the client's own headers and sends them with every call, and removes them from the tools. So the user configures a token once in their MCP client, and the agent never sees it.
+In this example:
 
- - TIP: Export a separate routes object for the tools, with its own `initRpc` path. Then you choose exactly which routes an agent gets, and can describe each for an agent rather than a frontend.
- - `generateMcpTools` and `createMcpServerFromTools` do the same in code, for another transport.
+ - `forwardHeaders` passes the MCP client's own headers on to every call, and removes them from the tools. So the user configures their token once in their MCP client, your routes check it as usual, and the agent never sees it.
+ - It answers POST, and 405 to other methods. Replies are plain JSON, not SSE, so proxies that buffer responses don't get in the way.
+ - It reads the request body itself, and also works after a body parser such as `express.json()`.
+ - `generateMcpTools("src/routes.ts", "routes")` returns the same list in code, e.g. for a test that checks the file is up to date.
+
+ - TIP: Give the tools a routes object of their own, served by its own `initRpc` path. Then you choose exactly which routes an agent gets, and describe each one for an agent rather than for a frontend.
+ - NOTE: Regenerate the file when the routes change; `cuple-mcp tools` is a natural step of your build.
 
 :::note[Why it works this way]
 
