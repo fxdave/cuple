@@ -38,12 +38,12 @@ mcp: builder
   .path("/mcp")
   .chain(authLink)
   .postRaw(async ({ req, res, data }) => {
-    if (!data.next) return void res.status(data.statusCode).json(data);
+    if (!data.next) return void res.status(401).set("WWW-Authenticate", "Bearer").json(data);
     const client = api.with({ middleware: () => ({ headers: { authorization: req.headers.authorization } }) });
     await handleMcpRequest(createMcpServer(tools, client), req, res);
   }),
 ```
 
-What the client's `with({ middleware })` injects is sent with every call and hidden from the agent's tools.
+What the client's `with({ middleware })` injects is sent with every call and hidden from the agent's tools. Tools are named `posts_getPost`, take their inputs flat (`{ id, title }`), and are marked read-only for GET routes.
 
 Please check the [docs](https://fxdave.github.io/cuple/)

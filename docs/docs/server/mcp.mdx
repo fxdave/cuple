@@ -37,12 +37,16 @@ claude mcp add my-api -- npx tsx mcp.ts
 
 In this example:
 
- - `cuple-mcp tools <file> <variable>` writes a typed module: one tool per route, named after it (e.g. `posts.getPost`), with `.meta({ description })` as its description and the route's `params`, `query`, `body` and `headers` as input.
+ - `cuple-mcp tools <file> <variable>` writes a typed module: one tool per route, named after it with underscores (`posts.getPost` is `posts_getPost`, since Claude's and OpenAI's APIs reject dots).
+ - A tool's description is the route's `.meta({ description })`. Write it for the agent: what the route is for and when to call it. Without one, the tool says only its method, route and results.
+ - A tool's inputs are the route's `params`, `query`, `body` and `headers` fields, side by side: `{ id, title }`, which agents fill more reliably than nested parts. A route whose parts share a field name keeps the parts; `createMcpServer(tools, client, { flatten: false })` keeps them for every tool.
+ - GET routes are marked read-only and DELETE routes destructive, so clients that ask before each change (ChatGPT does) let reads through.
  - Tools call your running server through the client, over the RPC endpoint, so routes without `.path()` work as well.
- - The response is given back as JSON. If it's not `success`, the tool call is marked as an error.
+ - The response is given back as JSON, both as text and as `structuredContent`. If it's not `success`, the tool call is marked as an error.
 
- - NOTE: `serveMcp` talks to the agent over stdin and stdout, so don't write logs to stdout in `mcp.ts`.
+ - NOTE: `serveMcp` talks to the agent over stdout, so nothing else may write to it: not `mcp.ts`, nor the modules it imports. Log to stderr (`console.error`).
  - NOTE: Rerun `cuple-mcp tools` when the routes change; it's a natural step of your build.
+ - TIP: Clients cap how much of a result they read (Claude Code: about 25,000 tokens). Give list routes a limit and an offset, and say so in their descriptions.
 
 ## Signing in
 
@@ -78,7 +82,8 @@ export const mcpRoutes = {
     .chain(authLink)
     .postRaw(async ({ req, res, data }) => {
       if (!data.next) {
-        res.status(data.statusCode).json(data);
+        // A 401 makes MCP clients ask the user for credentials again.
+        res.status(401).set("WWW-Authenticate", "Bearer").json(data);
         return;
       }
       const client = api.with({
@@ -86,11 +91,16 @@ export const mcpRoutes = {
       });
       await handleMcpRequest(createMcpServer(tools, client), req, res);
     }),
+  // Stateless, so there's no event stream to open: MCP asks for a 405 here.
+  mcpStream: builder
+    .path("/mcp")
+    .getRaw(async ({ res }) => void res.status(405).set("Allow", "POST").end()),
 };
 ```
 
  - `handleMcpRequest` answers one request over stateless [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http). Replies are plain JSON, not SSE, so proxies that buffer responses don't get in the way.
  - The route chooses the tools too: pass `createMcpServer` a different list per user, plan or permission.
+ - NOTE: Pass on a token only to the API it was issued for. A connector for a third party's users needs OAuth, which MCP clients start from the 401's `WWW-Authenticate` header ([authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)).
  - TIP: Give the tools a routes object of their own. Then you choose exactly which routes an agent gets, and describe each one for an agent rather than for a frontend.
 
 ## Other transports

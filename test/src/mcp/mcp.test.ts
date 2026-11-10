@@ -34,59 +34,53 @@ const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
 // Each connect builds a TypeScript program for the routes: seconds, more under
 // the full suite's load.
 describe("MCP", { timeout: 30_000 }, () => {
-  it("lists a tool per route, with only the inputs the route takes", async () => {
+  it("lists a tool per route, named for any client, with flat inputs", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
 
+    // Claude's and OpenAI's APIs reject dots in tool names.
     expect(tools.map((tool) => tool.name).sort()).toEqual([
-      "auth.login",
+      "auth_login",
       "createPost",
-      "posts.getPost",
-      "posts.search",
+      "posts_getPost",
+      "posts_search",
     ]);
-    const getPost = tools.find((tool) => tool.name === "posts.getPost")!;
+    const getPost = tools.find((tool) => tool.name === "posts_getPost")!;
     expect(getPost.description).toBe("Gets one post");
-    expect(getPost.inputSchema.required).toEqual(["params"]);
-    // Every query field is optional, so the query is too.
-    const search = tools.find((tool) => tool.name === "posts.search")!;
+    expect(getPost.inputSchema).toMatchObject({
+      properties: { id: {} },
+      required: ["id"],
+    });
+    expect(getPost.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
+    // Every query field is optional.
+    const search = tools.find((tool) => tool.name === "posts_search")!;
     expect(search.inputSchema.required).toEqual([]);
+    // Without .meta({ description }) a tool still says what it is.
+    expect(search.description).toBe("GET posts.search. Answers success.");
     // A route's headers are input like any other part, so the agent sees what it needs.
     const createPost = tools.find((tool) => tool.name === "createPost")!;
-    expect(Object.keys(createPost.inputSchema.properties!).sort()).toEqual([
-      "body",
-      "headers",
-    ]);
-    expect(createPost.inputSchema.required).toContain("headers");
-    expect(createPost.inputSchema.properties!.headers).toMatchObject({
-      properties: { authorization: { type: "string" } },
-      required: ["authorization"],
+    expect(createPost.inputSchema).toMatchObject({
+      properties: { title: { type: "string" }, authorization: { type: "string" } },
+      required: ["title", "authorization"],
     });
-    expect(Object.keys(getPost.inputSchema.properties!)).toEqual(["params"]);
+    expect(createPost.annotations?.readOnlyHint).toBe(false);
   });
 
   it("calls routes through the RPC endpoint, including ones without a path", async () => {
     const mcp = await connect();
 
-    const found = await mcp.callTool({
-      name: "posts.getPost",
-      arguments: { params: { id: 1 } },
-    });
+    const found = await mcp.callTool({ name: "posts_getPost", arguments: { id: 1 } });
     expect(found.isError).toBe(false);
     expect(text(found)).toMatchObject({ result: "success", title: "Hello" });
+    expect(found.structuredContent).toMatchObject({ result: "success", title: "Hello" });
 
-    const search = await mcp.callTool({
-      name: "posts.search",
-      arguments: { query: { q: "x" } },
-    });
+    const search = await mcp.callTool({ name: "posts_search", arguments: { q: "x" } });
     expect(text(search)).toMatchObject({ result: "success", q: "x" });
   });
 
   it("marks non-success results as errors", async () => {
     const mcp = await connect();
-    const missing = await mcp.callTool({
-      name: "posts.getPost",
-      arguments: { params: { id: 2 } },
-    });
+    const missing = await mcp.callTool({ name: "posts_getPost", arguments: { id: 2 } });
 
     expect(missing.isError).toBe(true);
     expect(text(missing)).toMatchObject({ result: "not-found", statusCode: 404 });
@@ -94,24 +88,38 @@ describe("MCP", { timeout: 30_000 }, () => {
 
   it("an agent can log in, and send the token to a gated route", async () => {
     const mcp = await connect();
-    const createPost = (headers?: object) =>
-      mcp.callTool({ name: "createPost", arguments: { body: { title: "Hi" }, headers } });
+    const createPost = (authorization?: string) =>
+      mcp.callTool({ name: "createPost", arguments: { title: "Hi", authorization } });
 
     expect((await createPost()).isError).toBe(true);
 
     const login = await mcp.callTool({
-      name: "auth.login",
-      arguments: { body: { password: "hunter2" } },
+      name: "auth_login",
+      arguments: { password: "hunter2" },
     });
     const { token } = text(login);
 
-    const created = await createPost({ authorization: `Bearer ${token}` });
+    const created = await createPost(`Bearer ${token}`);
     expect(text(created)).toMatchObject({ result: "success", title: "Hi" });
+  });
+
+  it("keeps the parts when asked to, and reads parts sent as JSON text", async () => {
+    const mcp = await connect({ flatten: false });
+    const { tools } = await mcp.listTools();
+    const getPost = tools.find((tool) => tool.name === "posts_getPost")!;
+    expect(getPost.inputSchema.required).toEqual(["params"]);
+
+    // Some models send an object argument as its JSON.
+    const found = await mcp.callTool({
+      name: "posts_getPost",
+      arguments: { params: JSON.stringify({ id: 1 }) },
+    });
+    expect(text(found)).toMatchObject({ result: "success", title: "Hello" });
   });
 
   it("reports network failures as tool errors", async () => {
     const mcp = await connect({ url: "http://localhost:1/rpc" });
-    const result = await mcp.callTool({ name: "posts.search", arguments: {} });
+    const result = await mcp.callTool({ name: "posts_search", arguments: {} });
 
     expect(result.isError).toBe(true);
     expect((result.content as { text: string }[])[0].text).toMatch(/fetch failed/);
@@ -157,5 +165,41 @@ describe("MCP", { timeout: 30_000 }, () => {
       required: ["root"],
     });
     expect(JSON.stringify(tool)).not.toContain("$ref");
+  });
+
+  it("writes unions the way clients read them", () => {
+    const literal = (value: string) => ({ type: "literal" as const, value });
+    const route: RouteInfo = {
+      name: "posts.filter",
+      description: undefined,
+      path: null,
+      method: "post",
+      bodySchema: {
+        type: "object",
+        properties: {
+          status: {
+            schema: { type: "union", variants: [literal("open"), literal("closed")] },
+            required: true,
+          },
+          id: {
+            schema: { type: "union", variants: [{ type: "string" }, { type: "number" }] },
+            required: false,
+          },
+        },
+      },
+      querySchema: null,
+      paramsSchema: null,
+      headersSchema: null,
+      response: [],
+    };
+
+    const body = routeToTool(route).inputSchema.properties!.body as {
+      properties: Record<string, object>;
+    };
+    expect(body.properties.status).toEqual({ type: "string", enum: ["open", "closed"] });
+    expect(body.properties.id).toEqual({
+      anyOf: [{ type: "string" }, { type: "number" }],
+    });
+    expect(JSON.stringify(body)).not.toContain("oneOf");
   });
 });

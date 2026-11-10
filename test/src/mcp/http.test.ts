@@ -84,14 +84,14 @@ describe("MCP over HTTP, from a cuple route", { timeout: 30_000 }, () => {
   it("hides what the client injects from the tools", async () => {
     const { tools } = await (await connect()).listTools();
     const createPost = tools.find((tool) => tool.name === "createPost")!;
-    expect(Object.keys(createPost.inputSchema.properties!)).toEqual(["body"]);
-    expect(createPost.inputSchema.required).toEqual(["body"]);
+    expect(Object.keys(createPost.inputSchema.properties!)).toEqual(["title"]);
+    expect(createPost.inputSchema.required).toEqual(["title"]);
   });
 
   it("calls the routes with what the client injects", async () => {
     const created = await (await connect()).callTool({
       name: "createPost",
-      arguments: { body: { title: "Hi" } },
+      arguments: { title: "Hi" },
     });
     expect(created.isError).toBe(false);
     expect(text(created)).toMatchObject({ result: "success", title: "Hi" });
@@ -100,7 +100,7 @@ describe("MCP over HTTP, from a cuple route", { timeout: 30_000 }, () => {
   it("an agent can't override what the client injects", async () => {
     const result = await (await connect()).callTool({
       name: "createPost",
-      arguments: { body: { title: "Hi" }, headers: { authorization: "Bearer wrong" } },
+      arguments: { title: "Hi", authorization: "Bearer wrong", headers: "x" },
     });
     expect(text(result)).toMatchObject({ result: "success" });
   });
@@ -150,5 +150,14 @@ describe("withoutInjected", () => {
     expect(
       withoutInjected(tool, { body: "raw" }).inputSchema.properties,
     ).not.toHaveProperty("body");
+  });
+});
+
+describe("createMcpServer's client", () => {
+  it("takes a client with or without .with()", () => {
+    const api = createClient<typeof routes>({ path: "http://localhost/rpc" });
+    const authed = api.with({ middleware: () => ({ headers: { authorization: "x" } }) });
+    expect(createMcpServer([], api)).toBeDefined();
+    expect(createMcpServer([], authed)).toBeDefined();
   });
 });

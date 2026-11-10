@@ -1,6 +1,7 @@
-import { type Client, createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
+import { createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -8,21 +9,30 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import {
+  flattened,
   generateMcpTools,
   INPUTS,
   type Injected,
   isObject,
   type McpTool,
+  type Part,
   withoutInjected,
 } from "./tools.js";
 
-type AnyClient = Client<RecursiveApi, any>;
+/** A `@cuple/client` of your routes, with or without `.with(…)`. */
+type AnyClient = object;
 
 export type McpServerInfo = {
   /** How the server introduces itself to the agent. Default: `"cuple"`. */
   name?: string;
   /** Default: `"1.0.0"`. */
   version?: string;
+  /**
+   * Offer each tool's inputs at the top level, `{ id, title }` rather than
+   * `{ params: { id }, body: { title } }`, which agents fill more reliably.
+   * Tools whose parts share a key keep the parts. Default: `true`.
+   */
+  flatten?: boolean;
 };
 
 /** @deprecated The options of `createMcpServer(filePath, variableName, options)`. */
@@ -94,9 +104,7 @@ export async function serveMcp(
   variableName: string,
   options: McpOptions,
 ): Promise<Server>;
-export async function serveMcp(
-  ...args: [any, any, any?]
-) {
+export async function serveMcp(...args: [any, any, any?]) {
   const server = (createMcpServer as (...a: unknown[]) => Server)(...args);
   await server.connect(new StdioServerTransport());
   return server;
@@ -106,6 +114,13 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
   const byName = new Map(tools.map((entry) => [entry.tool.name, entry]));
   const injected = async (): Promise<Injected> =>
     ((await (client as any).clientProps.middleware?.()) ?? {}) as Injected;
+  /** What the agent sees: without the injected inputs, flat where possible. */
+  const offered = (tool: Tool, hidden: Injected) => {
+    const visible = withoutInjected(tool, hidden);
+    return (info?.flatten ?? true)
+      ? (flattened(visible) ?? { tool: visible })
+      : { tool: visible };
+  };
 
   const server = new Server(
     { name: info?.name ?? "cuple", version: info?.version ?? "1.0.0" },
@@ -114,7 +129,7 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const hidden = await injected();
-    return { tools: tools.map((entry) => withoutInjected(entry.tool, hidden)) };
+    return { tools: tools.map((entry) => offered(entry.tool, hidden).tool) };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -122,25 +137,28 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
     if (!entry)
       throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
 
-    const args = request.params.arguments ?? {};
     const hidden = await injected();
+    const shown = offered(entry.tool, hidden);
+    const given = partsOf(request.params.arguments ?? {}, shown);
     // The client merges its own data shallowly under these, so merge each part
     // here: the injected keys win, and parts the agent left out stay out.
     const input: Record<string, unknown> = {};
     for (const part of INPUTS) {
-      const given = args[part];
       const own = hidden[part];
       const value =
-        isObject(given) && isObject(own) ? { ...given, ...own } : (own ?? given);
+        isObject(given[part]) && isObject(own)
+          ? { ...given[part], ...own }
+          : (own ?? given[part]);
       if (value !== undefined) input[part] = value;
     }
     try {
       const response = await fetchCuple(
-        endpointOf(client, entry.tool.name, entry.method),
+        endpointOf(client, entry.path, entry.method),
         input,
       );
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
+        ...(isObject(response) && { structuredContent: response }),
         isError: response.result !== "success",
       };
     } catch (e) {
@@ -154,11 +172,45 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
   return server;
 }
 
-/** `posts.getPost` + `get` is `client.posts.getPost.get`. */
-function endpointOf(client: object, name: string, method: string) {
+/**
+ * The agent's arguments as request parts. Agents sometimes send an object as
+ * its JSON text, so a string where the schema wants an object is parsed.
+ */
+function partsOf(
+  args: Record<string, unknown>,
+  shown: { tool: Tool; inputs?: Record<string, Part> },
+): Partial<Record<Part, unknown>> {
+  const schemas = (shown.tool.inputSchema.properties ?? {}) as Record<
+    string,
+    { type?: string }
+  >;
+  const value = (key: string) => {
+    const given = args[key];
+    const wants = schemas[key]?.type;
+    if (typeof given !== "string" || (wants !== "object" && wants !== "array"))
+      return given;
+    try {
+      return JSON.parse(given);
+    } catch {
+      return given;
+    }
+  };
+  if (!shown.inputs) return Object.fromEntries(INPUTS.map((part) => [part, value(part)]));
+
+  const parts: Partial<Record<Part, Record<string, unknown>>> = {};
+  for (const [key, part] of Object.entries(shown.inputs)) {
+    if (args[key] === undefined) continue;
+    parts[part] ??= {};
+    parts[part][key] = value(key);
+  }
+  return parts;
+}
+
+/** `["posts", "getPost"]` + `get` is `client.posts.getPost.get`. */
+function endpointOf(client: object, path: string[], method: string) {
   // The client is a Proxy, so every path exists.
   let endpoint: any = client;
-  for (const segment of [...name.split("."), method]) {
+  for (const segment of [...path, method]) {
     endpoint = endpoint[segment];
   }
   return endpoint;
