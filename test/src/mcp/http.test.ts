@@ -1,12 +1,15 @@
 import type { Server as HttpServer } from "node:http";
 import path from "node:path";
-import { createMcpHttpHandler, generateMcpTools } from "@cuple/mcp";
+import { createClient } from "@cuple/client";
+import { createMcpServer, generateMcpTools, handleMcpRequest } from "@cuple/mcp";
+import { createBuilder } from "@cuple/server";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withoutHeaders } from "../../../packages/mcp/src/tools";
-import { app } from "./routes.fixture";
+import { z } from "zod";
+import { withoutInjected } from "../../../packages/mcp/src/tools";
+import { app, type routes } from "./routes.fixture";
 
 const routesFile = path.resolve(__dirname, "routes.fixture.ts");
 const tsconfigPath = path.resolve(__dirname, "../../tsconfig.json");
@@ -14,24 +17,43 @@ const tsconfigPath = path.resolve(__dirname, "../../tsconfig.json");
 let rpc: HttpServer;
 let mcpHttp: HttpServer;
 let mcpUrl: URL;
-let rpcUrl: string;
 
 beforeAll(async () => {
   rpc = app.listen(0);
   await new Promise((resolve) => rpc.once("listening", resolve));
-  rpcUrl = `http://localhost:${(rpc.address() as { port: number }).port}/rpc`;
-  const url = rpcUrl;
-
-  // Through JSON, as a build step would write it.
+  const api = createClient<typeof routes>({
+    path: `http://localhost:${(rpc.address() as { port: number }).port}/rpc`,
+  });
+  // As a build step writes them.
   const tools = JSON.parse(
     JSON.stringify(generateMcpTools(routesFile, "routes", { tsconfigPath })),
   );
-  // No body parser: the handler reads the request itself.
+
+  // The MCP endpoint is an ordinary route: its own auth, its own client.
   const mcpApp = express();
-  mcpApp.all(
-    "/mcp",
-    createMcpHttpHandler(tools, { url, forwardHeaders: ["Authorization"] }),
-  );
+  const builder = createBuilder(mcpApp);
+  const apiKey = builder
+    .headersSchema(z.looseObject({ "x-api-key": z.string() }))
+    .middleware(async ({ data }) =>
+      data.headers["x-api-key"] === "k-1"
+        ? { next: true as const, token: "t-123" }
+        : { next: false as const, statusCode: 401, message: "Bad key" },
+    )
+    .buildLink();
+  builder
+    .path("/mcp")
+    .chain(apiKey)
+    .postRaw(async ({ req, res, data }) => {
+      if (!data.next) {
+        res.status(data.statusCode).json(data);
+        return;
+      }
+      const client = api.with({
+        middleware: () => ({ headers: { authorization: `Bearer ${data.token}` } }),
+      });
+      await handleMcpRequest(createMcpServer(tools, client), req, res);
+    });
+
   mcpHttp = mcpApp.listen(0);
   await new Promise((resolve) => mcpHttp.once("listening", resolve));
   mcpUrl = new URL(
@@ -43,7 +65,7 @@ afterAll(() => {
   mcpHttp.close();
 });
 
-async function connect(headers: Record<string, string> = {}) {
+async function connect(headers: Record<string, string> = { "x-api-key": "k-1" }) {
   const mcp = new Client({ name: "test", version: "1.0.0" });
   await mcp.connect(
     new StreamableHTTPClientTransport(mcpUrl, { requestInit: { headers } }),
@@ -54,68 +76,37 @@ async function connect(headers: Record<string, string> = {}) {
 const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((result.content as { text: string }[])[0].text);
 
-describe("MCP over HTTP", { timeout: 30_000 }, () => {
-  it("hides forwarded headers from the tools", async () => {
-    const mcp = await connect();
-    const { tools } = await mcp.listTools();
-    const createPost = tools.find((tool) => tool.name === "createPost")!;
+describe("MCP over HTTP, from a cuple route", { timeout: 30_000 }, () => {
+  it("runs the route's own auth first", async () => {
+    await expect(connect({ "x-api-key": "wrong" })).rejects.toThrow();
+  });
 
+  it("hides what the client injects from the tools", async () => {
+    const { tools } = await (await connect()).listTools();
+    const createPost = tools.find((tool) => tool.name === "createPost")!;
     expect(Object.keys(createPost.inputSchema.properties!)).toEqual(["body"]);
     expect(createPost.inputSchema.required).toEqual(["body"]);
   });
 
-  it("passes the client's header to the route", async () => {
-    const call = (mcp: Client) =>
-      mcp.callTool({ name: "createPost", arguments: { body: { title: "Hi" } } });
-
-    expect((await call(await connect())).isError).toBe(true);
-    expect((await call(await connect({ authorization: "Bearer wrong" }))).isError).toBe(
-      true,
-    );
-
-    const created = await call(await connect({ authorization: "Bearer t-123" }));
+  it("calls the routes with what the client injects", async () => {
+    const created = await (await connect()).callTool({
+      name: "createPost",
+      arguments: { body: { title: "Hi" } },
+    });
     expect(created.isError).toBe(false);
     expect(text(created)).toMatchObject({ result: "success", title: "Hi" });
   });
 
-  it("answers only POST", async () => {
-    const res = await fetch(mcpUrl);
-    expect(res.status).toBe(405);
-    expect(res.headers.get("allow")).toBe("POST");
-  });
-
-  it("works behind a body parser too", async () => {
-    const parsed = express();
-    parsed.use(express.json());
-    parsed.post(
-      "/mcp",
-      createMcpHttpHandler(generateMcpTools(routesFile, "routes", { tsconfigPath }), {
-        url: rpcUrl,
-      }),
-    );
-    const server = parsed.listen(0);
-    await new Promise((resolve) => server.once("listening", resolve));
-    const port = (server.address() as { port: number }).port;
-    const mcp = new Client({ name: "test", version: "1.0.0" });
-    await mcp.connect(
-      new StreamableHTTPClientTransport(new URL(`http://localhost:${port}/mcp`)),
-    );
-    const { tools } = await mcp.listTools();
-    server.close();
-    expect(tools.map((tool) => tool.name)).toContain("posts.getPost");
-  });
-
-  it("an agent-supplied header does not override a forwarded one", async () => {
-    const mcp = await connect({ authorization: "Bearer wrong" });
-    const result = await mcp.callTool({
+  it("an agent can't override what the client injects", async () => {
+    const result = await (await connect()).callTool({
       name: "createPost",
-      arguments: { body: { title: "Hi" }, headers: { authorization: "Bearer t-123" } },
+      arguments: { body: { title: "Hi" }, headers: { authorization: "Bearer wrong" } },
     });
-    expect(result.isError).toBe(true);
+    expect(text(result)).toMatchObject({ result: "success" });
   });
 });
 
-describe("withoutHeaders", () => {
+describe("withoutInjected", () => {
   const tool = {
     name: "t",
     inputSchema: {
@@ -132,8 +123,10 @@ describe("withoutHeaders", () => {
     },
   };
 
-  it("keeps the headers the agent still sends", () => {
-    expect(withoutHeaders(tool, ["authorization"]).inputSchema).toEqual({
+  it("keeps the keys the agent still sends", () => {
+    expect(
+      withoutInjected(tool, { headers: { authorization: "x" } }).inputSchema,
+    ).toEqual({
       type: "object",
       properties: {
         body: { type: "object" },
@@ -147,11 +140,15 @@ describe("withoutHeaders", () => {
     });
   });
 
-  it("drops headers when none are left", () => {
-    expect(withoutHeaders(tool, ["authorization", "x-org"]).inputSchema).toEqual({
+  it("drops a part when nothing is left of it, or it is injected whole", () => {
+    const both = { headers: { authorization: "x", "x-org": "y" } };
+    expect(withoutInjected(tool, both).inputSchema).toEqual({
       type: "object",
       properties: { body: { type: "object" } },
       required: ["body"],
     });
+    expect(
+      withoutInjected(tool, { body: "raw" }).inputSchema.properties,
+    ).not.toHaveProperty("body");
   });
 });

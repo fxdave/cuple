@@ -1,48 +1,49 @@
 # @cuple/mcp
 
-Expose [Cuple](https://github.com/fxdave/cuple) routes as [MCP](https://modelcontextprotocol.io) tools.
+Expose [Cuple](https://github.com/fxdave/cuple) routes as [MCP](https://modelcontextprotocol.io) tools. It's a client: tool calls go to your API through a `@cuple/client`, with whatever that client sends.
 
 ## Installation
 
 ```bash
-npm i -D @cuple/mcp typescript
+npm i @cuple/mcp && npm i -D typescript
 ```
 
 ## Usage
 
+Write the tools from your route types, at build time:
+
+```bash
+cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts
+```
+
+Serve them to a local agent over stdio:
+
 ```ts
-// mcp.ts
+// mcp.ts, then: claude mcp add my-api -- npx tsx mcp.ts
 import { serveMcp } from "@cuple/mcp";
+import { tools } from "./mcp-tools";
 
-serveMcp("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
+const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
+serveMcp(tools, api.with({
+  middleware: () => ({ headers: { authorization: `Bearer ${process.env.TOKEN}` } }),
+}));
 ```
 
-```bash
-claude mcp add my-api -- npx tsx mcp.ts
-```
-
-Every route is a tool, with its `params`, `query`, `body` and `headers` as input. A route that needs `authorization` says so, so the agent logs in through your login route and sends the token.
-
-## Over HTTP
-
-For a remote MCP server, such as a connector users add to their AI app. Write the tools at build time, so production needs no TypeScript sources:
-
-```bash
-cuple-mcp tools src/routes.ts routes > src/mcp-tools.json
-```
+Or remotely, from a route of your own, so the request's own auth decides what the tools send:
 
 ```ts
-import { createMcpHttpHandler } from "@cuple/mcp";
-import tools from "./mcp-tools.json";
+import { createMcpServer, handleMcpRequest } from "@cuple/mcp";
 
-app.all(
-  "/mcp",
-  createMcpHttpHandler(tools, {
-    url: "http://localhost:8080/rpc",
-    // The user's token goes to every call; the agent never sees it.
-    forwardHeaders: ["authorization"],
+mcp: builder
+  .path("/mcp")
+  .chain(authLink)
+  .postRaw(async ({ req, res, data }) => {
+    if (!data.next) return void res.status(data.statusCode).json(data);
+    const client = api.with({ middleware: () => ({ headers: { authorization: req.headers.authorization } }) });
+    await handleMcpRequest(createMcpServer(tools, client), req, res);
   }),
-);
 ```
+
+What the client's `with({ middleware })` injects is sent with every call and hidden from the agent's tools.
 
 Please check the [docs](https://fxdave.github.io/cuple/)

@@ -8,7 +8,7 @@ import { convertSchemaToOpenAPI } from "@cuple/openapi";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
- * One route as an MCP tool, and the HTTP method to call it with. Plain JSON, so
+ * One route as an MCP tool, and the HTTP method to call it with. Plain data, so
  * a list of them can be written at build time and served where the TypeScript
  * sources are not. Make them with {@link generateMcpTools} or the
  * `cuple-mcp tools` command.
@@ -18,20 +18,14 @@ export type McpTool = {
   tool: Tool;
 };
 
-/** {@link McpTool}s as a JSON import types them, where `"object"` widens to `string`. */
-export type McpToolsJson = readonly {
-  method: string;
-  tool: { name: string; inputSchema: { type: string } };
-}[];
-
 /**
  * Reads your routes from the TypeScript source and returns one tool each.
  *
  * @param filePath The file that exports your routes, e.g. `"./src/routes.ts"`.
  * @param variableName The exported variable holding them, e.g. `"routes"`.
  * @example
- * // Usually run at build time, through the CLI:
- * //   cuple-mcp tools src/routes.ts routes > mcp-tools.json
+ * // Usually run at build time, through the CLI, which writes a typed module:
+ * //   cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts
  * const tools = generateMcpTools("./src/routes.ts", "routes");
  */
 export function generateMcpTools(
@@ -111,34 +105,48 @@ function isRequired(schema: Schema) {
   return Object.values(schema.properties).some((property) => property.required);
 }
 
+/** The request parts a client injects, e.g. `{ headers: { authorization: "…" } }`. */
+export type Injected = Partial<Record<(typeof INPUTS)[number], unknown>>;
+
 /**
- * The tool without the given headers: the server supplies them, so the agent
- * neither sees nor sends them. `headers` goes when nothing is left of it.
+ * The tool without what the client injects: those inputs are the server's to
+ * send, so the agent neither sees nor sends them. A part goes entirely when
+ * nothing is left of it, or when the client injects it whole.
  */
-export function withoutHeaders(tool: Tool, names: string[]): Tool {
+export function withoutInjected(tool: Tool, injected: Injected): Tool {
   const schema = tool.inputSchema;
-  const headers = schema.properties?.headers as
-    | { properties?: Record<string, object>; required?: string[] }
-    | undefined;
-  if (!headers?.properties) return tool;
+  const properties = { ...schema.properties };
+  let required = schema.required ?? [];
 
-  const properties = Object.fromEntries(
-    Object.entries(headers.properties).filter(([key]) => !names.includes(key)),
-  );
-  const required = (headers.required ?? []).filter((key) => !names.includes(key));
-  const { headers: _, ...rest } = schema.properties!;
-  const keep = Object.keys(properties).length > 0;
+  for (const part of INPUTS) {
+    const value = injected[part];
+    if (value === undefined || !(part in properties)) continue;
+    const partSchema = properties[part] as {
+      properties?: Record<string, object>;
+      required?: string[];
+    };
+    const keys = isObject(value) ? Object.keys(value) : null;
+    const left = keys
+      ? Object.entries(partSchema.properties ?? {}).filter(([key]) => !keys.includes(key))
+      : [];
+    if (left.length === 0) {
+      delete properties[part];
+      required = required.filter((key) => key !== part);
+      continue;
+    }
+    const partRequired = (partSchema.required ?? []).filter(
+      (key) => !keys?.includes(key),
+    );
+    properties[part] = {
+      ...partSchema,
+      properties: Object.fromEntries(left),
+      required: partRequired,
+    };
+    if (partRequired.length === 0) required = required.filter((key) => key !== part);
+  }
 
-  return {
-    ...tool,
-    inputSchema: {
-      ...schema,
-      properties: keep
-        ? { ...rest, headers: { ...headers, properties, required } }
-        : rest,
-      required: (schema.required ?? []).filter(
-        (key) => key !== "headers" || required.length > 0,
-      ),
-    },
-  };
+  return { ...tool, inputSchema: { ...schema, properties, required } };
 }
+
+export const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);

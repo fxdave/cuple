@@ -1,4 +1,4 @@
-import { createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
+import { type Client, createClient, fetchCuple, type RecursiveApi } from "@cuple/client";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -7,71 +7,115 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { generateMcpTools, INPUTS, type McpTool } from "./tools.js";
+import {
+  generateMcpTools,
+  INPUTS,
+  type Injected,
+  isObject,
+  type McpTool,
+  withoutInjected,
+} from "./tools.js";
 
-export type McpOptions = {
-  /** Your server's RPC endpoint, which the tools call, e.g. `"http://localhost:8080/rpc"`. */
-  url: string;
-  /** Defaults to the nearest `tsconfig.json`. */
-  tsconfigPath?: string;
+type AnyClient = Client<RecursiveApi, any>;
+
+export type McpServerInfo = {
   /** How the server introduces itself to the agent. Default: `"cuple"`. */
   name?: string;
   /** Default: `"1.0.0"`. */
   version?: string;
 };
 
-/**
- * Serves your routes as MCP tools over stdin/stdout, the way agents start a
- * local MCP server. For a remote server, see `createMcpHttpHandler`.
- *
- * @param filePath The file that exports your routes, e.g. `"./src/routes.ts"`.
- * @param variableName The exported variable holding them, e.g. `"routes"`.
- * @example
- * // mcp.ts, then: claude mcp add my-api -- npx tsx mcp.ts
- * serveMcp("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
- */
-export async function serveMcp(
-  filePath: string,
-  variableName: string,
-  options: McpOptions,
-) {
-  const server = createMcpServer(filePath, variableName, options);
-  await server.connect(new StdioServerTransport());
-  return server;
-}
+/** @deprecated The options of `createMcpServer(filePath, variableName, options)`. */
+export type McpOptions = McpServerInfo & {
+  /** Your server's RPC endpoint, which the tools call, e.g. `"http://localhost:8080/rpc"`. */
+  url: string;
+  /** Defaults to the nearest `tsconfig.json`. */
+  tsconfigPath?: string;
+};
 
 /**
- * The MCP server {@link serveMcp} runs, not connected yet: for a transport of
- * your own, or a test. Calls go through the RPC endpoint rather than REST
- * paths, so routes without `.path()` are tools too.
+ * An MCP server whose tools call your routes through `client`, not connected
+ * yet: give it any transport from `@modelcontextprotocol/sdk`, or use
+ * `handleMcpRequest` for HTTP.
+ *
+ * What the client's `with({ middleware })` injects (a token, a tenant) goes
+ * with every call and is hidden from the agent.
+ *
+ * @param tools From `cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts`.
+ * @example
+ * const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
+ * const server = createMcpServer(tools, api.with({
+ *   middleware: () => ({ headers: { authorization: `Bearer ${process.env.TOKEN}` } }),
+ * }));
+ * await server.connect(new StdioServerTransport());
  */
+export function createMcpServer(
+  tools: McpTool[],
+  client: AnyClient,
+  info?: McpServerInfo,
+): Server;
+/** @deprecated Reads the TypeScript source on every call; use `createMcpServer(tools, client)`. */
 export function createMcpServer(
   filePath: string,
   variableName: string,
   options: McpOptions,
+): Server;
+export function createMcpServer(
+  toolsOrFile: McpTool[] | string,
+  clientOrVariable: AnyClient | string,
+  options?: McpServerInfo | McpOptions,
 ) {
-  const tools = generateMcpTools(filePath, variableName, {
-    tsconfigPath: options.tsconfigPath,
-  });
-  return serverFor(tools, options);
+  if (typeof toolsOrFile === "string") {
+    const legacy = options as McpOptions;
+    const tools = generateMcpTools(toolsOrFile, clientOrVariable as string, {
+      tsconfigPath: legacy.tsconfigPath,
+    });
+    return serverFor(tools, createClient<RecursiveApi>({ path: legacy.url }), legacy);
+  }
+  return serverFor(toolsOrFile, clientOrVariable as AnyClient, options);
 }
 
-/** `headers` are sent on every call, over whatever headers the agent passed. */
-export function serverFor(
+/**
+ * Serves your routes as MCP tools over stdio, the way agents start a local
+ * MCP server.
+ *
+ * @example
+ * // mcp.ts, then: claude mcp add my-api -- npx tsx mcp.ts
+ * serveMcp(tools, createClient<typeof routes>({ path: "http://localhost:8080/rpc" }));
+ */
+export async function serveMcp(
   tools: McpTool[],
-  options: Omit<McpOptions, "tsconfigPath"> & { headers?: Record<string, string> },
+  client: AnyClient,
+  info?: McpServerInfo,
+): Promise<Server>;
+/** @deprecated Use `serveMcp(tools, client)`. */
+export async function serveMcp(
+  filePath: string,
+  variableName: string,
+  options: McpOptions,
+): Promise<Server>;
+export async function serveMcp(
+  ...args: [any, any, any?]
 ) {
+  const server = (createMcpServer as (...a: unknown[]) => Server)(...args);
+  await server.connect(new StdioServerTransport());
+  return server;
+}
+
+function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
   const byName = new Map(tools.map((entry) => [entry.tool.name, entry]));
-  const client = createClient<RecursiveApi>({ path: options.url });
+  const injected = async (): Promise<Injected> =>
+    ((await (client as any).clientProps.middleware?.()) ?? {}) as Injected;
 
   const server = new Server(
-    { name: options.name ?? "cuple", version: options.version ?? "1.0.0" },
+    { name: info?.name ?? "cuple", version: info?.version ?? "1.0.0" },
     { capabilities: { tools: {} } },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: tools.map((entry) => entry.tool),
-  }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const hidden = await injected();
+    return { tools: tools.map((entry) => withoutInjected(entry.tool, hidden)) };
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const entry = byName.get(request.params.name);
@@ -79,11 +123,16 @@ export function serverFor(
       throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
 
     const args = request.params.arguments ?? {};
-    const input: Record<string, unknown> = Object.fromEntries(
-      INPUTS.map((key) => [key, args[key]]),
-    );
-    if (options.headers) {
-      input.headers = { ...(args.headers as object | undefined), ...options.headers };
+    const hidden = await injected();
+    // The client merges its own data shallowly under these, so merge each part
+    // here: the injected keys win, and parts the agent left out stay out.
+    const input: Record<string, unknown> = {};
+    for (const part of INPUTS) {
+      const given = args[part];
+      const own = hidden[part];
+      const value =
+        isObject(given) && isObject(own) ? { ...given, ...own } : (own ?? given);
+      if (value !== undefined) input[part] = value;
     }
     try {
       const response = await fetchCuple(
