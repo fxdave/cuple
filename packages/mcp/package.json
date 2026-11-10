@@ -23,7 +23,7 @@
   ],
   "dependencies": {
     "@cuple/client": "^2.4.0",
-    "@cuple/inspect": "^2.5.0",
+    "@cuple/inspect": "^2.6.0",
     "@cuple/openapi": "^2.5.0",
     "@modelcontextprotocol/sdk": "^1.30.1"
   },

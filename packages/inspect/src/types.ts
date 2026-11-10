@@ -37,6 +37,8 @@ export type ResponseVariant = {
 export type RouteInfo = {
   name: string;
   description: string | undefined;
+  /** The route's `.meta({ … })` fields that have literal values, e.g. `{ readOnly: true }`. */
+  meta: Record<string, string | number | boolean>;
   /** `null` when the route has no `.path()`: it is only reachable through the RPC endpoint. */
   path: PathInfo | null;
   method: string;

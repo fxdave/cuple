@@ -40,7 +40,7 @@ In this example:
  - `cuple-mcp tools <file> <variable>` writes a typed module: one tool per route, named after it with underscores (`posts.getPost` is `posts_getPost`, since Claude's and OpenAI's APIs reject dots).
  - A tool's description is the route's `.meta({ description })`. Write it for the agent: what the route is for and when to call it. Without one, the tool says only its method, route and results.
  - A tool's inputs are the route's `params`, `query`, `body` and `headers` fields, side by side: `{ id, title }`, which agents fill more reliably than nested parts. A route whose parts share a field name keeps the parts; `createMcpServer(tools, client, { flatten: false })` keeps them for every tool.
- - GET routes are marked read-only and DELETE routes destructive, so clients that ask before each change (ChatGPT does) let reads through.
+ - GET routes are marked read-only and DELETE routes destructive, so clients that ask before each change (ChatGPT does) let reads through. A POST route that only reads says so with `.meta({ readOnly: true })`; `.meta({ destructive: true })` marks one that deletes.
  - Tools call your running server through the client, over the RPC endpoint, so routes without `.path()` work as well.
  - The response is given back as JSON, both as text and as `structuredContent`. If it's not `success`, the tool call is marked as an error.
 

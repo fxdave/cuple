@@ -116,13 +116,16 @@ export function routeToTool(route: RouteInfo): Tool {
     name: route.name.replace(/[^a-zA-Z0-9_-]/g, "_"),
     description: route.description ?? describe(route),
     inputSchema: { type: "object", properties, required },
-    // Without readOnlyHint, ChatGPT asks the user to confirm every call.
+    // Without readOnlyHint, ChatGPT asks the user to confirm every call. A POST
+    // that only reads says so with .meta({ readOnly: true }).
     annotations: {
-      readOnlyHint: route.method === "get",
-      destructiveHint: route.method === "delete",
+      readOnlyHint: flag(route.meta?.readOnly) ?? route.method === "get",
+      destructiveHint: flag(route.meta?.destructive) ?? route.method === "delete",
     },
   };
 }
+
+const flag = (value: unknown) => (typeof value === "boolean" ? value : undefined);
 
 /** For a route without `.meta({ description })`: better than nothing. */
 function describe(route: RouteInfo) {

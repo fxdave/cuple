@@ -42,9 +42,13 @@ describe("MCP", { timeout: 30_000 }, () => {
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       "auth_login",
       "createPost",
+      "posts_count",
       "posts_getPost",
       "posts_search",
     ]);
+    // A POST that only reads can say so.
+    const count = tools.find((tool) => tool.name === "posts_count")!;
+    expect(count.annotations?.readOnlyHint).toBe(true);
     const getPost = tools.find((tool) => tool.name === "posts_getPost")!;
     expect(getPost.description).toBe("Gets one post");
     expect(getPost.inputSchema).toMatchObject({
@@ -140,6 +144,7 @@ describe("MCP", { timeout: 30_000 }, () => {
     const route: RouteInfo = {
       name: "saveTree",
       description: undefined,
+      meta: {},
       path: null,
       method: "post",
       bodySchema: {
@@ -172,6 +177,7 @@ describe("MCP", { timeout: 30_000 }, () => {
     const route: RouteInfo = {
       name: "posts.filter",
       description: undefined,
+      meta: {},
       path: null,
       method: "post",
       bodySchema: {
