@@ -5,22 +5,31 @@ description: 'Expose routes as MCP tools'
 
 # MCP
 
-With `@cuple/mcp`, AI agents can call your routes as [MCP](https://modelcontextprotocol.io) tools. Like [OpenAPI](./openapi), it reads your routes from the TypeScript source.
+With `@cuple/mcp`, AI agents can call your routes as [MCP](https://modelcontextprotocol.io) tools. It's a client of your API: each tool call is a request through a `@cuple/client`, so it gets the same validation, middlewares and auth as any other client.
 
 ```bash
-npm i -D @cuple/mcp typescript
+npm i @cuple/mcp && npm i -D typescript
 ```
 
 ## Example
 
-```ts
-// mcp.ts
-import { serveMcp } from "@cuple/mcp";
+Like [OpenAPI](./openapi), the tools come from your routes' types. Write them at build time:
 
-serveMcp("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
+```bash
+cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts
 ```
 
-Then register it with your agent as a command. For example, in Claude Code:
+Then serve them over stdio, the way agents start a local MCP server:
+
+```ts
+// mcp.ts
+import { createClient } from "@cuple/client";
+import { serveMcp } from "@cuple/mcp";
+import type { routes } from "./src/routes";
+import { tools } from "./src/mcp-tools";
+
+serveMcp(tools, createClient<typeof routes>({ path: "http://localhost:8080/rpc" }));
+```
 
 ```bash
 claude mcp add my-api -- npx tsx mcp.ts
@@ -28,43 +37,79 @@ claude mcp add my-api -- npx tsx mcp.ts
 
 In this example:
 
- - `"routes"` is the name of the exported variable that holds your routes, as for `generateOpenAPI`.
- - Every route becomes a tool, named after the route, e.g. `posts.getPost`. `.meta({ description })` becomes the tool's description.
- - A tool's input is what the route declares: `params`, `query`, `body` and `headers`, the same as `fetchCuple`'s.
- - Tools call your running server at `url`, through the RPC endpoint, so routes without `.path()` work as well.
- - The response is given back as JSON. If it's not `success`, the tool call is marked as an error.
+ - `cuple-mcp tools <file> <variable>` writes a typed module: one tool per route, named after it with underscores (`posts.getPost` is `posts_getPost`, since Claude's and OpenAI's APIs reject dots).
+ - A tool's description is the route's `.meta({ description })`. Write it for the agent: what the route is for and when to call it. Without one, the tool says only its method, route and results.
+ - A tool's inputs are the route's `params`, `query`, `body` and `headers` fields, side by side: `{ id, title }`, which agents fill more reliably than nested parts. A route whose parts share a field name keeps the parts; `createMcpServer(tools, client, { flatten: false })` keeps them for every tool.
+ - GET routes are marked read-only and DELETE routes destructive, so clients that ask before each change (ChatGPT does) let reads through. A POST route that only reads says so with `.meta({ readOnly: true })`; `.meta({ destructive: true })` marks one that deletes.
+ - Tools call your running server through the client, over the RPC endpoint, so routes without `.path()` work as well.
+ - The response is given back as JSON, both as text and as `structuredContent`. If it's not `success`, the tool call is marked as an error.
 
- - NOTE: `serveMcp` talks to the agent over stdin and stdout, so don't write logs to stdout in `mcp.ts`.
- - NOTE: It reads your TypeScript source, so run it where the source is available.
+ - NOTE: `serveMcp` talks to the agent over stdout, so nothing else may write to it: not `mcp.ts`, nor the modules it imports. Log to stderr (`console.error`).
+ - NOTE: Rerun `cuple-mcp tools` when the routes change; it's a natural step of your build.
+ - TIP: Clients cap how much of a result they read (Claude Code: about 25,000 tokens). Give list routes a limit and an offset, and say so in their descriptions.
 
 ## Signing in
 
-The tools say what each route needs, headers included. With a login route and a route that requires `authorization`:
+The client decides what every call carries, as anywhere else. Give it what the agent shouldn't handle:
 
 ```ts
-login: builder
-  .bodySchema(z.strictObject({ email: z.string(), password: z.string() }))
-  .post(async ({ data }) => success({ token: await signIn(data.body) })),
+const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
 
-listPosts: builder
-  .chain(authLink) // .headersSchema(z.looseObject({ authorization: z.string() }))
-  .get(async () => success({ posts })),
+serveMcp(tools, api.with({
+  middleware: () => ({ headers: { authorization: `Bearer ${process.env.API_TOKEN}` } }),
+}));
 ```
 
-`listPosts`'s tool requires `headers.authorization`, so the agent calls `login` with the credentials you give it, and sends the token it gets back with the gated calls. There's nothing to configure.
+Whatever the middleware injects goes with every call, and is removed from the tools' inputs, so the agent neither sees nor overrides it. A header, a cookie, a tenant id in the query: it's whatever your API takes.
 
- - NOTE: The token goes through the conversation, like anything the agent reads. Give an agent an account with only the access it needs.
- - TIP: For local testing, accept a dev token that only works in development mode, and give it to the agent. Then it can call gated routes without signing in itself.
+Without it, a route that needs `authorization` says so in its tool, and the agent can log in through your login route and send the token itself.
+
+ - NOTE: A token the agent handles goes through the conversation, like anything it reads. Give an agent an account with only the access it needs.
+
+## Over HTTP
+
+A remote MCP server, such as a connector users add to their AI app, is a route of your own. Its auth decides who is asking, and the client it builds decides what the tools send:
+
+```ts
+import { createMcpServer, handleMcpRequest } from "@cuple/mcp";
+import { tools } from "./mcp-tools";
+
+const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
+
+export const mcpRoutes = {
+  mcp: builder
+    .path("/mcp")
+    .chain(authLink)
+    .postRaw(async ({ req, res, data }) => {
+      if (!data.next) {
+        // A 401 makes MCP clients ask the user for credentials again.
+        res.status(401).set("WWW-Authenticate", "Bearer").json(data);
+        return;
+      }
+      const client = api.with({
+        middleware: () => ({ headers: { authorization: req.headers.authorization } }),
+      });
+      await handleMcpRequest(createMcpServer(tools, client), req, res);
+    }),
+  // Stateless, so there's no event stream to open: MCP asks for a 405 here.
+  mcpStream: builder
+    .path("/mcp")
+    .getRaw(async ({ res }) => void res.status(405).set("Allow", "POST").end()),
+};
+```
+
+ - `handleMcpRequest` answers one request over stateless [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http). Replies are plain JSON, not SSE, so proxies that buffer responses don't get in the way.
+ - The route chooses the tools too: pass `createMcpServer` a different list per user, plan or permission.
+ - NOTE: Pass on a token only to the API it was issued for. A connector for a third party's users needs OAuth, which MCP clients start from the 401's `WWW-Authenticate` header ([authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)).
+ - TIP: Give the tools a routes object of their own. Then you choose exactly which routes an agent gets, and describe each one for an agent rather than for a frontend.
 
 ## Other transports
 
-`createMcpServer` takes the same arguments and returns the server without connecting it, for a transport of your own:
+`createMcpServer(tools, client)` returns the server without connecting it, for any transport from `@modelcontextprotocol/sdk`:
 
 ```ts
-import { createMcpServer } from "@cuple/mcp";
-
-const server = createMcpServer("./src/routes.ts", "routes", { url: "http://localhost:8080/rpc" });
-await server.connect(transport); // any transport from @modelcontextprotocol/sdk
+const server = createMcpServer(tools, client);
+await server.connect(transport);
 ```
 
 :::note[Why it works this way]
@@ -73,6 +118,6 @@ MCP is here so AI agents can easily call Cuple endpoints. They're good with HTTP
 
 Tools call your running server, so an agent gets the same validation, middlewares and auth as your app, and can reach nothing a normal client can't. The route's types are its instructions: an agent learns that `listPosts` needs `authorization` the same way it learns it needs `params`, with no extra setup to keep in sync.
 
-Running as a separate process that reads the source is only where it started. An `initRpc` option that also serves MCP from the app would be simpler. Choosing which routes become tools isn't done yet either.
+The tools come from your types, like the OpenAPI document, because only the types know what a route returns. Calls go through a client, because an agent is one: what it may send is the client's to decide, with the same `with()` you'd use anywhere else.
 
 :::

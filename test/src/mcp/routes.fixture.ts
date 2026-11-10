@@ -38,6 +38,10 @@ export const routes = {
     search: builder
       .querySchema(z.object({ q: z.string().optional() }))
       .get(async ({ data }) => success({ q: data.query.q ?? null })),
+    count: builder
+      .meta({ description: "Counts posts matching a filter", readOnly: true })
+      .bodySchema(z.object({ tag: z.string() }))
+      .post(async () => success({ count: 1 })),
   },
   createPost: builder
     .chain(auth)

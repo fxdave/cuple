@@ -170,19 +170,21 @@ function extractRouteInfo(
     }
   }
 
-  // Extract metadata from tMeta
+  // Extract metadata from tMeta: every field with a literal value.
   const metaProp = routeType.getProperty("tMeta");
-  let description: string | undefined;
+  const meta: Record<string, string | number | boolean> = {};
   if (metaProp) {
     const metaType = checker.getTypeOfSymbolAtLocation(metaProp, node);
-    const descProp = metaType.getProperty("description");
-    if (descProp) {
-      const descType = checker.getTypeOfSymbolAtLocation(descProp, node);
-      if (descType.isStringLiteral()) {
-        description = descType.value;
+    for (const field of metaType.getProperties()) {
+      const fieldType = checker.getTypeOfSymbolAtLocation(field, node);
+      if (fieldType.isStringLiteral() || fieldType.isNumberLiteral()) {
+        meta[field.name] = fieldType.value;
+      } else if (fieldType.flags & ts.TypeFlags.BooleanLiteral) {
+        meta[field.name] = checker.typeToString(fieldType) === "true";
       }
     }
   }
+  const description = typeof meta.description === "string" ? meta.description : undefined;
 
   // Extract input fields
   const inputProp = routeType.getProperty("tInput");
@@ -220,6 +222,7 @@ function extractRouteInfo(
   return {
     name,
     description,
+    meta,
     path: pathValue === null ? null : parsePath(pathValue),
     method,
     bodySchema,
