@@ -1,4 +1,5 @@
 import type { Builder } from "@cuple/server";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { Request } from "express";
 import { handleMcpRequest } from "./http.js";
 import { type McpRoutes, routeTools, type ToolRoutes } from "./routes.js";
@@ -26,8 +27,12 @@ export type McpEndpointOptions<B, T, P> = McpServerInfo & {
      */
     inject: (props: { data: DataOf<B>; req: Request }) => Promise<Injected>;
   };
-  /** Which tools this caller gets. Default: all. */
-  visible?: (props: { data: DataOf<B>; name: string }) => boolean;
+  /**
+   * The tools this caller gets, per MCP request: drop the ones they can't use,
+   * or tell them how to (`description: "… Needs the Pro plan."`). It's what the
+   * agent can call too. Tools are matched to their routes by name.
+   */
+  toolset?: (props: { data: DataOf<B>; tools: Tool[] }) => Promise<Tool[]>;
   /**
    * Sent with a 401 from the chain. MCP clients start OAuth from it; without
    * `resource_metadata` they look for it at the well-known URL. Default: `"Bearer"`.
@@ -91,10 +96,13 @@ export function createMcpEndpoint<
         hidden,
         call: (input: Injected) => endpoint._invoke!(input, { req }),
       })),
-    ].filter(({ tool }) => options.visible?.({ data, name: tool.name }) ?? true);
+    ];
+    const toolset = options.toolset
+      ? refined(served, await options.toolset({ data, tools: served.map((s) => s.tool) }))
+      : served;
 
     await handleMcpRequest(
-      toolServer(async () => served, options),
+      toolServer(async () => toolset, options),
       req,
       res,
     );
@@ -107,4 +115,13 @@ export function createMcpEndpoint<
   }
 
   return { mcp, tools: ownTools, routes: (options.routes?.pick ?? {}) as P };
+}
+
+function refined(served: ServedTool[], tools: Tool[]): ServedTool[] {
+  const byName = new Map(served.map((entry) => [entry.tool.name, entry]));
+  return tools.map((tool) => {
+    const entry = byName.get(tool.name);
+    if (!entry) throw new Error(`toolset returned "${tool.name}", which is no tool`);
+    return { ...entry, tool };
+  });
 }

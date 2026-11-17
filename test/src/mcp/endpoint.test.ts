@@ -78,7 +78,16 @@ export const mcp = createMcpEndpoint(builder.path("/mcp").chain(apiKey), {
       };
     },
   },
-  visible: ({ data, name }) => data.account === "ann" || !name.startsWith("datasets"),
+  toolset: async ({ data, tools }) =>
+    data.account === "ann"
+      ? tools
+      : tools
+          .filter((tool) => !tool.name.startsWith("datasets"))
+          .map((tool) =>
+            tool.name === "posts_remove"
+              ? { ...tool, description: `${tool.description}. Needs the Pro plan.` }
+              : tool,
+          ),
 });
 
 let http: HttpServer;
@@ -154,9 +163,17 @@ describe("createMcpEndpoint", () => {
     expect(remove.annotations).toEqual({ readOnlyHint: false, destructiveHint: true });
   });
 
-  it("filters the tools per caller", async () => {
-    const { tools } = await (await connect("k-bob")).listTools();
+  it("lets toolset filter and refine the tools per caller", async () => {
+    const bob = await connect("k-bob");
+    const { tools } = await bob.listTools();
     expect(tools.map((tool) => tool.name)).not.toContain("datasets_list");
+    expect(tools.find((tool) => tool.name === "posts_remove")!.description).toBe(
+      "Deletes a post. Needs the Pro plan.",
+    );
+    // What it drops can't be called either.
+    await expect(bob.callTool({ name: "datasets_list", arguments: {} })).rejects.toThrow(
+      /Unknown tool/,
+    );
   });
 
   it("runs its own tools in-process, after the endpoint's chain", async () => {

@@ -62,7 +62,18 @@ export const mcp = createMcpEndpoint(builder.path("/mcp").chain(mcpAuthLink), {
 
  - `inject` runs once per MCP request. The keys it returns are taken out of the tools, so the agent neither sees nor overrides them, and go with every call.
  - What it returns is up to your app: a token your auth link accepts, a cookie, a tenant id in the query. The MCP credential itself never needs to work on your app's routes.
- - `visible: ({ data, name }) => …` hides tools from some callers, for example by plan.
+ - `toolset` shapes the tool list per caller: drop what they can't use, or say how to get it. The agent can call only what it returns.
+
+```ts
+toolset: async ({ data, tools }) =>
+  data.plan === "pro"
+    ? tools
+    : tools.map((tool) =>
+        tool.name.startsWith("reports_")
+          ? { ...tool, description: `${tool.description} Needs the Pro plan: upgrade under Settings.` }
+          : tool,
+      ),
+```
 
 ## Signing in
 
