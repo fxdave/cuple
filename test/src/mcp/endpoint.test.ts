@@ -78,7 +78,7 @@ export const mcp = createMcpEndpoint(builder.path("/mcp").chain(apiKey), {
       };
     },
   },
-  toolset: async ({ data, tools }) =>
+  listTools: async ({ data, tools }) =>
     data.account === "ann"
       ? tools
       : tools
@@ -163,7 +163,7 @@ describe("createMcpEndpoint", () => {
     expect(remove.annotations).toEqual({ readOnlyHint: false, destructiveHint: true });
   });
 
-  it("lets toolset filter and refine the tools per caller", async () => {
+  it("lets listTools filter and refine the tools per caller", async () => {
     const bob = await connect("k-bob");
     const { tools } = await bob.listTools();
     expect(tools.map((tool) => tool.name)).not.toContain("datasets_list");

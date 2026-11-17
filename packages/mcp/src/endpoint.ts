@@ -32,7 +32,7 @@ export type McpEndpointOptions<B, T, P> = McpServerInfo & {
    * or tell them how to (`description: "… Needs the Pro plan."`). It's what the
    * agent can call too. Tools are matched to their routes by name.
    */
-  toolset?: (props: { data: DataOf<B>; tools: Tool[] }) => Promise<Tool[]>;
+  listTools?: (props: { data: DataOf<B>; tools: Tool[] }) => Promise<Tool[]>;
   /**
    * Sent with a 401 from the chain. MCP clients start OAuth from it; without
    * `resource_metadata` they look for it at the well-known URL. Default: `"Bearer"`.
@@ -97,12 +97,15 @@ export function createMcpEndpoint<
         call: (input: Injected) => endpoint._invoke!(input, { req }),
       })),
     ];
-    const toolset = options.toolset
-      ? refined(served, await options.toolset({ data, tools: served.map((s) => s.tool) }))
+    const listed = options.listTools
+      ? refined(
+          served,
+          await options.listTools({ data, tools: served.map((s) => s.tool) }),
+        )
       : served;
 
     await handleMcpRequest(
-      toolServer(async () => toolset, options),
+      toolServer(async () => listed, options),
       req,
       res,
     );
@@ -121,7 +124,7 @@ function refined(served: ServedTool[], tools: Tool[]): ServedTool[] {
   const byName = new Map(served.map((entry) => [entry.tool.name, entry]));
   return tools.map((tool) => {
     const entry = byName.get(tool.name);
-    if (!entry) throw new Error(`toolset returned "${tool.name}", which is no tool`);
+    if (!entry) throw new Error(`listTools returned "${tool.name}", which is no tool`);
     return { ...entry, tool };
   });
 }
