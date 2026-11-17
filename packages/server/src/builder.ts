@@ -3,6 +3,7 @@ import type z from "zod";
 import { ZodError, type ZodType } from "zod";
 import type { RawBodyParser } from "./body-parsers";
 import {
+  type InputPart,
   type InputPath,
   type InvalidInput,
   invalidInput,
@@ -50,18 +51,39 @@ type WithoutUndefinedProperties<T extends object> = Pick<T, NotUndefinedProperti
   [Key in UndefinedProperties<T>]?: never;
 };
 
+/** A request's parts, for calling an endpoint in-process. */
+export type EndpointInput = Partial<Record<InputPart, unknown>>;
+
+/**
+ * What an endpoint answers: `json` from get/post/…, `raw` from getRaw/…,
+ * `sse` from getSSE/….
+ */
+export type EndpointKind = "json" | "raw" | "sse";
+
+export type InvokeOptions = {
+  /** The request to inherit from (ip, protocol, …); the input replaces its parts. */
+  req?: ExpressRequest;
+  /** Defaults to a response that ignores what's set on it. */
+  res?: ExpressResponse;
+  /** Skip the first `skip` middlewares: `data` is what they produced. */
+  skip?: number;
+  data?: object;
+};
+
 /**
  * Built endpoint with server and client types.
- * Runtime data: `handler` and `method`.
- * ApiCaller is typing only for @cuple/client.
+ * Runtime data: the fields starting with `_`.
+ * The `t…` fields are typing only, for @cuple/client and others.
  */
 export type BuiltEndpoint<
   TInput extends object,
   TResponses,
   TMethod extends HttpVerbs,
   TMeta,
+  TKind extends EndpointKind = EndpointKind,
 > = {
   tMeta: TMeta;
+  tKind: TKind;
   tInput: WithoutUndefinedProperties<{
     body: TInput extends { body?: unknown } ? TInput["body"] : undefined;
     query: TInput extends { query?: unknown } ? TInput["query"] : undefined;
@@ -73,7 +95,26 @@ export type BuiltEndpoint<
 } & {
   _handler: (req: ExpressRequest, res: ExpressResponse) => void;
   _method: TMethod;
+  _kind: TKind;
+  /** `.meta()`'s object. */
+  _meta?: object;
+  /** The schemas the chain validates, links included, in order. */
+  _inputs: EndpointSchema[];
+  /** Whether the body is read by rawBody() rather than as JSON. */
+  _rawBody: boolean;
+  /** Runs the endpoint without HTTP; only `json` endpoints have it. */
+  _invoke?: (
+    input: EndpointInput,
+    options?: InvokeOptions,
+  ) => Promise<{ statusCode: number } & Record<string, unknown>>;
 };
+
+export type EndpointSchema = { part: InputPart; schema: ZodType };
+
+/** Middlewares carry the schemas they validate, so the endpoint can list them. */
+type Tagged = { _inputs?: EndpointSchema[] };
+const inputsOf = (middlewares: Middleware<any, any, any>[]) =>
+  middlewares.flatMap((mw) => (mw as Tagged)._inputs ?? []);
 
 type HttpVerbs = "get" | "post" | "put" | "patch" | "delete";
 
@@ -142,6 +183,7 @@ type BuilderConfig = {
   path?: string;
   errorHandler?: ErrorHandler;
   bodyParser?: RawBodyParser<any, any> | null;
+  meta?: object;
 };
 
 type AnyBuilderParams = {
@@ -183,7 +225,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
 
   /** Add custom metadata to the endpoint, e.g. OpenAPI description */
   meta<const T extends { description?: string; name?: string }>(meta: T) {
-    return this as unknown as Builder<{
+    return new Builder({ ...this.config, meta }) as unknown as Builder<{
       tMeta: T;
       tInput: TParams["tInput"];
       tData: TParams["tData"];
@@ -410,18 +452,91 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
    */
   buildLink = this._buildMiddleware;
 
+  /** How far this chain is built: for running what's after it in-process. */
+  get _chain() {
+    return {
+      middlewares: this.config.middlewares.length,
+      inputs: inputsOf(this.config.middlewares).length,
+    };
+  }
+
   private _build(): BuiltEndpoint<
     TParams["tInput"],
     TParams["tResponses"],
     TParams["tMethod"],
-    TParams["tMeta"]
+    TParams["tMeta"],
+    "json"
   > {
-    return this._buildRaw(false);
+    const run = this._buildRun();
+    const handler = this._wrapWithBodyParser((req, res) => {
+      void run(req, res, null, 0).then(({ statusCode, ...rest }) =>
+        res.status(statusCode).send(rest),
+      );
+    });
+    this._register(handler);
+
+    return {
+      ...this._endpoint(handler, "json"),
+      _invoke: (input, options = {}) =>
+        run(
+          requestFor(input, options.req),
+          options.res ?? ignoredResponse(),
+          options.data ?? null,
+          options.skip ?? 0,
+        ),
+    };
   }
 
-  private _buildRaw(
-    isRawHandler: boolean = true,
-  ): BuiltEndpoint<TParams["tInput"], any, TParams["tMethod"], TParams["tMeta"]> {
+  /** Runs the chain and the finalware: the response, never a rejection. */
+  private _buildRun() {
+    const middlewares = this.config.middlewares;
+    return (req: ExpressRequest, res: ExpressResponse, data: any, skip: number) =>
+      this._runMiddlewares(middlewares.slice(skip), { req, res, data })
+        .then((response: any) => {
+          if (!response.next) return response;
+          if (!this.config.finalware) throw new MissingFinalwareError();
+          return this.config.finalware({ req, res, data: response });
+        })
+        .then(({ next, ...rest }: any) => rest as { statusCode: number })
+        .catch((err: unknown) => this.config.errorHandler({ err, res, req }))
+        .catch((err: unknown) => {
+          console.error("Custom error handler failed, falling back to DEFAULT");
+          return DEFAULT_ERROR_HANDLER({ err, res, req });
+        });
+  }
+
+  private _register(handler: (req: ExpressRequest, res: ExpressResponse) => void) {
+    if (this.config.method && this.config.path) {
+      this.config.app[this.config.method](this.config.path, handler);
+    }
+  }
+
+  private _endpoint<TKind extends EndpointKind>(
+    handler: (req: ExpressRequest, res: ExpressResponse) => void,
+    kind: TKind,
+  ) {
+    return {
+      _handler: handler,
+      _method: this.config.method!,
+      _kind: kind,
+      _meta: this.config.meta,
+      _inputs: inputsOf(this.config.middlewares),
+      _rawBody: this.config.bodyParser !== undefined,
+      tInput: undefined as any,
+      tMethod: undefined as any,
+      tOutput: undefined as any,
+      tMeta: undefined as any,
+      tKind: undefined as any,
+    };
+  }
+
+  private _buildRaw(): BuiltEndpoint<
+    TParams["tInput"],
+    any,
+    TParams["tMethod"],
+    TParams["tMeta"],
+    "raw"
+  > {
     const endpoint = this._buildMiddleware();
 
     const coreHandler = (req: ExpressRequest, res: ExpressResponse) => {
@@ -429,41 +544,29 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         .then((response) => {
           if (typeof response.next !== "boolean")
             throw new BadMiddlewareReturnTypeError();
-          if (!isRawHandler && !response.next) return response;
           if (!this.config.finalware) throw new MissingFinalwareError();
           return this.config.finalware({ req, res, data: response });
         })
-        .then((response) => {
-          if (isRawHandler) return;
-          const { next, statusCode, ...rest } = response;
-          res.status(statusCode).send(rest);
-        })
-        .catch((err: unknown) => {
-          if (isRawHandler) return;
-          const { statusCode, ...rest } = this.config.errorHandler({ err, res, req });
-          res.status(statusCode).send(rest);
-        })
-        .catch((err: unknown) => {
-          console.error("Custom error handler failed, falling back to DEFAULT");
-          const { statusCode, ...rest } = DEFAULT_ERROR_HANDLER({ err, res, req });
-          res.status(statusCode).send(rest);
-        });
+        .catch(() => {});
     };
 
     const handler = this._wrapWithBodyParser(coreHandler);
+    this._register(handler);
+    return this._endpoint(handler, "raw");
+  }
 
-    if (this.config.method && this.config.path) {
-      this.config.app[this.config.method](this.config.path, handler);
+  private async _runMiddlewares(
+    middlewares: Middleware<any, any, any>[],
+    { req, res, data }: MiddlewareProps<any>,
+  ) {
+    let actualData = data;
+    for (const mw of middlewares) {
+      const { next, ...rest } = await mw({ data: actualData, req, res });
+      if (typeof next !== "boolean") throw new BadMiddlewareReturnTypeError();
+      if (!next) return { ...rest, next: false as const };
+      actualData = { ...actualData, ...rest };
     }
-
-    return {
-      _handler: handler,
-      _method: this.config.method!,
-      tInput: undefined as any,
-      tMethod: undefined as any,
-      tOutput: undefined as any,
-      tMeta: undefined as any,
-    };
+    return { ...actualData, next: true as const };
   }
 
   /** Finalize as GET. Handler returns JSON response. */
@@ -532,7 +635,7 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     | (InvalidInput<`${TPropertyName}`, InputPath<z.input<TParser>>> & { next: false })
     | (UnexpectedError & { next: false })
   > {
-    return async ({ req, res, data }: MiddlewareProps<unknown>) => {
+    const validate = async ({ req, res, data }: MiddlewareProps<unknown>) => {
       try {
         let newData = parser.parse(req[propertyName]);
         const existingData = data && (data as any)[propertyName];
@@ -563,6 +666,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         } as UnexpectedError & { next: false };
       }
     };
+    const inputs: EndpointSchema[] = [{ part: propertyName, schema: parser }];
+    return Object.assign(validate, { _inputs: inputs }) as any;
   }
 
   private _buildFinalMiddlewareSetter<TMethod extends HttpVerbs>(method: TMethod) {
@@ -633,7 +738,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
         TParams["tInput"],
         CupleSSEStream<TEvent> | TParams["tResponses"] | UnexpectedError,
         TMethod,
-        TParams["tMeta"]
+        TParams["tMeta"],
+        "sse"
       > & { _sse: true };
     };
   }
@@ -642,7 +748,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     TParams["tInput"],
     TParams["tResponses"],
     TParams["tMethod"],
-    TParams["tMeta"]
+    TParams["tMeta"],
+    "sse"
   > & { _sse: true } {
     const endpoint = this._buildMiddleware();
 
@@ -715,20 +822,8 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     };
 
     const handler = this._wrapWithBodyParser(coreHandler);
-
-    if (this.config.method && this.config.path) {
-      this.config.app[this.config.method](this.config.path, handler);
-    }
-
-    return {
-      _handler: handler,
-      _method: this.config.method!,
-      _sse: true as const,
-      tInput: undefined as any,
-      tMethod: undefined as any,
-      tOutput: undefined as any,
-      tMeta: undefined as any,
-    };
+    this._register(handler);
+    return { ...this._endpoint(handler, "sse"), _sse: true as const };
   }
 
   private _wrapWithBodyParser(
@@ -749,25 +844,39 @@ export class Builder<TParams extends AnyBuilderParams = BuilderParams> {
     TParams["tResponses"],
     TParams["tDependencyData"]
   > {
-    return async ({
-      req,
-      res,
-      data,
-    }: {
-      req: ExpressRequest;
-      res: ExpressResponse;
-      data: TParams["tData"];
-    }) => {
-      let actualData = data;
-      for (const mw of this.config.middlewares) {
-        const { next, ...rest } = await mw({ data: actualData, req, res });
-        if (typeof next !== "boolean") throw new BadMiddlewareReturnTypeError();
-        if (!next) return { ...rest, next: false };
-        actualData = { ...actualData, ...rest };
-      }
-      return { ...actualData, next: true };
-    };
+    const middlewares = this.config.middlewares;
+    const link = (props: MiddlewareProps<TParams["tData"]>) =>
+      this._runMiddlewares(middlewares, props);
+    return Object.assign(link, { _inputs: inputsOf(middlewares) }) as any;
   }
+}
+
+/**
+ * The request an in-process call runs on: `base`'s, with the input's parts as
+ * own properties, since Express defines some of them as getters.
+ */
+function requestFor(input: EndpointInput, base?: ExpressRequest): ExpressRequest {
+  const req = Object.create(base ?? null);
+  for (const part of ["body", "query", "params", "headers"] as const) {
+    Object.defineProperty(req, part, {
+      value: input[part] ?? (part === "body" ? undefined : {}),
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+  }
+  return req;
+}
+
+/** A response for in-process calls: what a middleware sets on it goes nowhere. */
+function ignoredResponse(): ExpressResponse {
+  const res: any = new Proxy(
+    { locals: {}, headersSent: false },
+    {
+      get: (target: any, key) => (key in target ? target[key] : () => res),
+    },
+  );
+  return res;
 }
 
 enum SchemaType {

@@ -1,5 +1,14 @@
 export { buffer, json, type RawBodyParser } from "./body-parsers";
-export { Builder, createBuilder, SSEOptions } from "./builder";
+export {
+  Builder,
+  type BuiltEndpoint,
+  createBuilder,
+  type EndpointInput,
+  type EndpointKind,
+  type EndpointSchema,
+  type InvokeOptions,
+  SSEOptions,
+} from "./builder";
 export {
   apiResponse,
   conflict,
