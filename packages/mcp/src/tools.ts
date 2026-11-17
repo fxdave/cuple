@@ -143,25 +143,28 @@ function describe(route: RouteInfo) {
  * Several clients handle `anyOf` but not `oneOf`, and see a union of literals
  * best as one `enum`.
  */
-function forClients(schema: object): object {
+export function forClients(schema: object): object {
   if (Array.isArray(schema)) return schema.map(forClients);
   if (typeof schema !== "object" || schema === null) return schema;
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema)) {
     out[key] = typeof value === "object" && value !== null ? forClients(value) : value;
   }
-  const variants = out.oneOf as Record<string, unknown>[] | undefined;
+  const variants = (out.oneOf ?? out.anyOf) as Record<string, unknown>[] | undefined;
   if (!variants) return out;
   delete out.oneOf;
+  delete out.anyOf;
+  // `{ enum: ["a"] }` from inspect, `{ const: "a" }` from zod.
+  const values = (v: Record<string, unknown>) =>
+    Array.isArray(v.enum) ? v.enum : "const" in v ? [v.const] : null;
   const literals = variants.every(
-    (v) =>
-      Array.isArray(v.enum) && v.type === variants[0].type && Object.keys(v).length === 2,
+    (v) => values(v) && v.type === variants[0].type && Object.keys(v).length === 2,
   );
   return literals
     ? {
         ...out,
         type: variants[0].type,
-        enum: variants.flatMap((v) => v.enum as unknown[]),
+        enum: variants.flatMap((v) => values(v)!),
       }
     : { ...out, anyOf: variants };
 }

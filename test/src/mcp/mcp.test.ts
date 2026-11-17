@@ -1,14 +1,12 @@
 import type { Server as HttpServer } from "node:http";
 import path from "node:path";
+import { createClient } from "@cuple/client";
 import type { RouteInfo } from "@cuple/inspect";
-import { createMcpServer, type McpOptions, routeToTool } from "@cuple/mcp";
+import { createMcpServer, type McpServerInfo, routeToTool } from "@cuple/mcp";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { app } from "./routes.fixture";
-
-const routesFile = path.resolve(__dirname, "routes.fixture.ts");
-const tsconfigPath = path.resolve(__dirname, "../../tsconfig.json");
+import { app, routes } from "./routes.fixture";
 
 let http: HttpServer;
 let url: string;
@@ -20,8 +18,9 @@ beforeAll(async () => {
 });
 afterAll(() => http.close());
 
-async function connect(options: Partial<McpOptions> = {}) {
-  const server = createMcpServer(routesFile, "routes", { url, tsconfigPath, ...options });
+async function connect(options: McpServerInfo & { url?: string } = {}) {
+  const client = createClient<typeof routes>({ path: options.url ?? url });
+  const server = createMcpServer(routes, client, options);
   const mcp = new Client({ name: "test", version: "1.0.0" });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverSide), mcp.connect(clientSide)]);
@@ -31,9 +30,7 @@ async function connect(options: Partial<McpOptions> = {}) {
 const text = (result: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((result.content as { text: string }[])[0].text);
 
-// Each connect builds a TypeScript program for the routes: seconds, more under
-// the full suite's load.
-describe("MCP", { timeout: 30_000 }, () => {
+describe("MCP from routes, through a client", () => {
   it("lists a tool per route, named for any client, with flat inputs", async () => {
     const mcp = await connect();
     const { tools } = await mcp.listTools();
@@ -60,7 +57,7 @@ describe("MCP", { timeout: 30_000 }, () => {
     const search = tools.find((tool) => tool.name === "posts_search")!;
     expect(search.inputSchema.required).toEqual([]);
     // Without .meta({ description }) a tool still says what it is.
-    expect(search.description).toBe("GET posts.search. Answers success.");
+    expect(search.description).toBe("GET posts.search.");
     // A route's headers are input like any other part, so the agent sees what it needs.
     const createPost = tools.find((tool) => tool.name === "createPost")!;
     expect(createPost.inputSchema).toMatchObject({
@@ -121,6 +118,24 @@ describe("MCP", { timeout: 30_000 }, () => {
     expect(text(found)).toMatchObject({ result: "success", title: "Hello" });
   });
 
+  it("still reads the routes from the TypeScript source, deprecated", {
+    timeout: 30_000,
+  }, async () => {
+    const server = createMcpServer(
+      path.resolve(__dirname, "routes.fixture.ts"),
+      "routes",
+      {
+        url,
+        tsconfigPath: path.resolve(__dirname, "../../tsconfig.json"),
+      },
+    );
+    const mcp = new Client({ name: "test", version: "1.0.0" });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(serverSide), mcp.connect(clientSide)]);
+    const found = await mcp.callTool({ name: "posts_getPost", arguments: { id: 1 } });
+    expect(text(found)).toMatchObject({ result: "success", title: "Hello" });
+  });
+
   it("reports network failures as tool errors", async () => {
     const mcp = await connect({ url: "http://localhost:1/rpc" });
     const result = await mcp.callTool({ name: "posts_search", arguments: {} });
@@ -135,7 +150,9 @@ describe("MCP", { timeout: 30_000 }, () => {
       /Unknown tool/,
     );
   });
+});
 
+describe("tools from generated route info", () => {
   // A ref points into an OpenAPI document's `components.schemas`, which a tool
   // schema has no equivalent of, and clients rewrite tool schemas for their
   // provider — so a recursive input says nothing rather than carrying a pointer

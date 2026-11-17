@@ -8,6 +8,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
+import { type McpRoutes, routeTools, type ToolRoutes } from "./routes.js";
 import {
   flattened,
   generateMcpTools,
@@ -44,45 +45,63 @@ export type McpOptions = McpServerInfo & {
 };
 
 /**
+ * A tool as one MCP request serves it: what the server sends for the agent
+ * (`hidden`, which the agent neither sees nor overrides), and how to call it.
+ */
+export type ServedTool = {
+  tool: Tool;
+  hidden: Injected;
+  call: (input: Injected) => Promise<unknown>;
+};
+
+/**
  * An MCP server whose tools call your routes through `client`, not connected
- * yet: give it any transport from `@modelcontextprotocol/sdk`, or use
- * `handleMcpRequest` for HTTP.
+ * yet: give it any transport from `@modelcontextprotocol/sdk`. It's for a
+ * separate process, such as a stdio server; in your own server, use
+ * `createMcpEndpoint`.
  *
  * What the client's `with({ middleware })` injects (a token, a tenant) goes
  * with every call and is hidden from the agent.
  *
- * @param tools From `cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts`.
+ * @param routes Your routes, or tools from `cuple-mcp tools`.
  * @example
  * const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
- * const server = createMcpServer(tools, api.with({
+ * const server = createMcpServer(routes, api.with({
  *   middleware: () => ({ headers: { authorization: `Bearer ${process.env.TOKEN}` } }),
  * }));
  * await server.connect(new StdioServerTransport());
  */
-export function createMcpServer(
-  tools: McpTool[],
+export function createMcpServer<T extends McpRoutes>(
+  routes: (T & ToolRoutes<T>) | McpTool[],
   client: AnyClient,
   info?: McpServerInfo,
 ): Server;
-/** @deprecated Reads the TypeScript source on every call; use `createMcpServer(tools, client)`. */
+/** @deprecated Reads the TypeScript source on every call; use `createMcpServer(routes, client)`. */
 export function createMcpServer(
   filePath: string,
   variableName: string,
   options: McpOptions,
 ): Server;
 export function createMcpServer(
-  toolsOrFile: McpTool[] | string,
+  routesOrFile: McpRoutes | McpTool[] | string,
   clientOrVariable: AnyClient | string,
   options?: McpServerInfo | McpOptions,
 ) {
-  if (typeof toolsOrFile === "string") {
+  if (typeof routesOrFile === "string") {
     const legacy = options as McpOptions;
-    const tools = generateMcpTools(toolsOrFile, clientOrVariable as string, {
+    const tools = generateMcpTools(routesOrFile, clientOrVariable as string, {
       tsconfigPath: legacy.tsconfigPath,
     });
-    return serverFor(tools, createClient<RecursiveApi>({ path: legacy.url }), legacy);
+    return clientServer(tools, createClient<RecursiveApi>({ path: legacy.url }), legacy);
   }
-  return serverFor(toolsOrFile, clientOrVariable as AnyClient, options);
+  const tools = Array.isArray(routesOrFile)
+    ? routesOrFile
+    : routeTools(routesOrFile).map(({ tool, path, endpoint }) => ({
+        tool,
+        path,
+        method: endpoint._method as string,
+      }));
+  return clientServer(tools, clientOrVariable as AnyClient, options);
 }
 
 /**
@@ -91,14 +110,14 @@ export function createMcpServer(
  *
  * @example
  * // mcp.ts, then: claude mcp add my-api -- npx tsx mcp.ts
- * serveMcp(tools, createClient<typeof routes>({ path: "http://localhost:8080/rpc" }));
+ * serveMcp(routes, createClient<typeof routes>({ path: "http://localhost:8080/rpc" }));
  */
-export async function serveMcp(
-  tools: McpTool[],
+export async function serveMcp<T extends McpRoutes>(
+  routes: (T & ToolRoutes<T>) | McpTool[],
   client: AnyClient,
   info?: McpServerInfo,
 ): Promise<Server>;
-/** @deprecated Use `serveMcp(tools, client)`. */
+/** @deprecated Use `serveMcp(routes, client)`. */
 export async function serveMcp(
   filePath: string,
   variableName: string,
@@ -110,12 +129,22 @@ export async function serveMcp(...args: [any, any, any?]) {
   return server;
 }
 
-function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
-  const byName = new Map(tools.map((entry) => [entry.tool.name, entry]));
-  const injected = async (): Promise<Injected> =>
-    ((await (client as any).clientProps.middleware?.()) ?? {}) as Injected;
-  /** What the agent sees: without the injected inputs, flat where possible. */
-  const offered = (tool: Tool, hidden: Injected) => {
+function clientServer(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
+  return toolServer(async () => {
+    // Read on every request: the middleware may hand out a fresh token.
+    const hidden = ((await (client as any).clientProps.middleware?.()) ?? {}) as Injected;
+    return tools.map((entry) => ({
+      tool: entry.tool,
+      hidden,
+      call: (input) => fetchCuple(endpointOf(client, entry.path, entry.method), input),
+    }));
+  }, info);
+}
+
+/** The MCP server for a list of tools, which `load` gives for each request. */
+export function toolServer(load: () => Promise<ServedTool[]>, info?: McpServerInfo) {
+  /** What the agent sees: without the hidden inputs, flat where possible. */
+  const offered = ({ tool, hidden }: ServedTool) => {
     const visible = withoutInjected(tool, hidden);
     return (info?.flatten ?? true)
       ? (flattened(visible) ?? { tool: visible })
@@ -127,24 +156,20 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
     { capabilities: { tools: {} } },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const hidden = await injected();
-    return { tools: tools.map((entry) => offered(entry.tool, hidden).tool) };
-  });
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: (await load()).map((entry) => offered(entry).tool),
+  }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const entry = byName.get(request.params.name);
+    const entry = (await load()).find((e) => e.tool.name === request.params.name);
     if (!entry)
       throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
 
-    const hidden = await injected();
-    const shown = offered(entry.tool, hidden);
-    const given = partsOf(request.params.arguments ?? {}, shown);
-    // The client merges its own data shallowly under these, so merge each part
-    // here: the injected keys win, and parts the agent left out stay out.
-    const input: Record<string, unknown> = {};
+    const given = partsOf(request.params.arguments ?? {}, offered(entry));
+    // Merge each part: the hidden keys win, and parts the agent left out stay out.
+    const input: Injected = {};
     for (const part of INPUTS) {
-      const own = hidden[part];
+      const own = entry.hidden[part];
       const value =
         isObject(given[part]) && isObject(own)
           ? { ...given[part], ...own }
@@ -152,10 +177,7 @@ function serverFor(tools: McpTool[], client: AnyClient, info?: McpServerInfo) {
       if (value !== undefined) input[part] = value;
     }
     try {
-      const response = await fetchCuple(
-        endpointOf(client, entry.path, entry.method),
-        input,
-      );
+      const response = (await entry.call(input)) as Record<string, unknown>;
       return {
         content: [{ type: "text", text: JSON.stringify(response) }],
         ...(isObject(response) && { structuredContent: response }),

@@ -1,49 +1,42 @@
 # @cuple/mcp
 
-Expose [Cuple](https://github.com/fxdave/cuple) routes as [MCP](https://modelcontextprotocol.io) tools. It's a client: tool calls go to your API through a `@cuple/client`, with whatever that client sends.
+Serve [Cuple](https://github.com/fxdave/cuple) routes as [MCP](https://modelcontextprotocol.io) tools, so AI agents can call them.
 
 ## Installation
 
 ```bash
-npm i @cuple/mcp && npm i -D typescript
+npm i @cuple/mcp
 ```
 
 ## Usage
 
-Write the tools from your route types, at build time:
+An MCP endpoint in your own server, behind an auth link of its own:
 
-```bash
-cuple-mcp tools src/routes.ts routes > src/mcp-tools.ts
+```ts
+import { createMcpEndpoint } from "@cuple/mcp";
+
+export const mcp = createMcpEndpoint(builder.path("/mcp").chain(mcpAuthLink), {
+  // Tools of its own: they see what mcpAuthLink gave.
+  tools: (b) => ({
+    whoAmI: b.meta({ description: "Says who is signed in" }).get(async ({ data }) => success({ user: data.user })),
+  }),
+  // Routes made for your app, offered too: exactly these, with the credentials they take.
+  routes: {
+    pick: { getPost: routes.posts.getPost },
+    inject: async ({ data }) => ({ headers: { authorization: `Bearer ${await tokenFor(data.user)}` } }),
+  },
+});
 ```
 
-Serve them to a local agent over stdio:
+Tools come from the routes' zod schemas and `.meta({ description })`, and run in-process. What `inject` returns is hidden from the agent and wins over what it sends.
+
+For a local agent over stdio, a separate process calls your API through a client:
 
 ```ts
 // mcp.ts, then: claude mcp add my-api -- npx tsx mcp.ts
-import { serveMcp } from "@cuple/mcp";
-import { tools } from "./mcp-tools";
-
-const api = createClient<typeof routes>({ path: "http://localhost:8080/rpc" });
-serveMcp(tools, api.with({
+serveMcp(routes, createClient<typeof routes>({ path: "http://localhost:8080/rpc" }).with({
   middleware: () => ({ headers: { authorization: `Bearer ${process.env.TOKEN}` } }),
 }));
 ```
 
-Or remotely, from a route of your own, so the request's own auth decides what the tools send:
-
-```ts
-import { createMcpServer, handleMcpRequest } from "@cuple/mcp";
-
-mcp: builder
-  .path("/mcp")
-  .chain(authLink)
-  .postRaw(async ({ req, res, data }) => {
-    if (!data.next) return void res.status(401).set("WWW-Authenticate", "Bearer").json(data);
-    const client = api.with({ middleware: () => ({ headers: { authorization: req.headers.authorization } }) });
-    await handleMcpRequest(createMcpServer(tools, client), req, res);
-  }),
-```
-
-What the client's `with({ middleware })` injects is sent with every call and hidden from the agent's tools. Tools are named `posts_getPost`, take their inputs flat (`{ id, title }`), and are marked read-only for GET routes.
-
-Please check the [docs](https://fxdave.github.io/cuple/)
+Please check the [docs](https://fxdave.github.io/cuple/docs/server/mcp)
