@@ -28,11 +28,12 @@ export type McpEndpointOptions<B, T, P> = McpServerInfo & {
     inject: (props: { data: DataOf<B>; req: Request }) => Promise<Injected>;
   };
   /**
-   * The tools this caller gets, per MCP request: drop the ones they can't use,
-   * or tell them how to (`description: "… Needs the Pro plan."`). It's what the
-   * agent can call too. Tools are matched to their routes by name.
+   * Takes all tools and returns the ones this caller gets, per MCP request:
+   * drop the ones they can't use, or tell them how to (`description: "… Needs
+   * the Pro plan."`). The agent can call only these. Tools are matched to their
+   * routes by name.
    */
-  listTools?: (props: { data: DataOf<B>; tools: Tool[] }) => Promise<Tool[]>;
+  toolListMiddleware?: (props: { data: DataOf<B>; tools: Tool[] }) => Promise<Tool[]>;
   /**
    * Sent with a 401 from the chain. MCP clients start OAuth from it; without
    * `resource_metadata` they look for it at the well-known URL. Default: `"Bearer"`.
@@ -97,10 +98,10 @@ export function createMcpEndpoint<
         call: (input: Injected) => endpoint._invoke!(input, { req }),
       })),
     ];
-    const listed = options.listTools
+    const listed = options.toolListMiddleware
       ? refined(
           served,
-          await options.listTools({ data, tools: served.map((s) => s.tool) }),
+          await options.toolListMiddleware({ data, tools: served.map((s) => s.tool) }),
         )
       : served;
 
@@ -124,7 +125,8 @@ function refined(served: ServedTool[], tools: Tool[]): ServedTool[] {
   const byName = new Map(served.map((entry) => [entry.tool.name, entry]));
   return tools.map((tool) => {
     const entry = byName.get(tool.name);
-    if (!entry) throw new Error(`listTools returned "${tool.name}", which is no tool`);
+    if (!entry)
+      throw new Error(`toolListMiddleware returned "${tool.name}", which is no tool`);
     return { ...entry, tool };
   });
 }
