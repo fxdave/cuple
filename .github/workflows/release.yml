@@ -2,7 +2,8 @@ name: Release
 
 # Publishes each package whose package.json version isn't on npm yet. To
 # release, bump the versions of the packages that changed (and refresh the lock
-# with `npm install --package-lock-only`), then merge to main.
+# with `npm install --package-lock-only`), then merge to main. A pre-release
+# version (`2.6.0-next.0`) goes to its own dist-tag (`next`), not `latest`.
 #
 # Needs the NPM_KEY secret: an npm automation token that can publish @cuple/*.
 

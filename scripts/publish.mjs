@@ -2,6 +2,9 @@
 // and tags each release `@cuple/<name>@<version>`. A release is a commit that
 // bumps the versions; run on main by .github/workflows/release.yml.
 //
+// A pre-release goes to the dist-tag it names, so it isn't what `npm i` gets:
+// `2.6.0-next.0` goes to `next` (`npm i @cuple/mcp@next`), `2.6.0` to `latest`.
+//
 //   node scripts/publish.mjs            publish and tag
 //   node scripts/publish.mjs --dry-run  only say what it would publish
 
@@ -54,14 +57,23 @@ if (!pending.length) {
   process.exit(0);
 }
 
+/** `2.6.0` → `latest`, `2.6.0-next.0` → `next`. */
+const distTag = (version) => version.split("-")[1]?.split(".")[0] ?? "latest";
+
 for (const { dir, json } of pending) {
   const tag = `${json.name}@${json.version}`;
-  console.log(`${dryRun ? "Would publish" : "Publishing"} ${tag}`);
+  console.log(
+    `${dryRun ? "Would publish" : "Publishing"} ${tag} as ${distTag(json.version)}`,
+  );
   if (dryRun) continue;
-  execFileSync("npm", ["publish", "--access", "public", "--provenance"], {
-    cwd: dir,
-    stdio: "inherit",
-  });
+  execFileSync(
+    "npm",
+    ["publish", "--access", "public", "--provenance", "--tag", distTag(json.version)],
+    {
+      cwd: dir,
+      stdio: "inherit",
+    },
+  );
   execFileSync("git", ["tag", tag], { cwd: root, stdio: "inherit" });
   execFileSync("git", ["push", "origin", tag], { cwd: root, stdio: "inherit" });
 }
