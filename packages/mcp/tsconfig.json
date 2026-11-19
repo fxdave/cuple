@@ -12,6 +12,7 @@
   "references": [
     { "path": "../client/tsconfig.node.json" },
     { "path": "../inspect" },
-    { "path": "../openapi" }
+    { "path": "../openapi" },
+    { "path": "../server" }
   ]
 }

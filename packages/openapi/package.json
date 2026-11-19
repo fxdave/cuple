@@ -20,7 +20,7 @@
     "!src/**/*.bak"
   ],
   "dependencies": {
-    "@cuple/inspect": "^2.5.0"
+    "@cuple/inspect": "^2.5.0 || ^2.6.0-next.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
