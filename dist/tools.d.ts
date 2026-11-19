@@ -55,10 +55,12 @@ export declare const isObject: (value: unknown) => value is Record<string, unkno
 /**
  * The tool with its inputs at the top level, `{ id, title }` rather than
  * `{ params: { id }, body: { title } }`: agents fill flat arguments more
- * reliably. `inputs` says which part each one goes back to. `null` when the
- * parts can't be merged: a key in two of them, or a part that isn't an object.
+ * reliably. `inputs` says which part each one goes back to, and `parts` lists
+ * them all. `null` when the parts can't be merged: a key in two of them, or a
+ * part that isn't an object.
  */
 export declare function flattened(tool: Tool): {
     tool: Tool;
     inputs: Record<string, Part>;
+    parts: Part[];
 } | null;

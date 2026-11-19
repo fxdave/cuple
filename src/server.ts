@@ -200,7 +200,7 @@ export function toolServer(load: () => Promise<ServedTool[]>, info?: McpServerIn
  */
 function partsOf(
   args: Record<string, unknown>,
-  shown: { tool: Tool; inputs?: Record<string, Part> },
+  shown: { tool: Tool; inputs?: Record<string, Part>; parts?: Part[] },
 ): Partial<Record<Part, unknown>> {
   const schemas = (shown.tool.inputSchema.properties ?? {}) as Record<
     string,
@@ -219,11 +219,13 @@ function partsOf(
   };
   if (!shown.inputs) return Object.fromEntries(INPUTS.map((part) => [part, value(part)]));
 
-  const parts: Partial<Record<Part, Record<string, unknown>>> = {};
+  // Every part is an object here, so one the agent sent nothing for is `{}`.
+  const parts: Partial<Record<Part, Record<string, unknown>>> = Object.fromEntries(
+    (shown.parts ?? []).map((part) => [part, {}]),
+  );
   for (const [key, part] of Object.entries(shown.inputs)) {
     if (args[key] === undefined) continue;
-    parts[part] ??= {};
-    parts[part][key] = value(key);
+    parts[part]![key] = value(key);
   }
   return parts;
 }

@@ -108,11 +108,11 @@ function partsOf(args, shown) {
     };
     if (!shown.inputs)
         return Object.fromEntries(tools_js_1.INPUTS.map((part) => [part, value(part)]));
-    const parts = {};
+    // Every part is an object here, so one the agent sent nothing for is `{}`.
+    const parts = Object.fromEntries(((_b = shown.parts) !== null && _b !== void 0 ? _b : []).map((part) => [part, {}]));
     for (const [key, part] of Object.entries(shown.inputs)) {
         if (args[key] === undefined)
             continue;
-        (_b = parts[part]) !== null && _b !== void 0 ? _b : (parts[part] = {});
         parts[part][key] = value(key);
     }
     return parts;
