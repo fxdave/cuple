@@ -40,6 +40,10 @@ const appRoutes = {
     list: builder
       .meta({ description: "Lists datasets" })
       .get(async () => success({ datasets: ["a"] })),
+    count: builder
+      .meta({ description: "Counts datasets", readOnly: true })
+      .bodySchema(z.object({ city: z.string().optional() }))
+      .post(async ({ data }) => success({ count: data.body.city ? 1 : 2 })),
   },
 };
 initRpc(app, { path: "/rpc", routes: appRoutes });
@@ -137,6 +141,7 @@ describe("createMcpEndpoint", () => {
   it("lists its own tools and the picked routes, without what the server sends", async () => {
     const { tools } = await (await connect()).listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "datasets_count",
       "datasets_list",
       "posts_create",
       "posts_remove",
@@ -187,6 +192,14 @@ describe("createMcpEndpoint", () => {
       statusCode: 200,
       account: "ANN",
     });
+  });
+
+  it("sends an optional part the agent left empty as {}", async () => {
+    const result = await (await connect()).callTool({
+      name: "datasets_count",
+      arguments: {},
+    });
+    expect(result.structuredContent).toMatchObject({ result: "success", count: 2 });
   });
 
   it("calls a picked route with what inject gives, once per MCP request", async () => {
