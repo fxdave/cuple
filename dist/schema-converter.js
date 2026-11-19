@@ -1,0 +1,422 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createSchemaRegistry = createSchemaRegistry;
+exports.convertTypeToSchema = convertTypeToSchema;
+const ts = __importStar(require("typescript"));
+/**
+ * How deep the walk goes before it gives up.
+ *
+ * The guards below name every cycle they can recognise, but a type the walk
+ * cannot name has nowhere to point, so a bound is still what guarantees
+ * termination. 32 is far past anything a readable API response reaches, so it
+ * costs real schemas nothing, and it stays a backstop: hitting it yields
+ * `unknown`, never a definition.
+ */
+const MAX_DEPTH = 32;
+/**
+ * How many times one generic alias may nest on a branch before the walk treats
+ * it as unbounded and collapses it into a single definition.
+ *
+ * {@link growsFrom} catches the usual unbounded generic precisely, at the first
+ * repeat. This is the backstop for one it cannot see — a generic that grows
+ * through something other than its own type arguments. It is deliberately far
+ * above any hand-written nesting, because collapsing keys the definition on the
+ * alias symbol, and two instantiations of one generic only share a body when
+ * the recursion is what produced them.
+ */
+const MAX_ALIAS_NESTING = 16;
+/** How far {@link containsType} looks for the outer argument. */
+const MAX_CONTAINS_DEPTH = 10;
+/**
+ * TypeScript's placeholder names for types that have no name of their own. A
+ * definition cannot be keyed on one of these, so such a type stays `unknown`.
+ */
+const ANONYMOUS = new Set(["Array", "ReadonlyArray", "__type", "__object"]);
+function createSchemaRegistry() {
+    return { definitions: {}, names: new Map(), used: new Set(), cache: new Map() };
+}
+function frame() {
+    return { contextual: false, height: 1 };
+}
+function convertTypeToSchema(type, checker, registry) {
+    return convert(type, checker, registry, {
+        ancestors: new Set(),
+        aliases: new Map(),
+        collapsing: new Set(),
+        depth: 0,
+        frame: frame(),
+        generics: 0,
+    });
+}
+function convert(type, checker, registry, walk) {
+    var _a, _b;
+    const parent = walk.frame;
+    if (walk.ancestors.has(type)) {
+        parent.contextual = true;
+        return close(type, checker, registry);
+    }
+    const alias = type.aliasSymbol;
+    if (alias) {
+        // Inside its own definition, every occurrence is the definition.
+        if (walk.collapsing.has(alias)) {
+            parent.contextual = true;
+            return close(type, checker, registry);
+        }
+        const outer = walk.aliases.get(alias);
+        if (outer) {
+            // Whether this instantiation expands is decided against the outer ones,
+            // which live above this branch.
+            parent.contextual = true;
+            if (outer.length >= MAX_ALIAS_NESTING || growsFrom(type, outer, checker)) {
+                return close(type, checker, registry);
+            }
+        }
+    }
+    // The bound is only a backstop, so it cuts the branch rather than naming a
+    // type that may not be recursive at all.
+    if (walk.depth >= MAX_DEPTH) {
+        parent.contextual = true;
+        return { type: "unknown" };
+    }
+    // A generic alias above decides what its instantiations below do, so neither
+    // side of the cache is sound while one is open.
+    const shareable = walk.generics === 0 && walk.collapsing.size === 0;
+    if (shareable) {
+        const shared = registry.cache.get(type);
+        if (shared && walk.depth + shared.height <= MAX_DEPTH) {
+            // Reusing it still spends its frames, so the caller carries its height.
+            if (shared.height >= parent.height)
+                parent.height = shared.height + 1;
+            return shared.schema;
+        }
+    }
+    const own = frame();
+    walk.frame = own;
+    walk.ancestors.add(type);
+    let nesting;
+    if (alias) {
+        nesting = walk.aliases.get(alias);
+        if (!nesting) {
+            nesting = [];
+            walk.aliases.set(alias, nesting);
+        }
+        nesting.push(type);
+    }
+    const generic = ((_b = (_a = type.aliasTypeArguments) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0;
+    if (generic)
+        walk.generics++;
+    walk.depth++;
+    try {
+        const schema = describe(type, checker, registry, walk);
+        if (shareable && !own.contextual) {
+            registry.cache.set(type, { schema, height: own.height });
+        }
+        return schema;
+    }
+    finally {
+        walk.depth--;
+        if (generic)
+            walk.generics--;
+        if (alias && nesting) {
+            nesting.pop();
+            if (nesting.length === 0)
+                walk.aliases.delete(alias);
+        }
+        walk.ancestors.delete(type);
+        walk.frame = parent;
+        if (own.contextual)
+            parent.contextual = true;
+        if (own.height >= parent.height)
+            parent.height = own.height + 1;
+    }
+}
+/**
+ * Ends the branch at a type the walk refuses to enter again, pointing at a
+ * named definition of it. Only a type with no name of its own falls back to
+ * `unknown`, since there is then nothing to point at.
+ */
+function close(type, checker, registry) {
+    // An array's own symbol is just `Array`; the name is on its element.
+    if (checker.isArrayType(type)) {
+        const [element] = checker.getTypeArguments(type);
+        if (!element)
+            return { type: "array", items: { type: "unknown" } };
+        return { type: "array", items: close(element, checker, registry) };
+    }
+    const name = define(type, checker, registry);
+    return name === null ? { type: "unknown" } : { type: "ref", name };
+}
+/**
+ * Registers `type` as a named definition and returns its name, or `null` when
+ * the type is anonymous. The name is recorded before the body is described, so
+ * the recursion inside the body closes on a `ref` back to it.
+ */
+function define(type, checker, registry) {
+    var _a, _b, _c;
+    const symbol = (_a = type.aliasSymbol) !== null && _a !== void 0 ? _a : type.symbol;
+    if (!symbol)
+        return null;
+    if (ANONYMOUS.has(symbol.name) || symbol.name.startsWith("__"))
+        return null;
+    const existing = registry.names.get(symbol);
+    if (existing !== undefined)
+        return existing;
+    const name = reserve(symbol.name, registry);
+    registry.names.set(symbol, name);
+    registry.definitions[name] = { type: "unknown" };
+    // A definition is context-free: described on its own branch, where it closes
+    // back on itself. A generic collapses by symbol, because the levels of a
+    // recursive generic differ only in the arguments that drive the recursion.
+    const collapsing = new Set();
+    if (type.aliasSymbol && ((_c = (_b = type.aliasTypeArguments) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) > 0) {
+        collapsing.add(type.aliasSymbol);
+    }
+    registry.definitions[name] = describe(type, checker, registry, {
+        ancestors: new Set([type]),
+        aliases: new Map(),
+        collapsing,
+        depth: 0,
+        frame: frame(),
+        generics: 0,
+    });
+    return name;
+}
+/** OpenAPI component keys allow `[a-zA-Z0-9.\-_]`. */
+function reserve(symbolName, registry) {
+    const base = symbolName.replace(/[^A-Za-z0-9._-]/g, "_");
+    let name = base;
+    for (let n = 2; registry.used.has(name); n++)
+        name = `${base}_${n}`;
+    registry.used.add(name);
+    return name;
+}
+/**
+ * Whether this instantiation of a generic was produced by an outer one on the
+ * same branch, i.e. its arguments contain theirs:
+ * `type Deep<T> = { next: Deep<{ wrap: T }> }` instantiates `Deep<{ wrap: T }>`
+ * from `Deep<T>`, so every level is a fresh type and nothing ever repeats. That
+ * recursion is unbounded, and only a definition describes it faithfully.
+ *
+ * Two instantiations whose arguments are unrelated — the inner one of
+ * `Value<{ foo: Value<{ bar: string }> }>` — are ordinary nesting and expand.
+ */
+function growsFrom(type, outer, checker) {
+    var _a;
+    const args = type.aliasTypeArguments;
+    if (!(args === null || args === void 0 ? void 0 : args.length))
+        return false;
+    for (const ancestor of outer) {
+        for (const target of (_a = ancestor.aliasTypeArguments) !== null && _a !== void 0 ? _a : []) {
+            for (const arg of args) {
+                // The same argument is the same instantiation, which the ancestor set
+                // already catches; growth means strictly containing it.
+                if (arg === target)
+                    continue;
+                if (containsType(arg, target, checker, 0, new Set()))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+function containsType(type, target, checker, depth, seen) {
+    var _a;
+    if (type === target)
+        return true;
+    if (depth >= MAX_CONTAINS_DEPTH || seen.has(type))
+        return false;
+    // Only composites can hold another type.
+    if (!(type.flags & ts.TypeFlags.Object) && !type.isUnionOrIntersection())
+        return false;
+    seen.add(type);
+    for (const arg of (_a = type.aliasTypeArguments) !== null && _a !== void 0 ? _a : []) {
+        if (containsType(arg, target, checker, depth + 1, seen))
+            return true;
+    }
+    if (type.isUnionOrIntersection()) {
+        for (const member of type.types) {
+            if (containsType(member, target, checker, depth + 1, seen))
+                return true;
+        }
+        return false;
+    }
+    // An array's members are its element, not `Array.prototype`.
+    if (checker.isArrayType(type) || checker.isTupleType(type)) {
+        for (const arg of checker.getTypeArguments(type)) {
+            if (containsType(arg, target, checker, depth + 1, seen))
+                return true;
+        }
+        return false;
+    }
+    for (const prop of type.getProperties()) {
+        const propType = checker.getTypeOfSymbol(prop);
+        if (containsType(propType, target, checker, depth + 1, seen))
+            return true;
+    }
+    return false;
+}
+/** Tuples as one array, whose items are any of their elements. */
+function describeTuples(tuples, checker, registry, walk) {
+    const items = new Map();
+    for (const tuple of tuples) {
+        for (const element of checker.getTypeArguments(tuple)) {
+            const schema = convert(element, checker, registry, walk);
+            for (const variant of schema.type === "union" ? schema.variants : [schema]) {
+                items.set(JSON.stringify(variant), variant);
+            }
+        }
+    }
+    const variants = [...items.values()];
+    if (variants.length === 0)
+        return { type: "array", items: { type: "unknown" } };
+    if (variants.length === 1)
+        return { type: "array", items: variants[0] };
+    return { type: "array", items: { type: "union", variants } };
+}
+function describe(type, checker, registry, walk) {
+    // Handle boolean first (TS represents boolean as union of true | false)
+    if (type.flags & ts.TypeFlags.BooleanLiteral) {
+        return { type: "boolean" };
+    }
+    if (type.flags & ts.TypeFlags.Boolean) {
+        return { type: "boolean" };
+    }
+    // Handle string literal
+    if (type.isStringLiteral()) {
+        return { type: "literal", value: type.value };
+    }
+    // Handle number literal
+    if (type.isNumberLiteral()) {
+        return { type: "literal", value: type.value };
+    }
+    // Handle string
+    if (type.flags & ts.TypeFlags.String) {
+        return { type: "string" };
+    }
+    // Handle number
+    if (type.flags & ts.TypeFlags.Number) {
+        return { type: "number" };
+    }
+    // Handle unknown
+    if (type.flags & ts.TypeFlags.Unknown) {
+        return { type: "unknown" };
+    }
+    // Handle union types
+    if (type.isUnion()) {
+        // Filter out undefined from the union
+        const filteredTypes = type.types.filter((t) => !(t.flags & ts.TypeFlags.Undefined));
+        // Check if this is just true | false -> boolean
+        if (filteredTypes.length === 2 &&
+            filteredTypes.every((t) => t.flags & ts.TypeFlags.BooleanLiteral)) {
+            return { type: "boolean" };
+        }
+        if (filteredTypes.length > 0 && filteredTypes.every((t) => checker.isTupleType(t))) {
+            return describeTuples(filteredTypes, checker, registry, walk);
+        }
+        if (filteredTypes.length === 0) {
+            return { type: "unknown" };
+        }
+        if (filteredTypes.length === 1) {
+            return convert(filteredTypes[0], checker, registry, walk);
+        }
+        return {
+            type: "union",
+            variants: filteredTypes.map((t) => convert(t, checker, registry, walk)),
+        };
+    }
+    if (checker.isTupleType(type)) {
+        return describeTuples([type], checker, registry, walk);
+    }
+    // Handle array types
+    if (checker.isArrayType(type)) {
+        const typeArgs = type.typeArguments;
+        if (typeArgs && typeArgs.length > 0) {
+            return {
+                type: "array",
+                items: convert(typeArgs[0], checker, registry, walk),
+            };
+        }
+        return { type: "array", items: { type: "unknown" } };
+    }
+    // Handle intersection types - merge into a single object
+    if (type.isIntersection()) {
+        const mergedProperties = {};
+        for (const intersectedType of type.types) {
+            const schema = convert(intersectedType, checker, registry, walk);
+            if (schema.type === "object") {
+                Object.assign(mergedProperties, schema.properties);
+            }
+        }
+        if (Object.keys(mergedProperties).length > 0) {
+            return { type: "object", properties: mergedProperties };
+        }
+        return { type: "unknown" };
+    }
+    // Handle object types
+    if (type.flags & ts.TypeFlags.Object || type.getProperties().length > 0) {
+        const properties = {};
+        for (const prop of type.getProperties()) {
+            const propName = prop.getName();
+            // Skip internal properties
+            if (propName.startsWith("_"))
+                continue;
+            const propType = checker.getTypeOfSymbol(prop);
+            const isOptional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
+            // For optional properties, the type includes undefined in a union
+            // Strip undefined for the schema
+            let effectiveType = propType;
+            if (isOptional && propType.isUnion()) {
+                const nonUndefined = propType.types.filter((t) => !(t.flags & ts.TypeFlags.Undefined));
+                if (nonUndefined.length === 1) {
+                    effectiveType = nonUndefined[0];
+                }
+                else if (nonUndefined.length > 1) {
+                    // Reconstruct without creating a new union - just convert
+                    effectiveType = propType;
+                }
+            }
+            properties[propName] = {
+                schema: convert(effectiveType, checker, registry, walk),
+                required: !isOptional,
+            };
+        }
+        if (Object.keys(properties).length > 0) {
+            return { type: "object", properties };
+        }
+    }
+    return { type: "unknown" };
+}
+//# sourceMappingURL=schema-converter.js.map

@@ -1,0 +1,39 @@
+{
+  "name": "@cuple/inspect",
+  "version": "2.6.0-next.0",
+  "description": "Extract structured metadata from Cuple route definitions using TypeScript compiler API",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "src",
+    "!src/**/test",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/.claude",
+    "!src/**/*.bak"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxdave/cuple.git"
+  },
+  "keywords": [
+    "rpc",
+    "type",
+    "inspect",
+    "metadata",
+    "typescript",
+    "api"
+  ],
+  "author": "David Biro",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fxdave/cuple/issues"
+  },
+  "homepage": "https://github.com/fxdave/cuple#readme",
+  "peerDependencies": {
+    "@cuple/server": "^2.4.0 || ^2.6.0-next.0",
+    "typescript": "^5.0.0"
+  }
+}

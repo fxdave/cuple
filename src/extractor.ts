@@ -1,0 +1,337 @@
+import * as path from "node:path";
+import * as ts from "typescript";
+import { parsePath } from "./path-parser";
+import { extractResponseVariants } from "./response-extractor";
+import {
+  convertTypeToSchema,
+  createSchemaRegistry,
+  type SchemaRegistry,
+} from "./schema-converter";
+import type { InspectResult, ResponseVariant, RouteInfo, Schema } from "./types";
+
+/**
+ * The routes of `variableName`, plus the named definitions their
+ * `{ type: "ref" }` nodes point at, which a recursive type is described as.
+ */
+export function inspectRoutes(
+  filePath: string,
+  variableName: string,
+  options?: { tsconfigPath?: string },
+): InspectResult {
+  const resolvedPath = path.resolve(filePath);
+  const configPath = options?.tsconfigPath
+    ? path.resolve(options.tsconfigPath)
+    : findTsConfig(resolvedPath);
+
+  const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (configFile.error) {
+    throw new Error(
+      `Error reading tsconfig: ${ts.flattenDiagnosticMessageText(configFile.error.messageText, "\n")}`,
+    );
+  }
+
+  const parsedConfig = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(configPath),
+  );
+
+  const program = ts.createProgram({
+    rootNames: [resolvedPath],
+    options: parsedConfig.options,
+  });
+
+  const sourceFile = program.getSourceFile(resolvedPath);
+  if (!sourceFile) {
+    throw new Error(`Could not load source file: ${resolvedPath}`);
+  }
+
+  return inspectRoutesFromProgram(program, sourceFile, variableName);
+}
+
+/** {@link inspectRoutes} against a program you already have. */
+export function inspectRoutesFromProgram(
+  program: ts.Program,
+  sourceFile: ts.SourceFile,
+  variableName: string,
+): InspectResult {
+  const checker = program.getTypeChecker();
+
+  const variableDecl = findVariable(sourceFile, variableName);
+  if (!variableDecl) {
+    throw new Error(`Variable "${variableName}" not found in source file`);
+  }
+
+  // One registry for the whole inspection, so a recursive type shared by
+  // several routes is described once.
+  const registry = createSchemaRegistry();
+  const variableType = checker.getTypeAtLocation(variableDecl);
+  const routes = extractRoutesFromType(
+    variableType,
+    variableDecl,
+    sourceFile,
+    "",
+    checker,
+    registry,
+  );
+  return { routes, definitions: registry.definitions };
+}
+
+function findTsConfig(filePath: string): string {
+  let dir = path.dirname(filePath);
+  while (dir !== path.dirname(dir)) {
+    const configPath = path.join(dir, "tsconfig.json");
+    if (ts.sys.fileExists(configPath)) {
+      return configPath;
+    }
+    dir = path.dirname(dir);
+  }
+  throw new Error("Could not find tsconfig.json");
+}
+
+function findVariable(
+  sourceFile: ts.SourceFile,
+  name: string,
+): ts.VariableDeclaration | null {
+  let found: ts.VariableDeclaration | null = null;
+
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name
+    ) {
+      found = node;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return found;
+}
+
+function extractRoutesFromType(
+  type: ts.Type,
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+  prefix: string,
+  checker: ts.TypeChecker,
+  registry: SchemaRegistry,
+): RouteInfo[] {
+  const routes: RouteInfo[] = [];
+  const properties = type.getProperties();
+
+  for (const prop of properties) {
+    const propName = prop.getName();
+    const fullName = prefix ? `${prefix}.${propName}` : propName;
+    const propType = checker.getTypeOfSymbolAtLocation(prop, node);
+
+    // Check if this is a BuiltEndpoint by looking for _method property
+    const methodProp = propType.getProperty("_method");
+
+    if (methodProp) {
+      routes.push(extractRouteInfo(prop, propType, node, fullName, checker, registry));
+    } else {
+      // Nested object, recurse
+      const nestedRoutes = extractRoutesFromType(
+        propType,
+        node,
+        sourceFile,
+        fullName,
+        checker,
+        registry,
+      );
+      routes.push(...nestedRoutes);
+    }
+  }
+
+  return routes;
+}
+
+function extractRouteInfo(
+  symbol: ts.Symbol,
+  routeType: ts.Type,
+  node: ts.Node,
+  name: string,
+  checker: ts.TypeChecker,
+  registry: SchemaRegistry,
+): RouteInfo {
+  // Extract path from AST
+  const pathValue = extractPathFromSymbol(symbol);
+
+  // Extract method from tMethod
+  const methodProp = routeType.getProperty("tMethod");
+  let method = "get";
+  if (methodProp) {
+    const methodType = checker.getTypeOfSymbolAtLocation(methodProp, node);
+    if (methodType.isStringLiteral()) {
+      method = methodType.value;
+    }
+  }
+
+  // Extract metadata from tMeta: every field with a literal value.
+  const metaProp = routeType.getProperty("tMeta");
+  const meta: Record<string, string | number | boolean> = {};
+  if (metaProp) {
+    const metaType = checker.getTypeOfSymbolAtLocation(metaProp, node);
+    for (const field of metaType.getProperties()) {
+      const fieldType = checker.getTypeOfSymbolAtLocation(field, node);
+      if (fieldType.isStringLiteral() || fieldType.isNumberLiteral()) {
+        meta[field.name] = fieldType.value;
+      } else if (fieldType.flags & ts.TypeFlags.BooleanLiteral) {
+        meta[field.name] = checker.typeToString(fieldType) === "true";
+      }
+    }
+  }
+  const description = typeof meta.description === "string" ? meta.description : undefined;
+
+  // Extract input fields
+  const inputProp = routeType.getProperty("tInput");
+  let bodySchema: Schema | null = null;
+  let querySchema: Schema | null = null;
+  let paramsSchema: Schema | null = null;
+  let headersSchema: Schema | null = null;
+
+  if (inputProp) {
+    const inputType = checker.getTypeOfSymbolAtLocation(inputProp, node);
+    const inputFields = extractInputFields(inputType, checker);
+
+    if (inputFields.body) {
+      bodySchema = convertTypeToSchema(inputFields.body, checker, registry);
+    }
+    if (inputFields.query) {
+      querySchema = convertTypeToSchema(inputFields.query, checker, registry);
+    }
+    if (inputFields.params) {
+      paramsSchema = convertTypeToSchema(inputFields.params, checker, registry);
+    }
+    if (inputFields.headers) {
+      headersSchema = convertTypeToSchema(inputFields.headers, checker, registry);
+    }
+  }
+
+  // Extract response variants from tOutput
+  const outputProp = routeType.getProperty("tOutput");
+  let response: ResponseVariant[] = [];
+  if (outputProp) {
+    const outputType = checker.getTypeOfSymbolAtLocation(outputProp, node);
+    response = extractResponseVariants(outputType, checker, registry);
+  }
+
+  return {
+    name,
+    description,
+    meta,
+    path: pathValue === null ? null : parsePath(pathValue),
+    method,
+    bodySchema,
+    querySchema,
+    paramsSchema,
+    headersSchema,
+    response,
+  };
+}
+
+function extractPathFromSymbol(symbol: ts.Symbol): string | null {
+  const valueDecl = symbol.valueDeclaration;
+  if (!valueDecl) return null;
+
+  if (ts.isPropertyAssignment(valueDecl)) {
+    return findPathCallInExpression(valueDecl.initializer);
+  }
+
+  // Handle shorthand property assignments: { getHealth } -> resolve to original variable
+  if (ts.isShorthandPropertyAssignment(valueDecl)) {
+    // The name of the shorthand property is the same as the variable it references
+    // Walk up to find the original variable declaration
+    const sourceFile = valueDecl.getSourceFile();
+    const varName = valueDecl.name.text;
+    const originalDecl = findVariableDeclaration(sourceFile, varName);
+    if (originalDecl?.initializer) {
+      return findPathCallInExpression(originalDecl.initializer);
+    }
+  }
+
+  // Handle direct variable declarations (e.g. const route = builder.path(...).get(...))
+  if (ts.isVariableDeclaration(valueDecl) && valueDecl.initializer) {
+    return findPathCallInExpression(valueDecl.initializer);
+  }
+
+  return null;
+}
+
+function findVariableDeclaration(
+  sourceFile: ts.SourceFile,
+  name: string,
+): ts.VariableDeclaration | null {
+  let found: ts.VariableDeclaration | null = null;
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name
+    ) {
+      found = node;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function findPathCallInExpression(node: ts.Node): string | null {
+  if (ts.isCallExpression(node)) {
+    if (
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "path"
+    ) {
+      if (node.arguments.length > 0 && ts.isStringLiteral(node.arguments[0])) {
+        return node.arguments[0].text;
+      }
+    }
+
+    const pathInExpression = findPathCallInExpression(node.expression);
+    if (pathInExpression) return pathInExpression;
+  }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    return findPathCallInExpression(node.expression);
+  }
+
+  return null;
+}
+
+interface InputFields {
+  body?: ts.Type;
+  query?: ts.Type;
+  params?: ts.Type;
+  headers?: ts.Type;
+}
+
+function extractInputFields(inputType: ts.Type, checker: ts.TypeChecker): InputFields {
+  const fields: InputFields = {};
+  const properties = inputType.getProperties();
+
+  for (const prop of properties) {
+    const propName = prop.getName();
+    if (
+      propName === "body" ||
+      propName === "query" ||
+      propName === "params" ||
+      propName === "headers"
+    ) {
+      const propType = checker.getTypeOfSymbol(prop);
+
+      // Skip undefined types
+      if (propType.flags & ts.TypeFlags.Undefined) {
+        continue;
+      }
+
+      fields[propName] = propType;
+    }
+  }
+
+  return fields;
+}
