@@ -1,0 +1,60 @@
+name: Release
+
+# Publishes each package whose package.json version isn't on npm yet. To
+# release, bump the versions of the packages that changed (and refresh the lock
+# with `npm install --package-lock-only`), then merge to main. A pre-release
+# version (`2.6.0-next.0`) goes to its own dist-tag (`next`), not `latest`.
+#
+# Needs the NPM_KEY secret: an npm automation token that can publish @cuple/*.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # release tags
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Find unreleased versions
+        id: pending
+        run: |
+          node scripts/publish.mjs --dry-run | tee pending.txt
+          if grep -q "^Would publish" pending.txt; then
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install
+        if: steps.pending.outputs.any
+        run: npm ci
+      - name: Build
+        if: steps.pending.outputs.any
+        run: npm run build -- --filter='./packages/*'
+      - name: Lint
+        if: steps.pending.outputs.any
+        run: npm run lint
+      - name: Test
+        if: steps.pending.outputs.any
+        run: npm test
+
+      - name: Publish
+        if: steps.pending.outputs.any
+        run: node scripts/publish.mjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_KEY }}

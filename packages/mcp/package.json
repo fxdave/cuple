@@ -28,5 +28,10 @@
     "typescript": "^5.0.0"
   },
   "author": "David Biro",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fxdave/cuple.git",
+    "directory": "packages/mcp"
+  }
 }
